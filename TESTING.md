@@ -478,8 +478,6 @@ jobs:
         run: |
           cd assera-api
           pytest --cov --cov-report=xml
-      - name: Upload coverage
-        uses: codecov/codecov-action@v3
 
   ui-tests:
     runs-on: ubuntu-latest

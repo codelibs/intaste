@@ -36,9 +36,9 @@ export function QueryInput({
 
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     // Skip if IME composition is in progress (e.g., Japanese input)
-    // isComposing: standard way to detect IME composition
     // keyCode === 229: fallback for older browsers during IME input
-    if (e.isComposing || e.keyCode === 229) {
+    // nativeEvent.isComposing: standard way to detect IME composition
+    if (e.nativeEvent.isComposing || e.keyCode === 229) {
       return;
     }
 
