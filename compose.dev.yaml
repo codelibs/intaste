@@ -1,0 +1,64 @@
+# Copyright (c) 2025 CodeLibs
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#     http://www.apache.org/licenses/LICENSE-2.0
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# Assera Docker Compose - Development Configuration
+# Enables hot reload for both API and UI
+# Usage: docker compose -f compose.yaml -f compose.dev.yaml up
+
+services:
+  opensearch:
+    ports:
+      - "9200:9200"
+
+  fess:
+    ports:
+      - "8080:8080"
+
+  ollama:
+    ports:
+      - "11434:11434"
+
+  assera-api:
+    build:
+      context: ./assera-api
+      dockerfile: Dockerfile
+      args:
+        UID: ${ASSERA_UID:-1000}
+        GID: ${ASSERA_GID:-1000}
+    volumes:
+      - ./assera-api/app:/app/app:ro
+    command: uv run uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload --log-level debug
+    environment:
+      - DEBUG=true
+      - LOG_LEVEL=DEBUG
+    ports:
+      - "8000:8000"
+
+  assera-ui:
+    build:
+      context: ./assera-ui
+      dockerfile: Dockerfile
+      target: deps
+      args:
+        UID: ${ASSERA_UID:-1000}
+        GID: ${ASSERA_GID:-1000}
+    volumes:
+      - ./assera-ui:/app:cached
+      - /app/node_modules
+      - /app/.next
+    command: npm run dev
+    environment:
+      - NODE_ENV=development
+      - NEXT_PUBLIC_API_BASE=/api/v1
+      - API_PROXY_URL=http://assera-api:8000
+    ports:
+      - "3000:3000"
