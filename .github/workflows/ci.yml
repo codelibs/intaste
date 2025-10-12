@@ -87,15 +87,6 @@ jobs:
           cd assera-api
           uv run pytest --cov=app --cov-report=xml --cov-report=term-missing
 
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
-        with:
-          files: ./assera-api/coverage.xml
-          flags: api
-          name: assera-api
-          token: ${{ secrets.CODECOV_TOKEN }}
-          fail_ci_if_error: false
-
   ui-lint:
     name: UI Lint & Type Check
     runs-on: ubuntu-latest
@@ -153,15 +144,6 @@ jobs:
         run: |
           cd assera-ui
           npm test -- --run --coverage
-
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
-        with:
-          files: ./assera-ui/coverage/coverage-final.json
-          flags: ui
-          name: assera-ui
-          token: ${{ secrets.CODECOV_TOKEN }}
-          fail_ci_if_error: false
 
   ui-e2e:
     name: UI E2E Tests
