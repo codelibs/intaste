@@ -30,7 +30,7 @@ RUN npm ci
 COPY . .
 
 # Build application
-ENV NEXT_TELEMETRY_DISABLED 1
+ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
 
 FROM node:22.20.0-alpine AS runner
@@ -40,27 +40,43 @@ WORKDIR /app
 ARG UID=1000
 ARG GID=1000
 
-ENV NODE_ENV production
-ENV NEXT_TELEMETRY_DISABLED 1
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
 
 # Create non-root user with configurable UID/GID
-RUN addgroup --system --gid ${GID} nodejs
-RUN adduser --system --uid ${UID} --ingroup nodejs nextjs
+# Note: Alpine node image already has 'node' user with UID/GID 1000
+RUN set -eux; \
+    # Check if the requested UID already exists
+    if getent passwd ${UID} >/dev/null; then \
+        EXISTING_USER=$(getent passwd ${UID} | cut -d: -f1); \
+        EXISTING_GROUP=$(getent group ${GID} | cut -d: -f1); \
+        echo "Using existing user: ${EXISTING_USER} (UID ${UID}) with group: ${EXISTING_GROUP} (GID ${GID})"; \
+    else \
+        # Create new group if needed
+        if ! getent group ${GID} >/dev/null; then \
+            addgroup -g ${GID} -S nodejs; \
+        fi; \
+        # Create nextjs user
+        adduser -u ${UID} -S -G $(getent group ${GID} | cut -d: -f1) nextjs; \
+        EXISTING_USER=nextjs; \
+    fi
 
 # Copy necessary files
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 
-# Set proper permissions
-RUN chown -R nextjs:nodejs /app
+# Set proper permissions using the determined user
+RUN RUNTIME_USER=$(getent passwd ${UID} | cut -d: -f1); \
+    RUNTIME_GROUP=$(getent group ${GID} | cut -d: -f1); \
+    chown -R ${RUNTIME_USER}:${RUNTIME_GROUP} /app
 
-USER nextjs
+USER ${UID}:${GID}
 
 EXPOSE 3000
 
-ENV PORT 3000
-ENV HOSTNAME "0.0.0.0"
+ENV PORT=3000
+ENV HOSTNAME="0.0.0.0"
 
 # Health check
 HEALTHCHECK --interval=10s --timeout=3s --start-period=30s --retries=3 \

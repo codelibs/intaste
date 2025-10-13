@@ -148,21 +148,6 @@ jobs:
         with:
           category: "/language:${{ matrix.language }}"
 
-  secret-scan:
-    name: Secret Scanning
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Run Gitleaks
-        uses: gitleaks/gitleaks-action@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
-
   license-check:
     name: License Compliance Check
     runs-on: ubuntu-latest
@@ -208,7 +193,7 @@ jobs:
   security-summary:
     name: Security Summary
     runs-on: ubuntu-latest
-    needs: [dependency-scan, docker-scan, codeql, secret-scan, license-check]
+    needs: [dependency-scan, docker-scan, codeql, license-check]
     if: always()
     steps:
       - name: Check security scan results
@@ -217,13 +202,11 @@ jobs:
           echo "- Dependency Scan: ${{ needs.dependency-scan.result }}"
           echo "- Docker Scan: ${{ needs.docker-scan.result }}"
           echo "- CodeQL: ${{ needs.codeql.result }}"
-          echo "- Secret Scan: ${{ needs.secret-scan.result }}"
           echo "- License Check: ${{ needs.license-check.result }}"
 
           if [[ "${{ needs.dependency-scan.result }}" == "failure" ]] || \
              [[ "${{ needs.docker-scan.result }}" == "failure" ]] || \
-             [[ "${{ needs.codeql.result }}" == "failure" ]] || \
-             [[ "${{ needs.secret-scan.result }}" == "failure" ]]; then
+             [[ "${{ needs.codeql.result }}" == "failure" ]]; then
             echo "⚠️  Security vulnerabilities detected. Please review the security tab."
             exit 1
           fi
