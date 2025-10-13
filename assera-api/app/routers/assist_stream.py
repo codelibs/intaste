@@ -68,6 +68,7 @@ async def stream_assist_response(
 
     # Safely get options
     request_options = request.options or {}
+    request_options["session_id"] = session_id
 
     logger.debug(
         f"[{session_id}] Streaming query started: query={request.query!r}, options={request_options}"
@@ -84,131 +85,101 @@ async def stream_assist_response(
         )
         yield start_event
 
-        # 1. Intent extraction (non-streaming)
-        logger.debug(f"[{session_id}] Starting intent extraction for streaming")
-        intent_start = time.time()
-        intent_result = None
-        intent_ms = 0
-        normalized_query = request.query.strip()
+        # Step 1 & 2: Intent extraction and search via SearchAgent
+        logger.debug(f"[{session_id}] Starting SearchAgent stream")
 
-        try:
-            intent_result = await service.llm_client.intent(
-                query=request.query,
-                language=request_options.get("language"),
-                filters=request_options.get("filters"),
-                timeout_ms=settings.intent_timeout_ms,
-            )
-            intent_ms = int((time.time() - intent_start) * 1000)
+        intent_data = None
+        citations_data = None
 
-            logger.debug(
-                f"[{session_id}] Intent extraction completed: {intent_ms}ms, normalized_query={intent_result.normalized_query!r}"
-            )
+        async for event in service.search_agent.search_stream(
+            query=request.query,
+            options=request_options,
+        ):
+            if event.type == "intent":
+                intent_data = event.intent_data
+                if intent_data:  # Type guard for mypy
+                    event_count += 1
 
-            event_count += 1
-            intent_event = await format_sse(
-                "intent",
-                {
-                    "normalized_query": intent_result.normalized_query,
-                    "filters": intent_result.filters,
-                    "timing_ms": intent_ms,
-                },
-            )
-            logger.debug(
-                f"[{session_id}] Streaming event #{event_count}: type=intent, size={len(intent_event)} bytes"
-            )
-            yield intent_event
+                    intent_event = await format_sse(
+                        "intent",
+                        {
+                            "normalized_query": intent_data.normalized_query,
+                            "filters": intent_data.filters,
+                            "timing_ms": intent_data.timing_ms,
+                        },
+                    )
+                    logger.debug(
+                        f"[{session_id}] Streaming event #{event_count}: type=intent, "
+                        f"size={len(intent_event)} bytes"
+                    )
+                    yield intent_event
 
-        except Exception as e:
-            intent_ms = int((time.time() - intent_start) * 1000)
-            logger.warning(f"[{session_id}] Intent extraction failed after {intent_ms}ms: {e}")
-            logger.debug(f"[{session_id}] Intent error type: {type(e).__name__}, details: {str(e)}")
-            intent_result = None
-            logger.debug(f"[{session_id}] Using fallback normalized_query: {normalized_query!r}")
+            elif event.type == "citations":
+                citations_data = event.citations_data
+                if citations_data:  # Type guard for mypy
+                    # Format citations for SSE
+                    citations = [
+                        {
+                            "id": idx + 1,
+                            "title": hit.title,
+                            "snippet": hit.snippet,
+                            "url": hit.url,
+                            "score": hit.score,
+                            "meta": hit.meta,
+                        }
+                        for idx, hit in enumerate(citations_data.hits)
+                    ]
 
-        # 2. Search (non-streaming)
-        logger.debug(f"[{session_id}] Starting search for streaming")
-        search_start = time.time()
-        from app.core.search_provider.base import SearchQuery
+                    event_count += 1
+                    citations_event = await format_sse(
+                        "citations",
+                        {
+                            "count": len(citations),
+                            "citations": citations,
+                            "timing_ms": citations_data.timing_ms,
+                        },
+                    )
+                    logger.debug(
+                        f"[{session_id}] Streaming event #{event_count}: type=citations, "
+                        f"size={len(citations_event)} bytes, hits={len(citations)}"
+                    )
+                    yield citations_event
 
-        # Extract filters safely
-        filters = (
-            intent_result.filters
-            if (intent_result and intent_result.filters)
-            else request_options.get("filters", {})
-        )
-        if filters is None:
-            filters = {}
-
-        search_query = SearchQuery(
-            q=intent_result.normalized_query if intent_result else normalized_query,
-            page=1,
-            size=request_options.get("max_results", 5),
-            language=request_options.get("language", "ja"),
-            filters=filters,
-        )
-
-        logger.debug(f"[{session_id}] SearchQuery: {search_query}")
-
-        search_result = await service.search_provider.search(search_query)
-        search_ms = int((time.time() - search_start) * 1000)
+        # Validate we received all necessary events
+        if not intent_data:
+            raise RuntimeError("SearchAgent did not emit intent event")
+        if not citations_data:
+            raise RuntimeError("SearchAgent did not emit citations event")
 
         logger.debug(
-            f"[{session_id}] Search completed: {search_ms}ms, hits={len(search_result.hits)}, total={search_result.total}"
+            f"[{session_id}] SearchAgent stream completed: "
+            f"intent={intent_data.timing_ms}ms, search={citations_data.timing_ms}ms"
         )
 
-        # Format citations
-        citations = [
-            {
-                "id": idx + 1,
-                "title": hit.title,
-                "snippet": hit.snippet,
-                "url": hit.url,
-                "score": hit.score,
-                "meta": hit.meta,
-            }
-            for idx, hit in enumerate(search_result.hits)
-        ]
-
-        logger.debug(f"[{session_id}] Formatted {len(citations)} citations")
-
-        event_count += 1
-        citations_event = await format_sse(
-            "citations",
-            {
-                "count": len(citations),
-                "citations": citations,
-                "timing_ms": search_ms,
-            },
-        )
-        logger.debug(
-            f"[{session_id}] Streaming event #{event_count}: type=citations, size={len(citations_event)} bytes"
-        )
-        yield citations_event
-
-        # 3. Compose answer with streaming
+        # Step 3: Compose answer with streaming
         logger.debug(f"[{session_id}] Starting answer composition streaming")
         compose_start = time.time()
 
         # Prepare citation data for LLM
-        citations_data = [
+        citations_for_llm = [
             {
                 "title": hit.title,
                 "snippet": hit.snippet,
                 "url": hit.url,
             }
-            for hit in search_result.hits
+            for hit in citations_data.hits
         ]
 
-        logger.debug(f"[{session_id}] Citations data prepared: {len(citations_data)} items")
+        logger.debug(f"[{session_id}] Citations data prepared: {len(citations_for_llm)} items")
 
         # Stream answer chunks
         full_text = ""
         chunk_num = 0
         compose_stream = service.llm_client.compose_stream(
             query=request.query,
-            normalized_query=intent_result.normalized_query if intent_result else normalized_query,
-            citations_data=citations_data,
-            followups=intent_result.followups if intent_result else None,
+            normalized_query=intent_data.normalized_query,
+            citations_data=citations_for_llm,
+            followups=intent_data.followups,
             timeout_ms=settings.compose_timeout_ms,
         )
         async for chunk in compose_stream:
@@ -218,7 +189,8 @@ async def stream_assist_response(
 
             chunk_event = await format_sse("chunk", {"text": chunk})
             logger.debug(
-                f"[{session_id}] Streaming event #{event_count}: type=chunk, chunk_num={chunk_num}, chunk_length={len(chunk)}, total_length={len(full_text)}"
+                f"[{session_id}] Streaming event #{event_count}: type=chunk, "
+                f"chunk_num={chunk_num}, chunk_length={len(chunk)}, total_length={len(full_text)}"
             )
             yield chunk_event
 
@@ -226,7 +198,8 @@ async def stream_assist_response(
         total_ms = int((time.time() - start_time) * 1000)
 
         logger.debug(
-            f"[{session_id}] Composition streaming completed: chunks={chunk_num}, total_chars={len(full_text)}, compose_ms={compose_ms}ms"
+            f"[{session_id}] Composition streaming completed: chunks={chunk_num}, "
+            f"total_chars={len(full_text)}, compose_ms={compose_ms}ms"
         )
         logger.debug(f"[{session_id}] Full text preview: {full_text[:200]}")
 
@@ -250,7 +223,8 @@ async def stream_assist_response(
                 pass
 
         logger.debug(
-            f"[{session_id}] Total timings: intent={intent_ms if intent_result else 0}ms, search={search_ms}ms, compose={compose_ms}ms, total={total_ms}ms"
+            f"[{session_id}] Total timings: intent={intent_data.timing_ms}ms, "
+            f"search={citations_data.timing_ms}ms, compose={compose_ms}ms, total={total_ms}ms"
         )
 
         # Send complete event with summary
@@ -260,7 +234,7 @@ async def stream_assist_response(
             {
                 "answer": {
                     "text": cleaned_text,
-                    "suggested_questions": intent_result.followups if intent_result else [],
+                    "suggested_questions": intent_data.followups,
                 },
                 "citations": citations,
                 "session": {
@@ -268,18 +242,20 @@ async def stream_assist_response(
                     "turn": 1,
                 },
                 "timings": {
-                    "intent_ms": intent_ms if intent_result else 0,
-                    "search_ms": search_ms,
+                    "intent_ms": intent_data.timing_ms,
+                    "search_ms": citations_data.timing_ms,
                     "compose_ms": compose_ms,
                     "total_ms": total_ms,
                 },
             },
         )
         logger.debug(
-            f"[{session_id}] Streaming event #{event_count}: type=complete, size={len(complete_event)} bytes"
+            f"[{session_id}] Streaming event #{event_count}: type=complete, "
+            f"size={len(complete_event)} bytes"
         )
         logger.info(
-            f"[{session_id}] Streaming completed: total_events={event_count}, total_ms={total_ms}ms, citations={len(citations)}"
+            f"[{session_id}] Streaming completed: total_events={event_count}, "
+            f"total_ms={total_ms}ms, citations={len(citations)}"
         )
         yield complete_event
 
@@ -287,7 +263,8 @@ async def stream_assist_response(
         elapsed_ms = int((time.time() - start_time) * 1000)
         logger.error(f"[{session_id}] Streaming error after {elapsed_ms}ms: {e}", exc_info=True)
         logger.debug(
-            f"[{session_id}] Streaming error context: query={request.query!r}, events_sent={event_count}, error_type={type(e).__name__}"
+            f"[{session_id}] Streaming error context: query={request.query!r}, "
+            f"events_sent={event_count}, error_type={type(e).__name__}"
         )
 
         event_count += 1
@@ -299,7 +276,8 @@ async def stream_assist_response(
             },
         )
         logger.debug(
-            f"[{session_id}] Streaming event #{event_count}: type=error, size={len(error_event)} bytes"
+            f"[{session_id}] Streaming event #{event_count}: type=error, "
+            f"size={len(error_event)} bytes"
         )
         yield error_event
 

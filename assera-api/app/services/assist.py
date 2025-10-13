@@ -11,7 +11,7 @@
 # limitations under the License.
 
 """
-Assisted search service orchestrating Intent → Search → Compose flow.
+Assisted search service orchestrating SearchAgent → Compose flow.
 """
 
 import logging
@@ -20,20 +20,20 @@ import uuid
 from typing import Any
 
 from ..core.config import settings
-from ..core.llm.base import IntentOutput, LLMClient
-from ..core.search_provider.base import SearchProvider, SearchQuery
-from ..schemas.assist import Answer, AssistQueryResponse, Citation, Notice, Session, Timings
+from ..core.llm.base import LLMClient
+from ..core.search_agent.base import SearchAgent
+from ..schemas.assist import Answer, AssistQueryResponse, Citation, Session, Timings
 
 logger = logging.getLogger(__name__)
 
 
 class AssistService:
     """
-    Core service for assisted search combining LLM and search provider.
+    Core service for assisted search combining SearchAgent and LLM.
     """
 
-    def __init__(self, search_provider: SearchProvider, llm_client: LLMClient):
-        self.search_provider = search_provider
+    def __init__(self, search_agent: SearchAgent, llm_client: LLMClient):
+        self.search_agent = search_agent
         self.llm_client = llm_client
         # In-memory session storage (TODO: Use Redis/database for production)
         self.sessions: dict[str, dict[str, Any]] = {}
@@ -48,10 +48,9 @@ class AssistService:
         Execute assisted search query.
 
         Flow:
-        1. Intent extraction (LLM)
-        2. Search execution (Search Provider)
-        3. Answer composition (LLM)
-        4. Assemble response with citations
+        1. Search execution via SearchAgent (intent + search)
+        2. Answer composition (LLM)
+        3. Assemble response with citations
 
         Args:
             query: Natural language query
@@ -80,108 +79,31 @@ class AssistService:
         logger.debug(f"[{session_id}:{turn}] Session turn incremented")
         logger.debug(f"[{session_id}:{turn}] Request options: {options}")
 
-        # Initialize timings
-        intent_ms = 0
-        search_ms = 0
-        compose_ms = 0
-        notice: Notice | None = None
+        # Add session_id to options for logging in SearchAgent
+        options_with_session = {**options, "session_id": session_id}
 
-        # Step 1: Intent extraction
-        logger.info(f"[{session_id}:{turn}] Starting intent extraction")
+        # Step 1: Execute search via SearchAgent (intent + search)
+        logger.info(f"[{session_id}:{turn}] Starting search via SearchAgent")
+        search_result = await self.search_agent.search(query, options_with_session)
+
+        logger.info(
+            f"[{session_id}:{turn}] SearchAgent completed: {len(search_result.hits)} hits, "
+            f"intent={search_result.timings.intent_ms}ms, search={search_result.timings.search_ms}ms"
+        )
         logger.debug(
-            f"[{session_id}:{turn}] Intent input: query={query!r}, language={options.get('language', 'en')}, filters={options.get('filters')}, timeout={settings.intent_timeout_ms}ms"
+            f"[{session_id}:{turn}] SearchAgent result: normalized_query={search_result.normalized_query!r}, "
+            f"followups={search_result.followups}, ambiguity={search_result.ambiguity}"
         )
 
-        intent_start = time.time()
-
-        try:
-            intent = await self.llm_client.intent(
-                query=query,
-                language=options.get("language", "en"),
-                filters=options.get("filters"),
-                timeout_ms=settings.intent_timeout_ms,
-            )
-            intent_ms = int((time.time() - intent_start) * 1000)
-            logger.info(
-                f"[{session_id}:{turn}] Intent extracted: {intent.normalized_query} "
-                f"(ambiguity: {intent.ambiguity}, {intent_ms}ms)"
-            )
-            logger.debug(
-                f"[{session_id}:{turn}] Intent details: normalized_query={intent.normalized_query!r}, filters={intent.filters}, followups={intent.followups}, ambiguity={intent.ambiguity}"
-            )
-
-        except (TimeoutError, Exception) as e:
-            intent_ms = int((time.time() - intent_start) * 1000)
-            logger.warning(
-                f"[{session_id}:{turn}] Intent extraction failed after {intent_ms}ms: {e}"
-            )
-            logger.debug(
-                f"[{session_id}:{turn}] Intent error type: {type(e).__name__}, details: {str(e)}"
-            )
-
-            # Fallback: use original query
-            intent = IntentOutput(
-                normalized_query=query.strip(),
-                filters=options.get("filters"),
-                followups=[],
-                ambiguity="medium",
-            )
-            notice = Notice(
-                fallback=True,
-                reason="LLM_TIMEOUT" if isinstance(e, TimeoutError) else "LLM_UNAVAILABLE",
-            )
-            logger.debug(f"[{session_id}:{turn}] Using fallback intent: {intent}, notice={notice}")
-
-        # Step 2: Search execution
-        logger.info(f"[{session_id}:{turn}] Executing search")
-        logger.debug(
-            f"[{session_id}:{turn}] Search input: normalized_query={intent.normalized_query!r}, max_results={options.get('max_results', 5)}, filters={intent.filters or options.get('filters')}"
-        )
-
-        search_start = time.time()
-
-        try:
-            search_query = SearchQuery(
-                q=intent.normalized_query,
-                page=1,
-                size=options.get("max_results", 5),
-                language=options.get("language", "en"),
-                filters=intent.filters or options.get("filters"),
-                timeout_ms=settings.search_timeout_ms,
-            )
-            logger.debug(f"[{session_id}:{turn}] SearchQuery created: {search_query}")
-
-            search_result = await self.search_provider.search(search_query)
-            search_ms = int((time.time() - search_start) * 1000)
-            logger.info(
-                f"[{session_id}:{turn}] Search completed: {len(search_result.hits)} hits "
-                f"(total: {search_result.total}, {search_ms}ms)"
-            )
-            logger.debug(
-                f"[{session_id}:{turn}] Search result details: total={search_result.total}, hits_count={len(search_result.hits)}, took_ms={search_result.took_ms}, page={search_result.page}, size={search_result.size}"
-            )
-
-            if logger.isEnabledFor(logging.DEBUG) and search_result.hits:
-                for idx, hit in enumerate(search_result.hits[:3], 1):  # Log first 3 hits
-                    logger.debug(
-                        f"[{session_id}:{turn}] Hit #{idx}: id={hit.id}, title={hit.title[:50]}, score={hit.score}, url={hit.url[:80]}"
-                    )
-
-        except (TimeoutError, Exception) as e:
-            search_ms = int((time.time() - search_start) * 1000)
-            logger.error(f"[{session_id}:{turn}] Search failed after {search_ms}ms: {e}")
-            logger.debug(
-                f"[{session_id}:{turn}] Search error type: {type(e).__name__}, query={intent.normalized_query!r}, filters={intent.filters}"
-            )
-            # Return error - search is critical
-            raise RuntimeError(f"Search provider error: {e}") from e
-
-        # Step 3: Answer composition
+        # Step 2: Answer composition
         answer: Answer
+        compose_ms = 0
+
         if search_result.hits:
             logger.info(f"[{session_id}:{turn}] Composing answer")
             logger.debug(
-                f"[{session_id}:{turn}] Compose input: citations_count={len(search_result.hits)}, followups={intent.followups}, timeout={settings.compose_timeout_ms}ms"
+                f"[{session_id}:{turn}] Compose input: citations_count={len(search_result.hits)}, "
+                f"followups={search_result.followups}, timeout={settings.compose_timeout_ms}ms"
             )
 
             compose_start = time.time()
@@ -194,9 +116,9 @@ class AssistService:
 
                 compose = await self.llm_client.compose(
                     query=query,
-                    normalized_query=intent.normalized_query,
+                    normalized_query=search_result.normalized_query,
                     citations_data=citations_data,
-                    followups=intent.followups,
+                    followups=search_result.followups,
                     timeout_ms=settings.compose_timeout_ms,
                 )
                 compose_ms = int((time.time() - compose_start) * 1000)
@@ -207,28 +129,34 @@ class AssistService:
                 )
                 logger.info(f"[{session_id}:{turn}] Answer composed ({compose_ms}ms)")
                 logger.debug(
-                    f"[{session_id}:{turn}] Answer details: text_length={len(answer.text)}, text={answer.text!r}, suggested_questions={answer.suggested_questions}"
+                    f"[{session_id}:{turn}] Answer details: text_length={len(answer.text)}, "
+                    f"text={answer.text!r}, suggested_questions={answer.suggested_questions}"
                 )
 
             except (TimeoutError, Exception) as e:
                 compose_ms = int((time.time() - compose_start) * 1000)
                 logger.warning(f"[{session_id}:{turn}] Compose failed after {compose_ms}ms: {e}")
                 logger.debug(
-                    f"[{session_id}:{turn}] Compose error type: {type(e).__name__}, citations_count={len(search_result.hits)}"
+                    f"[{session_id}:{turn}] Compose error: {type(e).__name__}, "
+                    f"citations_count={len(search_result.hits)}"
                 )
 
                 # Fallback: generic guidance
                 answer = Answer(
                     text="Results are displayed. Please review the sources for details.",
-                    suggested_questions=intent.followups[:3],
+                    suggested_questions=search_result.followups[:3],
                 )
-                if not notice:
-                    notice = Notice(
+                # Add notice if not already present
+                if not search_result.notice:
+                    from ..schemas.assist import Notice
+
+                    search_result.notice = Notice(
                         fallback=True,
                         reason="LLM_TIMEOUT" if isinstance(e, TimeoutError) else "BAD_LLM_OUTPUT",
                     )
                 logger.debug(
-                    f"[{session_id}:{turn}] Using fallback answer: {answer}, notice={notice}"
+                    f"[{session_id}:{turn}] Using fallback answer: {answer}, "
+                    f"notice={search_result.notice}"
                 )
         else:
             # No search results
@@ -239,7 +167,7 @@ class AssistService:
             )
             logger.debug(f"[{session_id}:{turn}] Empty results answer: {answer}")
 
-        # Step 4: Assemble citations
+        # Step 3: Assemble citations
         logger.debug(f"[{session_id}:{turn}] Assembling citations: {len(search_result.hits)} hits")
 
         citations: list[Citation] = []
@@ -255,21 +183,23 @@ class AssistService:
             citations.append(citation)
             if logger.isEnabledFor(logging.DEBUG) and idx <= 3:  # Log first 3 citations
                 logger.debug(
-                    f"[{session_id}:{turn}] Citation #{idx}: id={citation.id}, title={citation.title[:50]}, score={citation.score}"
+                    f"[{session_id}:{turn}] Citation #{idx}: id={citation.id}, "
+                    f"title={citation.title[:50]}, score={citation.score}"
                 )
 
         # Calculate total time
         total_ms = int((time.time() - start_time) * 1000)
 
         logger.debug(
-            f"[{session_id}:{turn}] Timings: intent={intent_ms}ms, search={search_ms}ms, compose={compose_ms}ms, total={total_ms}ms"
+            f"[{session_id}:{turn}] Timings: intent={search_result.timings.intent_ms}ms, "
+            f"search={search_result.timings.search_ms}ms, compose={compose_ms}ms, total={total_ms}ms"
         )
 
         # Store in session history
         history_entry = {
             "turn": turn,
             "query": query,
-            "normalized_query": intent.normalized_query,
+            "normalized_query": search_result.normalized_query,
             "citations_count": len(citations),
         }
         self.sessions[session_id]["history"].append(history_entry)
@@ -282,15 +212,22 @@ class AssistService:
             answer=answer,
             citations=citations,
             session=Session(id=session_id, turn=turn),
-            timings=Timings(llm_ms=intent_ms + compose_ms, search_ms=search_ms, total_ms=total_ms),
-            notice=notice,
+            timings=Timings(
+                llm_ms=search_result.timings.intent_ms + compose_ms,
+                search_ms=search_result.timings.search_ms,
+                total_ms=total_ms,
+            ),
+            notice=search_result.notice,
         )
 
         logger.info(
-            f"[{session_id}:{turn}] Query completed: total_ms={total_ms}, citations={len(citations)}, notice={'Yes' if notice else 'No'}"
+            f"[{session_id}:{turn}] Query completed: total_ms={total_ms}, "
+            f"citations={len(citations)}, notice={'Yes' if search_result.notice else 'No'}"
         )
         logger.debug(
-            f"[{session_id}:{turn}] Final response: answer_length={len(answer.text)}, citations_count={len(citations)}, suggested_questions_count={len(answer.suggested_questions)}"
+            f"[{session_id}:{turn}] Final response: answer_length={len(answer.text)}, "
+            f"citations_count={len(citations)}, "
+            f"suggested_questions_count={len(answer.suggested_questions)}"
         )
 
         return response

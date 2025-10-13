@@ -12,7 +12,8 @@
 
 .PHONY: help up down logs ps restart pull-model clean dev test lint format up-gpu dev-gpu gpu-check \
         test-docker test-docker-api test-docker-ui lint-docker-api lint-docker-ui \
-        test-docker-build test-docker-clean check-docker init-test-cache
+        test-docker-build test-docker-clean check-docker init-test-cache \
+        lint-api lint-ui format-api format-ui format-docker-api format-docker-ui
 
 help: ## Show this help message
 	@echo 'Usage: make [target]'
@@ -62,13 +63,28 @@ health: ## Check health of all services
 test: ## Run tests
 	cd assera-api && uv pip install --system -e ".[dev]" && pytest
 
-lint: ## Run linters
-	cd assera-api && ruff check app/
-	cd assera-api && mypy app/
+lint-api: ## Run API linters
+	cd assera-api && uv run ruff check app/
+	cd assera-api && uv run mypy app/
 
-format: ## Format code
-	cd assera-api && black app/
-	cd assera-api && ruff check --fix app/
+lint-ui: ## Run UI linters
+	cd assera-ui && npm run lint
+	cd assera-ui && npm run type-check
+
+lint: ## Run all linters (API + UI)
+	@$(MAKE) --no-print-directory lint-api
+	@$(MAKE) --no-print-directory lint-ui
+
+format-api: ## Format API code
+	cd assera-api && uv run black app/
+	cd assera-api && uv run ruff check --fix app/
+
+format-ui: ## Format UI code
+	cd assera-ui && npm run format
+
+format: ## Format all code (API + UI)
+	@$(MAKE) --no-print-directory format-api
+	@$(MAKE) --no-print-directory format-ui
 
 env: ## Create .env from example
 	@if [ ! -f .env ]; then \
@@ -146,6 +162,22 @@ lint-docker-ui: ## Run UI lint checks in Docker
 	@UID=$$(id -u) GID=$$(id -g) docker compose -f compose.test.yaml run --rm lint-ui
 	@echo ""
 	@echo "✓ UI lint completed"
+
+format-docker-api: ## Run API format in Docker
+	@echo "=========================================="
+	@echo "Running API format in Docker..."
+	@echo "=========================================="
+	@UID=$$(id -u) GID=$$(id -g) docker compose -f compose.test.yaml run --rm format-api
+	@echo ""
+	@echo "✓ API format completed"
+
+format-docker-ui: ## Run UI format in Docker
+	@echo "=========================================="
+	@echo "Running UI format in Docker..."
+	@echo "=========================================="
+	@UID=$$(id -u) GID=$$(id -g) docker compose -f compose.test.yaml run --rm format-ui
+	@echo ""
+	@echo "✓ UI format completed"
 
 test-docker-build: ## Build Docker test image
 	@echo "Building Docker test image..."
