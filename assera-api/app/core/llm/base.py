@@ -48,6 +48,8 @@ class LLMClient(Protocol):
     async def intent(
         self,
         query: str,
+        system_prompt: str,
+        user_template: str,
         language: str | None = None,
         filters: dict[str, Any] | None = None,
         timeout_ms: int | None = None,
