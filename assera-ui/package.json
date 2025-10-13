@@ -27,7 +27,7 @@
     "react-dom": "^19.0.0",
     "react-i18next": "^16.0.0",
     "tailwind-merge": "^2.2.0",
-    "zustand": "^4.5.0"
+    "zustand": "^5.0.8"
   },
   "devDependencies": {
     "@playwright/test": "^1.55.1",
