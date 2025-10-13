@@ -69,7 +69,7 @@ class FessSearchAgent(BaseSearchAgent):
         self,
         query: str,
         options: dict[str, Any] | None = None,
-    ) -> AsyncGenerator[SearchEvent, None]:
+    ) -> AsyncGenerator[SearchEvent]:
         """
         Execute search with streaming progress updates.
 

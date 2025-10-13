@@ -127,7 +127,7 @@ Development workflows and contribution guidelines.
 | Layer | Technology |
 |-------|-----------|
 | Frontend | Next.js 15, React 19, shadcn/ui, TailwindCSS, Zustand |
-| API | FastAPI, Python 3.11, Pydantic, Uvicorn |
+| API | FastAPI, Python 3.13, Pydantic, Uvicorn |
 | Search | Fess 14.x (OpenAPI) |
 | LLM | Ollama (gpt-oss default) |
 | Deployment | Docker Compose, GitHub Actions |

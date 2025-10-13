@@ -35,7 +35,7 @@ This project adheres to the [Contributor Covenant Code of Conduct](CODE_OF_CONDU
 ### Prerequisites
 
 - Docker 24+ and Docker Compose v2+
-- Python 3.11+ (for local API development)
+- Python 3.13 (for local API development)
 - Node.js 20+ (for local UI development)
 - Git
 

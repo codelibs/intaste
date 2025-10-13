@@ -327,7 +327,7 @@ The project includes comprehensive testing at multiple levels:
 
 ## 9. Project Metrics
 
-- **Backend**: Python 3.11+ with FastAPI
+- **Backend**: Python 3.13+ with FastAPI
 - **Frontend**: React 19 with Next.js 15
 - **API Endpoints**: 9 RESTful endpoints
 - **Test Coverage**: Comprehensive unit, integration, and E2E tests

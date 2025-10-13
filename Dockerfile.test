@@ -11,7 +11,7 @@
 # limitations under the License.
 
 # Lightweight test runner - dependencies installed via volume mounts at runtime
-FROM python:3.11-slim
+FROM python:3.13-slim
 
 # Build arguments for user configuration
 ARG UID=1000

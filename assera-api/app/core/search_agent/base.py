@@ -139,7 +139,7 @@ class SearchAgent(Protocol):
         self,
         query: str,
         options: dict[str, Any] | None = None,
-    ) -> AsyncGenerator[SearchEvent, None]:
+    ) -> AsyncGenerator[SearchEvent]:
         """
         Execute search query with streaming progress updates.
 
@@ -184,7 +184,7 @@ class BaseSearchAgent:
         self,
         query: str,
         options: dict[str, Any] | None = None,
-    ) -> AsyncGenerator[SearchEvent, None]:
+    ) -> AsyncGenerator[SearchEvent]:
         """
         Abstract method: must be implemented by subclasses.
 
