@@ -31,7 +31,7 @@ Unify **definition, defaults, validation, priority, and secret management** of e
 
 | Variable | Type | Default | Required | Description |
 |---|---|---|---|---|
-| `TZ` | string | `Asia/Tokyo` | Optional | Timezone |
+| `TZ` | string | `UTC` | Optional | Timezone |
 | `ASSERA_PROFILE` | enum(`dev`,`dist`) | `dist` | Optional | Configuration profile (development/distribution) |
 | `ASSERA_API_TOKEN` | secret | — | **Required** | UI→API API Key (32+ characters) |
 | `ASSERA_SEARCH_PROVIDER` | enum | `fess` | Optional | Search provider (initial version fixed to `fess`) |
@@ -119,7 +119,7 @@ ASSERA_PROFILE=dist
 ASSERA_API_TOKEN=change-me
 ASSERA_DEFAULT_MODEL=gpt-oss
 ASSERA_SEARCH_PROVIDER=fess
-TZ=Asia/Tokyo
+TZ=UTC
 
 # === Endpoints (internal) ===
 FESS_BASE_URL=http://fess:8080

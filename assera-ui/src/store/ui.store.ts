@@ -36,7 +36,7 @@ interface UIState {
 export const useUIStore = create<UIState>()(
   persist(
     (set) => ({
-      lang: 'ja',
+      lang: 'en',
       theme: 'system',
       apiToken: null,
       sidebarOpen: true,

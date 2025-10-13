@@ -224,7 +224,7 @@ $ docker compose logs -f assera-api assera-ui
 | `FESS_BASE_URL` | `http://fess:8080` | Internal URL for API to call Fess |
 | `OLLAMA_BASE_URL` | `http://ollama:11434` | Internal URL for API to call Ollama |
 | `NEXT_PUBLIC_API_BASE` | `/api/v1` | API base path from UI |
-| `TZ` | `Asia/Tokyo` | Timezone |
+| `TZ` | `UTC` | Timezone |
 
 > **Security**: Set `ASSERA_API_TOKEN` to a sufficiently long random value.
 

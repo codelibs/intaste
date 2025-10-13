@@ -39,7 +39,7 @@ services:
       - "DISABLE_INSTALL_DEMO_CONFIG=true"
       - "DISABLE_SECURITY_PLUGIN=true"
       - "FESS_DICTIONARY_PATH=/usr/share/opensearch/config/dictionary"
-      - TZ=${TZ:-Asia/Tokyo}
+      - TZ=${TZ:-UTC}
     ulimits:
       memlock:
         soft: -1
@@ -66,7 +66,7 @@ services:
     environment:
       - SEARCH_ENGINE_HTTP_URL=http://assera-opensearch:9200
       - FESS_DICTIONARY_PATH=${FESS_DICTIONARY_PATH:-/usr/share/opensearch/config/dictionary/}
-      - TZ=${TZ:-Asia/Tokyo}
+      - TZ=${TZ:-UTC}
     networks:
       - assera-net
     expose:
@@ -106,7 +106,7 @@ services:
       ollama:
         condition: service_healthy
     environment:
-      - TZ=${TZ:-Asia/Tokyo}
+      - TZ=${TZ:-UTC}
       - ASSERA_API_TOKEN=${ASSERA_API_TOKEN:?ASSERA_API_TOKEN is required}
       - ASSERA_DEFAULT_MODEL=${ASSERA_DEFAULT_MODEL:-gpt-oss}
       - ASSERA_SEARCH_PROVIDER=${ASSERA_SEARCH_PROVIDER:-fess}
@@ -147,7 +147,7 @@ services:
     environment:
       - NEXT_PUBLIC_API_BASE=${NEXT_PUBLIC_API_BASE:-/api/v1}
       - API_PROXY_URL=http://assera-api:8000
-      - TZ=${TZ:-Asia/Tokyo}
+      - TZ=${TZ:-UTC}
     networks:
       - assera-net
     ports:

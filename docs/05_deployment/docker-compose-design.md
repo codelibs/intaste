@@ -70,7 +70,7 @@ services:
     image: ghcr.io/codelibs/assera-api:latest
     expose: ["8000"]
     environment:
-      TZ: ${TZ:-Asia/Tokyo}
+      TZ: ${TZ:-UTC}
       ASSERA_API_TOKEN: ${ASSERA_API_TOKEN}
       ASSERA_DEFAULT_MODEL: ${ASSERA_DEFAULT_MODEL:-gpt-oss}
       FESS_BASE_URL: ${FESS_BASE_URL:-http://fess:8080}
@@ -192,7 +192,7 @@ ASSERA_PROFILE=dist
 ASSERA_API_TOKEN=change-me
 ASSERA_DEFAULT_MODEL=gpt-oss
 ASSERA_SEARCH_PROVIDER=fess
-TZ=Asia/Tokyo
+TZ=UTC
 
 # === Endpoints (internal) ===
 FESS_BASE_URL=http://fess:8080
