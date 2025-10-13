@@ -25,6 +25,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 from app.main import app
 from app.core.config import Settings
+from app.core.search_agent.base import SearchAgent, SearchAgentResult, SearchAgentTimings
 from app.core.search_provider.base import SearchProvider, SearchResult, SearchQuery, SearchHit
 from app.core.llm.base import LLMClient, IntentOutput, ComposeOutput
 
@@ -106,12 +107,130 @@ def mock_llm_client() -> AsyncMock:
 
 
 @pytest.fixture
-def assist_service(mock_search_provider: AsyncMock, mock_llm_client: AsyncMock):
+def mock_search_agent(mock_search_provider: AsyncMock, mock_llm_client: AsyncMock) -> AsyncMock:
+    """Mock SearchAgent for testing"""
+    from app.core.search_agent.base import SearchEvent, IntentEventData, CitationsEventData
+
+    agent = AsyncMock(spec=SearchAgent)
+
+    # Default search result
+    agent.search.return_value = SearchAgentResult(
+        hits=[
+            SearchHit(
+                id="doc1",
+                title="Test Document 1",
+                snippet="This is a <em>test</em> document snippet",
+                url="http://example.com/doc1",
+                score=0.95,
+                meta={"site": "example.com", "type": "html"},
+            ),
+            SearchHit(
+                id="doc2",
+                title="Test Document 2",
+                snippet="Another test document with relevant information",
+                url="http://example.com/doc2",
+                score=0.85,
+                meta={"site": "example.com", "type": "pdf"},
+            ),
+        ],
+        total=2,
+        normalized_query="test query optimized",
+        original_query="test query",
+        followups=["What else?", "Tell me more"],
+        filters=None,
+        timings=SearchAgentTimings(intent_ms=100, search_ms=150),
+        notice=None,
+        ambiguity="low",
+    )
+
+    # Default search_stream async generator
+    async def mock_search_stream(query: str, options: dict | None = None):
+        # Get intent output from mock_llm_client if available
+        intent_output = None
+        # Check for side_effect first (e.g., exceptions)
+        if hasattr(mock_llm_client.intent, 'side_effect') and mock_llm_client.intent.side_effect is not None:
+            # If side_effect is set (e.g., exception), use fallback
+            try:
+                intent_output = await mock_llm_client.intent(query=query)
+            except Exception:
+                # Fallback intent
+                intent_output = IntentOutput(
+                    normalized_query=query.strip(),
+                    filters=None,
+                    followups=[],
+                    ambiguity="medium",
+                )
+        elif hasattr(mock_llm_client.intent, 'return_value') and mock_llm_client.intent.return_value is not None:
+            intent_output = mock_llm_client.intent.return_value
+        else:
+            # Default intent
+            intent_output = IntentOutput(
+                normalized_query="test query optimized",
+                filters=None,
+                followups=["What else?", "Tell me more"],
+                ambiguity="low",
+            )
+
+        # Yield intent event
+        yield SearchEvent(
+            type="intent",
+            data=IntentEventData(
+                normalized_query=intent_output.normalized_query,
+                filters=intent_output.filters,
+                followups=intent_output.followups,
+                ambiguity=intent_output.ambiguity,
+                timing_ms=100,
+            ),
+        )
+
+        # Get search result from mock_search_provider if available
+        search_result = None
+        if hasattr(mock_search_provider.search, 'return_value'):
+            search_result = mock_search_provider.search.return_value
+        else:
+            # Default search result
+            search_result = SearchResult(
+                hits=[
+                    SearchHit(
+                        id="doc1",
+                        title="Test Document 1",
+                        snippet="This is a <em>test</em> document snippet",
+                        url="http://example.com/doc1",
+                        score=0.95,
+                        meta={"site": "example.com", "type": "html"},
+                    ),
+                ],
+                total=1,
+                page=1,
+                size=5,
+                took_ms=150,
+            )
+
+        # Yield citations event
+        yield SearchEvent(
+            type="citations",
+            data=CitationsEventData(
+                hits=search_result.hits,
+                total=search_result.total,
+                timing_ms=150,
+            ),
+        )
+
+    agent.search_stream = mock_search_stream
+
+    # Default health response
+    agent.health.return_value = (True, {"status": "healthy"})
+
+    return agent
+
+
+@pytest.fixture
+def assist_service(mock_search_agent: AsyncMock, mock_llm_client: AsyncMock):
     """Create AssistService with mocked dependencies"""
     from app.services.assist import AssistService
 
     return AssistService(
-        search_provider=mock_search_provider,
+        search_agent=mock_search_agent,
         llm_client=mock_llm_client,
     )
 

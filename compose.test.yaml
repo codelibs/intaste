@@ -130,3 +130,44 @@ services:
       npm run type-check
       "
 
+  # Format checks
+  format-api:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+      args:
+        UID: ${UID:-1000}
+        GID: ${GID:-1000}
+    volumes:
+      - ./assera-api:/workspace/assera-api
+      - ./.cache/uv:/home/assera/.cache/uv
+    environment:
+      - ASSERA_API_TOKEN=test-token-for-ci-32-characters-long
+      - ASSERA_DEFAULT_MODEL=gpt-oss
+      - FESS_BASE_URL=http://fess:8080
+      - OLLAMA_BASE_URL=http://ollama:11434
+    command: >
+      bash -c "
+      cd /workspace/assera-api &&
+      uv sync --all-extras &&
+      uv run black app/ &&
+      uv run ruff check --fix app/
+      "
+
+  format-ui:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+      args:
+        UID: ${UID:-1000}
+        GID: ${GID:-1000}
+    volumes:
+      - ./assera-ui:/workspace/assera-ui
+      - ./assera-ui/node_modules:/workspace/assera-ui/node_modules
+    command: >
+      bash -c "
+      cd /workspace/assera-ui &&
+      npm ci --legacy-peer-deps &&
+      npm run format
+      "
+

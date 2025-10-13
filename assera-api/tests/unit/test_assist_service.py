@@ -23,16 +23,15 @@ from app.core.llm.base import IntentOutput, ComposeOutput
 
 @pytest.mark.unit
 @pytest.mark.asyncio
-async def test_query_full_flow_success(assist_service, mock_search_provider, mock_llm_client):
-    """Test successful query with full intent → search → compose flow"""
+async def test_query_full_flow_success(assist_service, mock_search_agent, mock_llm_client):
+    """Test successful query with full SearchAgent → compose flow"""
     result = await assist_service.query(
         query="What is the security policy?",
         options={"max_results": 5},
     )
 
     # Verify all stages were called
-    mock_llm_client.intent.assert_called_once()
-    mock_search_provider.search.assert_called_once()
+    mock_search_agent.search.assert_called_once()
     mock_llm_client.compose.assert_called_once()
 
     # Verify response structure
@@ -45,17 +44,20 @@ async def test_query_full_flow_success(assist_service, mock_search_provider, moc
 
 @pytest.mark.unit
 @pytest.mark.asyncio
-async def test_query_intent_fallback(assist_service, mock_search_provider, mock_llm_client):
-    """Test query when intent extraction fails"""
-    # Make intent fail
-    mock_llm_client.intent.side_effect = Exception("LLM error")
+async def test_query_intent_fallback(assist_service, mock_search_agent, mock_llm_client):
+    """Test query when SearchAgent returns notice about intent fallback"""
+    from app.schemas.assist import Notice
+
+    # Make SearchAgent return result with notice
+    search_result = mock_search_agent.search.return_value
+    search_result.notice = Notice(fallback=True, reason="LLM_UNAVAILABLE")
 
     result = await assist_service.query(
         query="What is the security policy?",
         options={},
     )
 
-    # Should still complete with fallback to original query
+    # Should still complete with notice propagated
     assert result.answer.text is not None
     assert len(result.citations) == 2
     assert result.notice is not None
@@ -64,7 +66,7 @@ async def test_query_intent_fallback(assist_service, mock_search_provider, mock_
 
 @pytest.mark.unit
 @pytest.mark.asyncio
-async def test_query_compose_fallback(assist_service, mock_search_provider, mock_llm_client):
+async def test_query_compose_fallback(assist_service, mock_search_agent, mock_llm_client):
     """Test query when answer composition fails"""
     # Make compose fail
     mock_llm_client.compose.side_effect = Exception("LLM error")
@@ -84,15 +86,21 @@ async def test_query_compose_fallback(assist_service, mock_search_provider, mock
 
 @pytest.mark.unit
 @pytest.mark.asyncio
-async def test_query_no_search_results(assist_service, mock_search_provider, mock_llm_client):
+async def test_query_no_search_results(assist_service, mock_search_agent, mock_llm_client):
     """Test query when search returns no results"""
-    # Make search return empty results
-    mock_search_provider.search.return_value = SearchResult(
+    from app.core.search_agent.base import SearchAgentResult, SearchAgentTimings
+
+    # Make SearchAgent return empty results
+    mock_search_agent.search.return_value = SearchAgentResult(
         hits=[],
         total=0,
-        page=1,
-        size=5,
-        took_ms=100,
+        normalized_query="nonexistent query",
+        original_query="nonexistent query",
+        followups=[],
+        filters=None,
+        timings=SearchAgentTimings(intent_ms=100, search_ms=100),
+        notice=None,
+        ambiguity="low",
     )
 
     result = await assist_service.query(
@@ -130,7 +138,7 @@ async def test_query_session_continuation(assist_service):
 
 @pytest.mark.unit
 @pytest.mark.asyncio
-async def test_query_with_options(assist_service, mock_search_provider, mock_llm_client):
+async def test_query_with_options(assist_service, mock_search_agent, mock_llm_client):
     """Test query with custom options"""
     result = await assist_service.query(
         query="Test query",
@@ -139,9 +147,12 @@ async def test_query_with_options(assist_service, mock_search_provider, mock_llm
         },
     )
 
-    # Verify options were passed to search
-    search_call = mock_search_provider.search.call_args[0][0]
-    assert search_call.size == 10
+    # Verify options were passed to SearchAgent
+    mock_search_agent.search.assert_called_once()
+    call_args = mock_search_agent.search.call_args
+    # call_args[1] is the keyword arguments dict
+    # options should be passed in second positional argument or as keyword argument
+    assert call_args[0][1]["max_results"] == 10  # Second positional arg is the options dict
 
 
 @pytest.mark.unit
@@ -209,12 +220,12 @@ async def test_query_timing_budget(assist_service):
 
 @pytest.mark.unit
 @pytest.mark.asyncio
-async def test_search_failure_raises_error(assist_service, mock_search_provider):
-    """Test that search failure raises an error (no fallback for search)"""
-    # Make search fail
-    mock_search_provider.search.side_effect = Exception("Search service down")
+async def test_search_failure_raises_error(assist_service, mock_search_agent):
+    """Test that SearchAgent failure raises an error (no fallback for search)"""
+    # Make SearchAgent fail
+    mock_search_agent.search.side_effect = RuntimeError("Search service down")
 
-    with pytest.raises(Exception):
+    with pytest.raises(RuntimeError):
         await assist_service.query(
             query="Test query",
             options={},

@@ -226,12 +226,16 @@ async def test_stream_query_intent_fallback(
             if event_type and event_data:
                 events.append({"event": event_type, "data": event_data})
 
-    # Intent event should NOT be present due to fallback
+    # Intent event SHOULD be present even with fallback behavior
     event_types = [e["event"] for e in events]
     assert "start" in event_types
-    assert "intent" not in event_types  # Intent failed, so no intent event
+    assert "intent" in event_types  # Intent event emitted with fallback data
     assert "citations" in event_types
     assert "complete" in event_types
+
+    # Verify intent event is present (followups are in complete event, not intent)
+    intent_event = next(e for e in events if e["event"] == "intent")
+    assert "normalized_query" in intent_event["data"]
 
     # Verify complete event has empty followups due to intent failure
     complete_event = next(e for e in events if e["event"] == "complete")
@@ -383,10 +387,14 @@ async def test_stream_query_error_handling(
     # Intent extraction error should not produce error event, but use fallback
     event_types = [e["event"] for e in events]
     assert "start" in event_types
-    assert "intent" not in event_types  # Intent failed, so no intent event
+    assert "intent" in event_types  # Intent event emitted with fallback data
     assert "citations" in event_types  # Fallback continues with search
     assert "complete" in event_types
     assert "error" not in event_types  # No error event - fallback used instead
+
+    # Verify intent event is present (followups are in complete event, not intent)
+    intent_event = next(e for e in events if e["event"] == "intent")
+    assert "normalized_query" in intent_event["data"]
 
     # Verify complete event has empty followups due to intent failure
     complete_event = next(e for e in events if e["event"] == "complete")

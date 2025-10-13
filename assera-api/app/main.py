@@ -24,6 +24,8 @@ from fastapi.responses import JSONResponse
 from .core.config import settings
 from .core.llm.base import LLMClient
 from .core.llm.factory import LLMClientFactory
+from .core.search_agent.base import SearchAgent
+from .core.search_agent.factory import create_search_agent
 from .core.search_provider.base import SearchProvider
 from .core.search_provider.factory import SearchProviderFactory
 from .core.security.middleware import add_request_id_middleware, setup_cors
@@ -40,6 +42,7 @@ logger = logging.getLogger(__name__)
 # Global instances
 search_provider: SearchProvider | None = None
 llm_client: LLMClient | None = None
+search_agent: SearchAgent | None = None
 assist_service: AssistService | None = None
 
 
@@ -48,7 +51,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """
     Application lifespan manager for startup and shutdown.
     """
-    global search_provider, llm_client, assist_service
+    global search_provider, llm_client, search_agent, assist_service
 
     # Startup
     logger.info("Starting Assera API...")
@@ -90,9 +93,18 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     llm_client = LLMClientFactory.create_from_settings(settings)
     logger.debug(f"LLM client initialized: {type(llm_client).__name__}")
 
+    # Initialize search agent
+    logger.debug("Initializing search agent...")
+    search_agent = create_search_agent(
+        search_provider=search_provider,
+        llm_client=llm_client,
+        settings=settings,
+    )
+    logger.debug(f"Search agent initialized: {type(search_agent).__name__}")
+
     logger.debug("Initializing assist service...")
     assist_service = AssistService(
-        search_provider=search_provider,
+        search_agent=search_agent,
         llm_client=llm_client,
     )
     logger.debug("Assist service initialized")
@@ -103,14 +115,11 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     # Shutdown
     logger.info("Shutting down Assera API...")
-    if search_provider:
-        logger.debug("Closing search provider...")
-        await search_provider.close()
-        logger.debug("Search provider closed")
-    if llm_client:
-        logger.debug("Closing LLM client...")
-        await llm_client.close()
-        logger.debug("LLM client closed")
+    if search_agent:
+        logger.debug("Closing search agent...")
+        await search_agent.close()
+        logger.debug("Search agent closed")
+    # Note: search_provider and llm_client are closed via search_agent.close()
     logger.info("Assera API shut down complete")
 
 
