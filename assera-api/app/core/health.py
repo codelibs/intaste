@@ -17,7 +17,6 @@ Health check utilities for dependency services.
 import asyncio
 import logging
 import time
-from typing import Any
 
 import httpx
 
@@ -26,9 +25,7 @@ from ..schemas.common import DependencyHealth
 logger = logging.getLogger(__name__)
 
 
-async def check_fess_health(
-    base_url: str, timeout_ms: int = 5000
-) -> DependencyHealth:
+async def check_fess_health(base_url: str, timeout_ms: int = 5000) -> DependencyHealth:
     """
     Check Fess search service health.
 
@@ -90,9 +87,7 @@ async def check_fess_health(
         )
 
 
-async def check_ollama_health(
-    base_url: str, timeout_ms: int = 5000
-) -> DependencyHealth:
+async def check_ollama_health(base_url: str, timeout_ms: int = 5000) -> DependencyHealth:
     """
     Check Ollama LLM service health.
 
@@ -150,9 +145,7 @@ async def check_ollama_health(
         )
 
 
-async def check_all_dependencies(
-    fess_url: str, ollama_url: str
-) -> dict[str, DependencyHealth]:
+async def check_all_dependencies(fess_url: str, ollama_url: str) -> dict[str, DependencyHealth]:
     """
     Check health of all dependency services in parallel.
 
@@ -167,24 +160,35 @@ async def check_all_dependencies(
     fess_task = check_fess_health(fess_url)
     ollama_task = check_ollama_health(ollama_url)
 
-    fess_health, ollama_health = await asyncio.gather(
-        fess_task, ollama_task, return_exceptions=True
+    results: tuple[DependencyHealth | BaseException, DependencyHealth | BaseException] = (
+        await asyncio.gather(fess_task, ollama_task, return_exceptions=True)
     )
+    fess_health_result, ollama_health_result = results
 
-    # Handle exceptions from gather
-    if isinstance(fess_health, Exception):
-        logger.error(f"Fess health check exception: {fess_health}")
+    # Handle exceptions from gather with type narrowing
+    if isinstance(fess_health_result, Exception):
+        logger.error(f"Fess health check exception: {fess_health_result}")
         fess_health = DependencyHealth(
             status="unhealthy",
-            error=str(fess_health),
+            error=str(fess_health_result),
         )
+    elif isinstance(fess_health_result, DependencyHealth):
+        fess_health = fess_health_result
+    else:
+        # Should never happen, but satisfy mypy
+        fess_health = DependencyHealth(status="unhealthy", error="Unknown error")
 
-    if isinstance(ollama_health, Exception):
-        logger.error(f"Ollama health check exception: {ollama_health}")
+    if isinstance(ollama_health_result, Exception):
+        logger.error(f"Ollama health check exception: {ollama_health_result}")
         ollama_health = DependencyHealth(
             status="unhealthy",
-            error=str(ollama_health),
+            error=str(ollama_health_result),
         )
+    elif isinstance(ollama_health_result, DependencyHealth):
+        ollama_health = ollama_health_result
+    else:
+        # Should never happen, but satisfy mypy
+        ollama_health = DependencyHealth(status="unhealthy", error="Unknown error")
 
     return {
         "fess": fess_health,

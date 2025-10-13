@@ -32,7 +32,7 @@ interface AssistState {
 
   send: (query: string, options?: Record<string, any>) => Promise<void>;
   sendStream: (query: string, options?: Record<string, any>) => Promise<void>;
-  selectCitation: (id: number) => void;
+  selectCitation: (id: number | null) => void;
   clear: () => void;
 }
 
@@ -153,7 +153,7 @@ export const useAssistStore = create<AssistState>((set, _get) => ({
     }
   },
 
-  selectCitation: (id: number) => {
+  selectCitation: (id: number | null) => {
     set({ selectedCitationId: id });
   },
 

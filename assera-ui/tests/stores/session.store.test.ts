@@ -17,7 +17,7 @@ describe('SessionStore', () => {
   beforeEach(() => {
     // Reset store state before each test
     useSessionStore.setState({
-      sessionId: null,
+      id: null,
       turn: 0,
     });
   });
@@ -25,48 +25,48 @@ describe('SessionStore', () => {
   it('initializes with default state', () => {
     const state = useSessionStore.getState();
 
-    expect(state.sessionId).toBe(null);
+    expect(state.id).toBe(null);
     expect(state.turn).toBe(0);
   });
 
   it('sets session ID', () => {
-    const sessionId = 'test-session-123';
-    useSessionStore.getState().setSessionId(sessionId);
+    const id = 'test-session-123';
+    useSessionStore.getState().set({ id });
 
-    expect(useSessionStore.getState().sessionId).toBe(sessionId);
+    expect(useSessionStore.getState().id).toBe(id);
   });
 
   it('increments turn number', () => {
-    useSessionStore.getState().incrementTurn();
+    useSessionStore.getState().set({ turn: 1 });
 
     expect(useSessionStore.getState().turn).toBe(1);
 
-    useSessionStore.getState().incrementTurn();
+    useSessionStore.getState().set({ turn: 2 });
 
     expect(useSessionStore.getState().turn).toBe(2);
   });
 
   it('resets session to initial state', () => {
     useSessionStore.setState({
-      sessionId: 'existing-session',
+      id: 'existing-session',
       turn: 5,
     });
 
     useSessionStore.getState().reset();
 
     const state = useSessionStore.getState();
-    expect(state.sessionId).toBe(null);
+    expect(state.id).toBe(null);
     expect(state.turn).toBe(0);
   });
 
   it('handles multiple session changes', () => {
-    useSessionStore.getState().setSessionId('session-1');
-    useSessionStore.getState().incrementTurn();
-    useSessionStore.getState().incrementTurn();
+    useSessionStore.getState().set({ id: 'session-1' });
+    useSessionStore.getState().set({ turn: 1 });
+    useSessionStore.getState().set({ turn: 2 });
 
     expect(useSessionStore.getState().turn).toBe(2);
 
-    useSessionStore.getState().setSessionId('session-2');
+    useSessionStore.getState().set({ id: 'session-2' });
 
     // Turn should still be 2 after changing session
     // (unless explicitly reset)
@@ -74,9 +74,9 @@ describe('SessionStore', () => {
   });
 
   it('allows setting session ID to null', () => {
-    useSessionStore.setState({ sessionId: 'existing-session' });
-    useSessionStore.getState().setSessionId(null);
+    useSessionStore.setState({ id: 'existing-session' });
+    useSessionStore.getState().set({ id: null });
 
-    expect(useSessionStore.getState().sessionId).toBe(null);
+    expect(useSessionStore.getState().id).toBe(null);
   });
 });

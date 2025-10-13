@@ -14,7 +14,7 @@
 Health check endpoints with liveness and readiness probes.
 """
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, Response, status
 
@@ -138,7 +138,7 @@ async def detailed_health_check(response: Response) -> DetailedHealthResponse:
 
     return DetailedHealthResponse(
         status=overall_status,
-        timestamp=datetime.now(timezone.utc).isoformat(),
+        timestamp=datetime.now(UTC).isoformat(),
         version=settings.api_version,
         dependencies=dependencies,
     )

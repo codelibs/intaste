@@ -12,6 +12,7 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { useAssistStore } from '@/store/assist.store';
+import { useUIStore } from '@/store/ui.store';
 import { mockApiResponse, createMockQueryResponse } from '../utils/test-utils';
 
 describe('AssistStore', () => {
@@ -24,6 +25,11 @@ describe('AssistStore', () => {
       citations: [],
       selectedCitationId: null,
       timings: null,
+    });
+
+    // Mock UI store with API token for streaming tests
+    useUIStore.setState({
+      apiToken: 'test-token',
     });
 
     // Reset mocks
@@ -91,13 +97,13 @@ describe('AssistStore', () => {
   });
 
   it('selects citation by ID', () => {
-    useAssistStore.getState().selectCitation('2');
+    useAssistStore.getState().selectCitation(2);
 
-    expect(useAssistStore.getState().selectedCitationId).toBe('2');
+    expect(useAssistStore.getState().selectedCitationId).toBe(2);
   });
 
   it('clears selection when selecting null', () => {
-    useAssistStore.setState({ selectedCitationId: '1' });
+    useAssistStore.setState({ selectedCitationId: 1 });
     useAssistStore.getState().selectCitation(null);
 
     expect(useAssistStore.getState().selectedCitationId).toBe(null);
@@ -105,7 +111,7 @@ describe('AssistStore', () => {
 
   it('clears error', () => {
     useAssistStore.setState({ error: 'Some error' });
-    useAssistStore.getState().clearError();
+    useAssistStore.getState().clear();
 
     expect(useAssistStore.getState().error).toBe(null);
   });
@@ -114,13 +120,13 @@ describe('AssistStore', () => {
     useAssistStore.setState({
       loading: true,
       error: 'Error',
-      answer: { text: 'Answer', suggested_followups: [] },
-      citations: [{ id: '1', title: 'Doc', snippet: '', url: '', score: 0.9, metadata: {} }],
-      selectedCitationId: '1',
-      timings: { intent_ms: 100, search_ms: 150, compose_ms: 80, total_ms: 330 },
+      answer: { text: 'Answer', suggested_questions: [] },
+      citations: [{ id: 1, title: 'Doc', snippet: '', url: '', score: 0.9, meta: {} }],
+      selectedCitationId: 1,
+      timings: { llm_ms: 100, search_ms: 150, total_ms: 330 },
     });
 
-    useAssistStore.getState().reset();
+    useAssistStore.getState().clear();
 
     const state = useAssistStore.getState();
     expect(state.loading).toBe(false);
@@ -135,6 +141,10 @@ describe('AssistStore', () => {
     const mockResponse = createMockQueryResponse();
     global.fetch = vi.fn().mockResolvedValue(mockApiResponse(mockResponse));
 
+    // Set session ID
+    const { useSessionStore } = await import('@/store/session.store');
+    useSessionStore.getState().set({ id: 'test-session-id' });
+
     const options = { max_results: 10, site: 'example.com' };
     await useAssistStore.getState().send('test query', options);
 
@@ -143,17 +153,22 @@ describe('AssistStore', () => {
       expect.objectContaining({
         body: JSON.stringify({
           query: 'test query',
+          session_id: 'test-session-id',
           options,
         }),
       })
     );
   });
 
-  it('includes session_id in API request when provided', async () => {
+  it('retrieves session_id from session store', async () => {
     const mockResponse = createMockQueryResponse();
     global.fetch = vi.fn().mockResolvedValue(mockApiResponse(mockResponse));
 
-    await useAssistStore.getState().send('test query', {}, 'session-123');
+    // Set session ID in session store
+    const { useSessionStore } = await import('@/store/session.store');
+    useSessionStore.getState().set({ id: 'session-123' });
+
+    await useAssistStore.getState().send('test query', {});
 
     expect(global.fetch).toHaveBeenCalledWith(
       expect.any(String),
@@ -172,7 +187,7 @@ describe('AssistStore', () => {
       const mockReadableStream = {
         getReader: () => ({
           read: vi.fn()
-            .mockResolvedValueOnce({ done: false, value: new TextEncoder().encode('event: complete\ndata: {"answer":{"text":"Done"},"session":{}}\n\n') })
+            .mockResolvedValueOnce({ done: false, value: new TextEncoder().encode('event: complete\ndata: {"answer":{"text":"Done","suggested_questions":[]},"session":{},"timings":{"llm_ms":100,"search_ms":200,"total_ms":300}}\n\n') })
             .mockResolvedValueOnce({ done: true }),
           releaseLock: vi.fn(),
         }),
@@ -196,7 +211,7 @@ describe('AssistStore', () => {
       const sseData =
         'event: chunk\ndata: {"text":"Hello "}\n\n' +
         'event: chunk\ndata: {"text":"world"}\n\n' +
-        'event: complete\ndata: {"answer":{"text":"Hello world"},"session":{}}\n\n';
+        'event: complete\ndata: {"answer":{"text":"Hello world","suggested_questions":[]},"session":{},"timings":{"llm_ms":100,"search_ms":200,"total_ms":300}}\n\n';
 
       const mockReadableStream = {
         getReader: () => ({
@@ -222,8 +237,8 @@ describe('AssistStore', () => {
 
     it('updates citations during streaming', async () => {
       const sseData =
-        'event: citations\ndata: {"citations":[{"id":1,"title":"Test","url":"http://test.com","content":"Content","score":0.9}]}\n\n' +
-        'event: complete\ndata: {"answer":{"text":"Done"},"session":{}}\n\n';
+        'event: citations\ndata: {"citations":[{"id":1,"title":"Test","url":"http://test.com","snippet":"Content","score":0.9}]}\n\n' +
+        'event: complete\ndata: {"answer":{"text":"Done","suggested_questions":[]},"session":{},"timings":{"llm_ms":100,"search_ms":200,"total_ms":300}}\n\n';
 
       const mockReadableStream = {
         getReader: () => ({
@@ -309,7 +324,7 @@ describe('AssistStore', () => {
     });
 
     it('updates session on stream complete', async () => {
-      const sseData = 'event: complete\ndata: {"answer":{"text":"Done"},"session":{"id":"session-123","turn":2}}\n\n';
+      const sseData = 'event: complete\ndata: {"answer":{"text":"Done","suggested_questions":[]},"session":{"id":"session-123","turn":2},"timings":{"llm_ms":100,"search_ms":200,"total_ms":300}}\n\n';
 
       const mockReadableStream = {
         getReader: () => ({

@@ -17,7 +17,12 @@ LLM client abstraction layer.
 from .base import ComposeOutput, IntentOutput, LLMClient
 from .factory import LLMClientFactory
 from .ollama import OllamaClient
-from .prompts import COMPOSE_SYSTEM_PROMPT, COMPOSE_USER_TEMPLATE, INTENT_SYSTEM_PROMPT, INTENT_USER_TEMPLATE
+from .prompts import (
+    COMPOSE_SYSTEM_PROMPT,
+    COMPOSE_USER_TEMPLATE,
+    INTENT_SYSTEM_PROMPT,
+    INTENT_USER_TEMPLATE,
+)
 
 __all__ = [
     "ComposeOutput",

@@ -19,7 +19,9 @@ from fastapi import Header, HTTPException, status
 from ..config import settings
 
 
-async def verify_api_token(x_assera_token: str = Header(..., alias="X-Assera-Token")) -> str:
+async def verify_api_token(
+    x_assera_token: str | None = Header(None, alias="X-Assera-Token")
+) -> str:
     """
     Verify the API token from X-Assera-Token header.
 
@@ -30,7 +32,7 @@ async def verify_api_token(x_assera_token: str = Header(..., alias="X-Assera-Tok
         The validated token
 
     Raises:
-        HTTPException: 401 if token is invalid
+        HTTPException: 401 if token is invalid or missing
     """
     if not x_assera_token or x_assera_token != settings.assera_api_token:
         raise HTTPException(

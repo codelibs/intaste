@@ -31,9 +31,23 @@ global.localStorage = localStorageMock as any;
 // Mock fetch
 global.fetch = vi.fn();
 
-// Mock crypto.randomUUID
-vi.stubGlobal('crypto', {
+// Mock crypto API with full Web Crypto API surface
+const cryptoMock = {
   randomUUID: vi.fn(() => '00000000-0000-0000-0000-000000000000'),
+  getRandomValues: vi.fn((array: any) => {
+    for (let i = 0; i < array.length; i++) {
+      array[i] = Math.floor(Math.random() * 256);
+    }
+    return array;
+  }),
+  subtle: {} as SubtleCrypto,
+};
+
+// Set crypto on both global and window
+vi.stubGlobal('crypto', cryptoMock);
+Object.defineProperty(global, 'crypto', {
+  value: cryptoMock,
+  writable: true,
 });
 
 // Mock uuid utility

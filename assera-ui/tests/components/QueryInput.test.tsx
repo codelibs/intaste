@@ -13,7 +13,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { renderWithProviders, screen } from '../utils/test-utils';
 import userEvent from '@testing-library/user-event';
-import QueryInput from '@/components/input/QueryInput';
+import { QueryInput } from '@/components/input/QueryInput';
 
 describe('QueryInput', () => {
   it('renders textarea with placeholder', () => {
@@ -21,7 +21,7 @@ describe('QueryInput', () => {
       <QueryInput value="" onChange={() => {}} onSubmit={() => {}} />
     );
 
-    const textarea = screen.getByPlaceholderText(/ask a question/i);
+    const textarea = screen.getByPlaceholderText(/enter your question/i);
     expect(textarea).toBeInTheDocument();
   });
 
@@ -33,7 +33,7 @@ describe('QueryInput', () => {
       <QueryInput value="" onChange={handleChange} onSubmit={() => {}} />
     );
 
-    const textarea = screen.getByPlaceholderText(/ask a question/i);
+    const textarea = screen.getByPlaceholderText(/enter your question/i);
     await user.type(textarea, 'test query');
 
     expect(handleChange).toHaveBeenCalled();
@@ -47,7 +47,7 @@ describe('QueryInput', () => {
       <QueryInput value="test query" onChange={() => {}} onSubmit={handleSubmit} />
     );
 
-    const textarea = screen.getByPlaceholderText(/ask a question/i);
+    const textarea = screen.getByPlaceholderText(/enter your question/i);
     await user.click(textarea);
     await user.keyboard('{Enter}');
 
@@ -62,19 +62,19 @@ describe('QueryInput', () => {
       <QueryInput value="test query" onChange={() => {}} onSubmit={handleSubmit} />
     );
 
-    const textarea = screen.getByPlaceholderText(/ask a question/i);
+    const textarea = screen.getByPlaceholderText(/enter your question/i);
     await user.click(textarea);
     await user.keyboard('{Shift>}{Enter}{/Shift}');
 
     expect(handleSubmit).not.toHaveBeenCalled();
   });
 
-  it('disables input when loading', () => {
+  it('disables input when disabled', () => {
     renderWithProviders(
-      <QueryInput value="" onChange={() => {}} onSubmit={() => {}} loading={true} />
+      <QueryInput value="" onChange={() => {}} onSubmit={() => {}} disabled={true} />
     );
 
-    const textarea = screen.getByPlaceholderText(/ask a question/i);
+    const textarea = screen.getByPlaceholderText(/enter your question/i);
     expect(textarea).toBeDisabled();
   });
 
@@ -94,7 +94,7 @@ describe('QueryInput', () => {
       <QueryInput value="" onChange={() => {}} onSubmit={handleSubmit} />
     );
 
-    const textarea = screen.getByPlaceholderText(/ask a question/i);
+    const textarea = screen.getByPlaceholderText(/enter your question/i);
     await user.click(textarea);
     await user.keyboard('{Enter}');
 
@@ -105,10 +105,10 @@ describe('QueryInput', () => {
     const handleChange = vi.fn();
 
     renderWithProviders(
-      <QueryInput value="" onChange={handleChange} onSubmit={() => {}} maxLength={10} />
+      <QueryInput value="" onChange={handleChange} onSubmit={() => {}} />
     );
 
-    const textarea = screen.getByPlaceholderText(/ask a question/i);
-    expect(textarea).toHaveAttribute('maxLength', '10');
+    const textarea = screen.getByPlaceholderText(/enter your question/i);
+    expect(textarea).toHaveAttribute('maxLength', '4096');
   });
 });

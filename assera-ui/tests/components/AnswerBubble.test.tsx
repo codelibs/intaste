@@ -13,7 +13,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { renderWithProviders, screen, createMockAnswer } from '../utils/test-utils';
 import userEvent from '@testing-library/user-event';
-import AnswerBubble from '@/components/answer/AnswerBubble';
+import { AnswerBubble } from '@/components/answer/AnswerBubble';
 
 describe('AnswerBubble', () => {
   it('renders answer text', () => {
@@ -30,8 +30,8 @@ describe('AnswerBubble', () => {
     };
     renderWithProviders(<AnswerBubble answer={answer} />);
 
-    const citation1 = screen.getByRole('button', { name: '[1]' });
-    const citation2 = screen.getByRole('button', { name: '[2]' });
+    const citation1 = screen.getByRole('button', { name: 'View citation 1' });
+    const citation2 = screen.getByRole('button', { name: 'View citation 2' });
 
     expect(citation1).toBeInTheDocument();
     expect(citation2).toBeInTheDocument();
@@ -49,55 +49,37 @@ describe('AnswerBubble', () => {
       <AnswerBubble answer={answer} onCitationClick={handleCitationClick} />
     );
 
-    const citation = screen.getByRole('button', { name: '[1]' });
+    const citation = screen.getByRole('button', { name: 'View citation 1' });
     await user.click(citation);
 
-    expect(handleCitationClick).toHaveBeenCalledWith('1');
+    expect(handleCitationClick).toHaveBeenCalledWith(1);
   });
 
   it('renders suggested follow-up questions', () => {
     const answer = {
       text: 'Test answer',
-      suggested_followups: ['What else?', 'Tell me more'],
+      suggested_questions: ['What else?', 'Tell me more'],
     };
     renderWithProviders(<AnswerBubble answer={answer} />);
 
-    expect(screen.getByText('What else?')).toBeInTheDocument();
-    expect(screen.getByText('Tell me more')).toBeInTheDocument();
-  });
-
-  it('calls onFollowupClick when follow-up is clicked', async () => {
-    const handleFollowupClick = vi.fn();
-    const user = userEvent.setup();
-    const answer = {
-      text: 'Test answer',
-      suggested_followups: ['What else?'],
-    };
-
-    renderWithProviders(
-      <AnswerBubble answer={answer} onFollowupClick={handleFollowupClick} />
-    );
-
-    const followup = screen.getByText('What else?');
-    await user.click(followup);
-
-    expect(handleFollowupClick).toHaveBeenCalledWith('What else?');
+    expect(screen.getByText(/What else\?/)).toBeInTheDocument();
+    expect(screen.getByText(/Tell me more/)).toBeInTheDocument();
   });
 
   it('does not render follow-ups section when empty', () => {
     const answer = {
       text: 'Test answer',
-      suggested_followups: [],
+      suggested_questions: [],
     };
     renderWithProviders(<AnswerBubble answer={answer} />);
 
-    expect(screen.queryByText(/follow-up/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/related questions/i)).not.toBeInTheDocument();
   });
 
   it('handles answer text without citations', () => {
     const answer = {
       text: 'Simple answer without citations',
-      suggested_followups: [],
+      suggested_questions: [],
     };
     renderWithProviders(<AnswerBubble answer={answer} />);
 

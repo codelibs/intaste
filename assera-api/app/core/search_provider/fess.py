@@ -41,8 +41,12 @@ class FessSearchProvider:
         """
         import time
 
-        logger.debug(f"Fess search started: query={query.q!r}, page={query.page}, size={query.size}")
-        logger.debug(f"Search query details: language={query.language}, sort={query.sort}, filters={query.filters}")
+        logger.debug(
+            f"Fess search started: query={query.q!r}, page={query.page}, size={query.size}"
+        )
+        logger.debug(
+            f"Search query details: language={query.language}, sort={query.sort}, filters={query.filters}"
+        )
 
         # Convert page/size to Fess start/num
         start = max(0, (query.page - 1) * query.size)
@@ -82,39 +86,53 @@ class FessSearchProvider:
             response = await self.client.get(url, params=params, timeout=timeout)
             elapsed_ms = int((time.time() - start_time) * 1000)
 
-            logger.debug(f"Fess response received: status={response.status_code}, elapsed={elapsed_ms}ms")
+            logger.debug(
+                f"Fess response received: status={response.status_code}, elapsed={elapsed_ms}ms"
+            )
 
             response.raise_for_status()
             raw_data = response.json()
 
             logger.debug(f"Fess raw response keys: {list(raw_data.keys())}")
-            logger.debug(f"Fess response: record_count={raw_data.get('record_count')}, page_count={raw_data.get('page_count')}, exec_time={raw_data.get('exec_time')}s")
+            logger.debug(
+                f"Fess response: record_count={raw_data.get('record_count')}, page_count={raw_data.get('page_count')}, exec_time={raw_data.get('exec_time')}s"
+            )
             logger.debug(f"Fess returned {len(raw_data.get('data', []))} documents")
 
-            if logger.isEnabledFor(logging.DEBUG) and raw_data.get('data'):
-                for idx, doc in enumerate(raw_data['data'][:3], 1):  # Log first 3 documents
-                    logger.debug(f"Fess doc #{idx}: id={doc.get('doc_id') or doc.get('id')}, title={doc.get('title', 'N/A')[:50]}, url={doc.get('url', 'N/A')[:80]}, score={doc.get('score')}")
+            if logger.isEnabledFor(logging.DEBUG) and raw_data.get("data"):
+                for idx, doc in enumerate(raw_data["data"][:3], 1):  # Log first 3 documents
+                    logger.debug(
+                        f"Fess doc #{idx}: id={doc.get('doc_id') or doc.get('id')}, title={doc.get('title', 'N/A')[:50]}, url={doc.get('url', 'N/A')[:80]}, score={doc.get('score')}"
+                    )
 
             result = self._normalize_response(raw_data, query)
-            logger.debug(f"Fess search normalized: total={result.total}, hits={len(result.hits)}, took={result.took_ms}ms")
+            logger.debug(
+                f"Fess search normalized: total={result.total}, hits={len(result.hits)}, took={result.took_ms}ms"
+            )
 
             return result
 
         except httpx.TimeoutException as e:
             elapsed_ms = int((time.time() - start_time) * 1000)
             logger.error(f"Fess search timeout after {elapsed_ms}ms: {e}")
-            logger.debug(f"Timeout config: requested={timeout}s, elapsed={elapsed_ms}ms, query={query.q!r}")
-            raise TimeoutError(f"Fess search timeout after {timeout}s")
+            logger.debug(
+                f"Timeout config: requested={timeout}s, elapsed={elapsed_ms}ms, query={query.q!r}"
+            )
+            raise TimeoutError(f"Fess search timeout after {timeout}s") from e
         except httpx.HTTPStatusError as e:
             elapsed_ms = int((time.time() - start_time) * 1000)
-            logger.error(f"Fess HTTP error: status={e.response.status_code}, elapsed={elapsed_ms}ms")
+            logger.error(
+                f"Fess HTTP error: status={e.response.status_code}, elapsed={elapsed_ms}ms"
+            )
             logger.debug(f"Fess error response: {e.response.text[:500]}")
             logger.debug(f"Fess request: url={url}, params={params}")
-            raise RuntimeError(f"Fess returned {e.response.status_code}")
+            raise RuntimeError(f"Fess returned {e.response.status_code}") from e
         except Exception as e:
-            elapsed_ms = int((time.time() - start_time) * 1000) if 'start_time' in locals() else 0
+            elapsed_ms = int((time.time() - start_time) * 1000) if "start_time" in locals() else 0
             logger.error(f"Fess search error after {elapsed_ms}ms: {e}")
-            logger.debug(f"Fess error details: type={type(e).__name__}, query={query.q!r}, params={params}")
+            logger.debug(
+                f"Fess error details: type={type(e).__name__}, query={query.q!r}, params={params}"
+            )
             raise
 
     def _normalize_response(self, raw_data: dict[str, Any], query: SearchQuery) -> SearchResult:
@@ -126,7 +144,9 @@ class FessSearchProvider:
         # Fess API v1 returns flat structure with top-level fields
         total = raw_data.get("record_count", 0)
         # Convert exec_time from seconds (float) to milliseconds (int)
-        took_ms = int(raw_data["exec_time"] * 1000) if raw_data.get("exec_time") is not None else None
+        took_ms = (
+            int(raw_data["exec_time"] * 1000) if raw_data.get("exec_time") is not None else None
+        )
         results = raw_data.get("data", [])
 
         logger.debug(f"Normalizing {len(results)} documents: total={total}, took_ms={took_ms}")
@@ -167,7 +187,9 @@ class FessSearchProvider:
             hits.append(hit)
 
             if logger.isEnabledFor(logging.DEBUG):
-                logger.debug(f"Normalized hit #{idx}: id={hit.id}, title={hit.title[:50]}, score={hit.score}, url={hit.url[:80]}")
+                logger.debug(
+                    f"Normalized hit #{idx}: id={hit.id}, title={hit.title[:50]}, score={hit.score}, url={hit.url[:80]}"
+                )
                 logger.debug(f"  snippet_length={len(hit.snippet or '')}, meta={hit.meta}")
 
         result = SearchResult(
@@ -178,7 +200,9 @@ class FessSearchProvider:
             size=query.size,
         )
 
-        logger.debug(f"Normalization complete: SearchResult(total={result.total}, hits_count={len(result.hits)}, took_ms={result.took_ms}, page={result.page}, size={result.size})")
+        logger.debug(
+            f"Normalization complete: SearchResult(total={result.total}, hits_count={len(result.hits)}, took_ms={result.took_ms}, page={result.page}, size={result.size})"
+        )
 
         return result
 
@@ -187,15 +211,16 @@ class FessSearchProvider:
         Check Fess health status.
         """
         try:
-            response = await self.client.get(
-                f"{self.base_url}/api/v1/health", timeout=2.0
-            )
+            response = await self.client.get(f"{self.base_url}/api/v1/health", timeout=2.0)
             response.raise_for_status()
             data = response.json()
             health_data = data.get("data", {})
             status = health_data.get("status", "unknown")
             is_healthy = status == "green" and not health_data.get("timed_out", False)
-            return (is_healthy, {"status": status, "timed_out": health_data.get("timed_out", False)})
+            return (
+                is_healthy,
+                {"status": status, "timed_out": health_data.get("timed_out", False)},
+            )
         except Exception as e:
             return (False, {"error": str(e)})
 
