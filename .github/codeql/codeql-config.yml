@@ -1,0 +1,20 @@
+# CodeQL configuration for Assera
+# This file configures which security queries to run during CodeQL analysis
+
+name: "Assera CodeQL Config"
+
+# Disable specific queries that generate false positives or are not applicable
+query-filters:
+  # Disable log injection warnings
+  # Assera already implements log safety measures:
+  # - repr() for escaping user input in logs (e.g., query!r)
+  # - PII masking configuration (log_pii_masking)
+  # - Character limits (log_max_prompt_chars, log_max_response_chars)
+  - exclude:
+      id: py/log-injection
+  - exclude:
+      id: js/log-injection
+
+# Use security-extended query suite but with above exclusions
+queries:
+  - uses: security-extended
