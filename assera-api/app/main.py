@@ -15,16 +15,17 @@ Assera API - FastAPI application entry point.
 """
 
 import logging
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
 from .core.config import settings
+from .core.llm.base import LLMClient
 from .core.llm.factory import LLMClientFactory
-from .core.llm.ollama import OllamaClient
+from .core.search_provider.base import SearchProvider
 from .core.search_provider.factory import SearchProviderFactory
-from .core.search_provider.fess import FessSearchProvider
 from .core.security.middleware import add_request_id_middleware, setup_cors
 from .routers import assist, assist_stream, health, models
 from .services.assist import AssistService
@@ -37,13 +38,13 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Global instances
-search_provider: FessSearchProvider | None = None
-llm_client: OllamaClient | None = None
+search_provider: SearchProvider | None = None
+llm_client: LLMClient | None = None
 assist_service: AssistService | None = None
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """
     Application lifespan manager for startup and shutdown.
     """
@@ -136,7 +137,7 @@ app.include_router(models.router, prefix="/api/v1")
 
 # Global exception handler
 @app.exception_handler(Exception)
-async def global_exception_handler(request: Request, exc: Exception):
+async def global_exception_handler(request: Request, exc: Exception) -> JSONResponse:
     """
     Global exception handler for unhandled errors.
     """
@@ -160,7 +161,7 @@ async def global_exception_handler(request: Request, exc: Exception):
 
 
 @app.get("/")
-async def root():
+async def root() -> dict[str, str | None]:
     """
     Root endpoint with API information.
     """

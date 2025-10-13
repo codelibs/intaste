@@ -14,11 +14,11 @@
 Factory for creating search provider instances based on configuration.
 """
 
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 from .base import SearchProvider
 from .fess import FessSearchProvider
-
 
 # Type alias for provider constructor
 ProviderConstructor = Callable[[dict[str, Any]], SearchProvider]
@@ -63,8 +63,7 @@ class SearchProviderFactory:
         if provider_name not in cls._registry:
             available = ", ".join(cls._registry.keys())
             raise ValueError(
-                f"Unknown search provider: {provider_name}. "
-                f"Available providers: {available}"
+                f"Unknown search provider: {provider_name}. " f"Available providers: {available}"
             )
 
         constructor = cls._registry[provider_name]

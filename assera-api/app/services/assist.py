@@ -20,8 +20,8 @@ import uuid
 from typing import Any
 
 from ..core.config import settings
-from ..core.llm.base import ComposeOutput, IntentOutput, LLMClient
-from ..core.search_provider.base import SearchProvider, SearchQuery, SearchResult
+from ..core.llm.base import IntentOutput, LLMClient
+from ..core.search_provider.base import SearchProvider, SearchQuery
 from ..schemas.assist import Answer, AssistQueryResponse, Citation, Notice, Session, Timings
 
 logger = logging.getLogger(__name__)
@@ -88,7 +88,9 @@ class AssistService:
 
         # Step 1: Intent extraction
         logger.info(f"[{session_id}:{turn}] Starting intent extraction")
-        logger.debug(f"[{session_id}:{turn}] Intent input: query={query!r}, language={options.get('language', 'ja')}, filters={options.get('filters')}, timeout={settings.intent_timeout_ms}ms")
+        logger.debug(
+            f"[{session_id}:{turn}] Intent input: query={query!r}, language={options.get('language', 'ja')}, filters={options.get('filters')}, timeout={settings.intent_timeout_ms}ms"
+        )
 
         intent_start = time.time()
 
@@ -104,12 +106,18 @@ class AssistService:
                 f"[{session_id}:{turn}] Intent extracted: {intent.normalized_query} "
                 f"(ambiguity: {intent.ambiguity}, {intent_ms}ms)"
             )
-            logger.debug(f"[{session_id}:{turn}] Intent details: normalized_query={intent.normalized_query!r}, filters={intent.filters}, followups={intent.followups}, ambiguity={intent.ambiguity}")
+            logger.debug(
+                f"[{session_id}:{turn}] Intent details: normalized_query={intent.normalized_query!r}, filters={intent.filters}, followups={intent.followups}, ambiguity={intent.ambiguity}"
+            )
 
         except (TimeoutError, Exception) as e:
             intent_ms = int((time.time() - intent_start) * 1000)
-            logger.warning(f"[{session_id}:{turn}] Intent extraction failed after {intent_ms}ms: {e}")
-            logger.debug(f"[{session_id}:{turn}] Intent error type: {type(e).__name__}, details: {str(e)}")
+            logger.warning(
+                f"[{session_id}:{turn}] Intent extraction failed after {intent_ms}ms: {e}"
+            )
+            logger.debug(
+                f"[{session_id}:{turn}] Intent error type: {type(e).__name__}, details: {str(e)}"
+            )
 
             # Fallback: use original query
             intent = IntentOutput(
@@ -118,12 +126,17 @@ class AssistService:
                 followups=[],
                 ambiguity="medium",
             )
-            notice = Notice(fallback=True, reason="LLM_TIMEOUT" if isinstance(e, TimeoutError) else "LLM_UNAVAILABLE")
+            notice = Notice(
+                fallback=True,
+                reason="LLM_TIMEOUT" if isinstance(e, TimeoutError) else "LLM_UNAVAILABLE",
+            )
             logger.debug(f"[{session_id}:{turn}] Using fallback intent: {intent}, notice={notice}")
 
         # Step 2: Search execution
         logger.info(f"[{session_id}:{turn}] Executing search")
-        logger.debug(f"[{session_id}:{turn}] Search input: normalized_query={intent.normalized_query!r}, max_results={options.get('max_results', 5)}, filters={intent.filters or options.get('filters')}")
+        logger.debug(
+            f"[{session_id}:{turn}] Search input: normalized_query={intent.normalized_query!r}, max_results={options.get('max_results', 5)}, filters={intent.filters or options.get('filters')}"
+        )
 
         search_start = time.time()
 
@@ -144,30 +157,40 @@ class AssistService:
                 f"[{session_id}:{turn}] Search completed: {len(search_result.hits)} hits "
                 f"(total: {search_result.total}, {search_ms}ms)"
             )
-            logger.debug(f"[{session_id}:{turn}] Search result details: total={search_result.total}, hits_count={len(search_result.hits)}, took_ms={search_result.took_ms}, page={search_result.page}, size={search_result.size}")
+            logger.debug(
+                f"[{session_id}:{turn}] Search result details: total={search_result.total}, hits_count={len(search_result.hits)}, took_ms={search_result.took_ms}, page={search_result.page}, size={search_result.size}"
+            )
 
             if logger.isEnabledFor(logging.DEBUG) and search_result.hits:
                 for idx, hit in enumerate(search_result.hits[:3], 1):  # Log first 3 hits
-                    logger.debug(f"[{session_id}:{turn}] Hit #{idx}: id={hit.id}, title={hit.title[:50]}, score={hit.score}, url={hit.url[:80]}")
+                    logger.debug(
+                        f"[{session_id}:{turn}] Hit #{idx}: id={hit.id}, title={hit.title[:50]}, score={hit.score}, url={hit.url[:80]}"
+                    )
 
         except (TimeoutError, Exception) as e:
             search_ms = int((time.time() - search_start) * 1000)
             logger.error(f"[{session_id}:{turn}] Search failed after {search_ms}ms: {e}")
-            logger.debug(f"[{session_id}:{turn}] Search error type: {type(e).__name__}, query={intent.normalized_query!r}, filters={intent.filters}")
+            logger.debug(
+                f"[{session_id}:{turn}] Search error type: {type(e).__name__}, query={intent.normalized_query!r}, filters={intent.filters}"
+            )
             # Return error - search is critical
-            raise RuntimeError(f"Search provider error: {e}")
+            raise RuntimeError(f"Search provider error: {e}") from e
 
         # Step 3: Answer composition
         answer: Answer
         if search_result.hits:
             logger.info(f"[{session_id}:{turn}] Composing answer")
-            logger.debug(f"[{session_id}:{turn}] Compose input: citations_count={len(search_result.hits)}, followups={intent.followups}, timeout={settings.compose_timeout_ms}ms")
+            logger.debug(
+                f"[{session_id}:{turn}] Compose input: citations_count={len(search_result.hits)}, followups={intent.followups}, timeout={settings.compose_timeout_ms}ms"
+            )
 
             compose_start = time.time()
 
             try:
                 citations_data = [hit.model_dump() for hit in search_result.hits]
-                logger.debug(f"[{session_id}:{turn}] Citations data prepared: {len(citations_data)} items")
+                logger.debug(
+                    f"[{session_id}:{turn}] Citations data prepared: {len(citations_data)} items"
+                )
 
                 compose = await self.llm_client.compose(
                     query=query,
@@ -183,12 +206,16 @@ class AssistService:
                     suggested_questions=compose.suggested_questions,
                 )
                 logger.info(f"[{session_id}:{turn}] Answer composed ({compose_ms}ms)")
-                logger.debug(f"[{session_id}:{turn}] Answer details: text_length={len(answer.text)}, text={answer.text!r}, suggested_questions={answer.suggested_questions}")
+                logger.debug(
+                    f"[{session_id}:{turn}] Answer details: text_length={len(answer.text)}, text={answer.text!r}, suggested_questions={answer.suggested_questions}"
+                )
 
             except (TimeoutError, Exception) as e:
                 compose_ms = int((time.time() - compose_start) * 1000)
                 logger.warning(f"[{session_id}:{turn}] Compose failed after {compose_ms}ms: {e}")
-                logger.debug(f"[{session_id}:{turn}] Compose error type: {type(e).__name__}, citations_count={len(search_result.hits)}")
+                logger.debug(
+                    f"[{session_id}:{turn}] Compose error type: {type(e).__name__}, citations_count={len(search_result.hits)}"
+                )
 
                 # Fallback: generic guidance
                 answer = Answer(
@@ -196,8 +223,13 @@ class AssistService:
                     suggested_questions=intent.followups[:3],
                 )
                 if not notice:
-                    notice = Notice(fallback=True, reason="LLM_TIMEOUT" if isinstance(e, TimeoutError) else "BAD_LLM_OUTPUT")
-                logger.debug(f"[{session_id}:{turn}] Using fallback answer: {answer}, notice={notice}")
+                    notice = Notice(
+                        fallback=True,
+                        reason="LLM_TIMEOUT" if isinstance(e, TimeoutError) else "BAD_LLM_OUTPUT",
+                    )
+                logger.debug(
+                    f"[{session_id}:{turn}] Using fallback answer: {answer}, notice={notice}"
+                )
         else:
             # No search results
             logger.info(f"[{session_id}:{turn}] No search results, skipping answer composition")
@@ -222,12 +254,16 @@ class AssistService:
             )
             citations.append(citation)
             if logger.isEnabledFor(logging.DEBUG) and idx <= 3:  # Log first 3 citations
-                logger.debug(f"[{session_id}:{turn}] Citation #{idx}: id={citation.id}, title={citation.title[:50]}, score={citation.score}")
+                logger.debug(
+                    f"[{session_id}:{turn}] Citation #{idx}: id={citation.id}, title={citation.title[:50]}, score={citation.score}"
+                )
 
         # Calculate total time
         total_ms = int((time.time() - start_time) * 1000)
 
-        logger.debug(f"[{session_id}:{turn}] Timings: intent={intent_ms}ms, search={search_ms}ms, compose={compose_ms}ms, total={total_ms}ms")
+        logger.debug(
+            f"[{session_id}:{turn}] Timings: intent={intent_ms}ms, search={search_ms}ms, compose={compose_ms}ms, total={total_ms}ms"
+        )
 
         # Store in session history
         history_entry = {
@@ -238,7 +274,9 @@ class AssistService:
         }
         self.sessions[session_id]["history"].append(history_entry)
         logger.debug(f"[{session_id}:{turn}] Session history updated: {history_entry}")
-        logger.debug(f"[{session_id}:{turn}] Total history entries: {len(self.sessions[session_id]['history'])}")
+        logger.debug(
+            f"[{session_id}:{turn}] Total history entries: {len(self.sessions[session_id]['history'])}"
+        )
 
         response = AssistQueryResponse(
             answer=answer,
@@ -248,7 +286,11 @@ class AssistService:
             notice=notice,
         )
 
-        logger.info(f"[{session_id}:{turn}] Query completed: total_ms={total_ms}, citations={len(citations)}, notice={'Yes' if notice else 'No'}")
-        logger.debug(f"[{session_id}:{turn}] Final response: answer_length={len(answer.text)}, citations_count={len(citations)}, suggested_questions_count={len(answer.suggested_questions)}")
+        logger.info(
+            f"[{session_id}:{turn}] Query completed: total_ms={total_ms}, citations={len(citations)}, notice={'Yes' if notice else 'No'}"
+        )
+        logger.debug(
+            f"[{session_id}:{turn}] Final response: answer_length={len(answer.text)}, citations_count={len(citations)}, suggested_questions_count={len(answer.suggested_questions)}"
+        )
 
         return response

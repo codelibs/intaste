@@ -42,7 +42,7 @@ npm start
 
 ## Project Structure
 
-```
+````
 assera-ui/
 ├── app/                      # Next.js App Router
 │   ├── layout.tsx           # Root layout
@@ -86,31 +86,39 @@ const response = await queryAssist({
   session_id: 'optional-uuid',
   options: { max_results: 5 }
 });
-```
+````
 
 Authentication token is stored in localStorage and sent via `X-Assera-Token` header.
 
 ## Components
 
 ### QueryInput
+
 Multi-line text input with keyboard shortcuts:
+
 - `Enter`: Submit query
 - `Shift+Enter`: New line
 - Max 4096 characters
 
 ### AnswerBubble
+
 Displays LLM-generated answer with:
+
 - Citation references `[1]`, `[2]`, etc. (clickable)
 - Suggested follow-up questions
 - Fallback notices
 
 ### EvidencePanel
+
 Sidebar with two tabs:
+
 - **Selected**: Detailed view of one citation
 - **All**: List of all citations
 
 ### EvidenceItem
+
 Citation card showing:
+
 - Title and snippet (sanitized HTML)
 - Metadata (site, type, score)
 - "Open in Fess" link
@@ -155,6 +163,7 @@ npm run format       # Prettier format
 ### Adding Components
 
 Follow the established patterns:
+
 1. Create component in appropriate directory
 2. Add Apache License header
 3. Use TypeScript with proper types
@@ -227,6 +236,7 @@ npm run test:e2e:ui
 ### Coverage
 
 View coverage report:
+
 ```bash
 npm run test:coverage
 open coverage/index.html

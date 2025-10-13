@@ -70,6 +70,6 @@ const nextConfig = {
     }
     return [];
   },
-}
+};
 
-module.exports = nextConfig
+module.exports = nextConfig;

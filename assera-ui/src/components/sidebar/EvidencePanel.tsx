@@ -24,12 +24,7 @@ interface EvidencePanelProps {
   className?: string;
 }
 
-export function EvidencePanel({
-  citations,
-  selectedId,
-  onSelect,
-  className,
-}: EvidencePanelProps) {
+export function EvidencePanel({ citations, selectedId, onSelect, className }: EvidencePanelProps) {
   const [tab, setTab] = useState<'selected' | 'all'>('selected');
 
   const selectedCitation = citations.find((c) => c.id === selectedId);
@@ -72,12 +67,7 @@ export function EvidencePanel({
       <div className="flex-1 overflow-y-auto p-4" role="tabpanel">
         {tab === 'selected' ? (
           selectedCitation ? (
-            <EvidenceItem
-              citation={selectedCitation}
-              active={true}
-              onSelect={() => {}}
-              showFull
-            />
+            <EvidenceItem citation={selectedCitation} active={true} onSelect={() => {}} showFull />
           ) : (
             <div className="text-center text-sm text-muted-foreground py-8">
               No citation selected

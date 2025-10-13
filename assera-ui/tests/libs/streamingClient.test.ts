@@ -46,8 +46,12 @@ describe('streamingClient', () => {
   it('should call fetch with correct parameters', async () => {
     const mockReadableStream = {
       getReader: () => ({
-        read: vi.fn()
-          .mockResolvedValueOnce({ done: false, value: new TextEncoder().encode('event: start\ndata: {}\n\n') })
+        read: vi
+          .fn()
+          .mockResolvedValueOnce({
+            done: false,
+            value: new TextEncoder().encode('event: start\ndata: {}\n\n'),
+          })
           .mockResolvedValueOnce({ done: true }),
         releaseLock: vi.fn(),
       }),
@@ -67,7 +71,7 @@ describe('streamingClient', () => {
         headers: expect.objectContaining({
           'Content-Type': 'application/json',
           'X-Assera-Token': 'test-token',
-          'Accept': 'text/event-stream',
+          Accept: 'text/event-stream',
         }),
       })
     );
@@ -79,8 +83,9 @@ describe('streamingClient', () => {
       apiToken: null,
     } as any);
 
-    await expect(queryAssistStream('test', {}, undefined, {}))
-      .rejects.toThrow('API token not configured');
+    await expect(queryAssistStream('test', {}, undefined, {})).rejects.toThrow(
+      'API token not configured'
+    );
   });
 
   it('should throw APIError on HTTP error response with structured error data', async () => {
@@ -90,12 +95,11 @@ describe('streamingClient', () => {
       json: async () => ({
         code: 'INTERNAL_SERVER_ERROR',
         message: 'Server error',
-        details: { reason: 'Database connection failed' }
+        details: { reason: 'Database connection failed' },
       }),
     });
 
-    await expect(queryAssistStream('test', {}, undefined, {}))
-      .rejects.toThrow(APIError);
+    await expect(queryAssistStream('test', {}, undefined, {})).rejects.toThrow(APIError);
 
     try {
       await queryAssistStream('test', {}, undefined, {});
@@ -134,7 +138,8 @@ describe('streamingClient', () => {
 
     const mockReadableStream = {
       getReader: () => ({
-        read: vi.fn()
+        read: vi
+          .fn()
           .mockResolvedValueOnce({ done: false, value: new TextEncoder().encode(sseData) })
           .mockResolvedValueOnce({ done: true }),
         releaseLock: vi.fn(),
@@ -157,7 +162,8 @@ describe('streamingClient', () => {
 
     const mockReadableStream = {
       getReader: () => ({
-        read: vi.fn()
+        read: vi
+          .fn()
           .mockResolvedValueOnce({ done: false, value: new TextEncoder().encode(sseData) })
           .mockResolvedValueOnce({ done: true }),
         releaseLock: vi.fn(),
@@ -180,7 +186,8 @@ describe('streamingClient', () => {
 
     const mockReadableStream = {
       getReader: () => ({
-        read: vi.fn()
+        read: vi
+          .fn()
           .mockResolvedValueOnce({ done: false, value: new TextEncoder().encode(sseData) })
           .mockResolvedValueOnce({ done: true }),
         releaseLock: vi.fn(),
@@ -200,12 +207,12 @@ describe('streamingClient', () => {
   it('should call onChunk callback for each chunk event', async () => {
     const onChunk = vi.fn();
     const sseData =
-      'event: chunk\ndata: {"text":"Hello "}\n\n' +
-      'event: chunk\ndata: {"text":"world"}\n\n';
+      'event: chunk\ndata: {"text":"Hello "}\n\n' + 'event: chunk\ndata: {"text":"world"}\n\n';
 
     const mockReadableStream = {
       getReader: () => ({
-        read: vi.fn()
+        read: vi
+          .fn()
           .mockResolvedValueOnce({ done: false, value: new TextEncoder().encode(sseData) })
           .mockResolvedValueOnce({ done: true }),
         releaseLock: vi.fn(),
@@ -230,7 +237,8 @@ describe('streamingClient', () => {
 
     const mockReadableStream = {
       getReader: () => ({
-        read: vi.fn()
+        read: vi
+          .fn()
           .mockResolvedValueOnce({ done: false, value: new TextEncoder().encode(sseData) })
           .mockResolvedValueOnce({ done: true }),
         releaseLock: vi.fn(),
@@ -256,7 +264,8 @@ describe('streamingClient', () => {
 
     const mockReadableStream = {
       getReader: () => ({
-        read: vi.fn()
+        read: vi
+          .fn()
           .mockResolvedValueOnce({ done: false, value: new TextEncoder().encode(sseData) })
           .mockResolvedValueOnce({ done: true }),
         releaseLock: vi.fn(),
@@ -282,7 +291,8 @@ describe('streamingClient', () => {
 
     const mockReadableStream = {
       getReader: () => ({
-        read: vi.fn()
+        read: vi
+          .fn()
           .mockResolvedValueOnce({ done: false, value: new TextEncoder().encode(chunk1) })
           .mockResolvedValueOnce({ done: false, value: new TextEncoder().encode(chunk2) })
           .mockResolvedValueOnce({ done: true }),
@@ -303,12 +313,12 @@ describe('streamingClient', () => {
   it('should handle multiple events in single chunk', async () => {
     const onChunk = vi.fn();
     const sseData =
-      'event: chunk\ndata: {"text":"First"}\n\n' +
-      'event: chunk\ndata: {"text":"Second"}\n\n';
+      'event: chunk\ndata: {"text":"First"}\n\n' + 'event: chunk\ndata: {"text":"Second"}\n\n';
 
     const mockReadableStream = {
       getReader: () => ({
-        read: vi.fn()
+        read: vi
+          .fn()
           .mockResolvedValueOnce({ done: false, value: new TextEncoder().encode(sseData) })
           .mockResolvedValueOnce({ done: true }),
         releaseLock: vi.fn(),
@@ -330,8 +340,12 @@ describe('streamingClient', () => {
   it('should include session_id in request if provided', async () => {
     const mockReadableStream = {
       getReader: () => ({
-        read: vi.fn()
-          .mockResolvedValueOnce({ done: false, value: new TextEncoder().encode('event: start\ndata: {}\n\n') })
+        read: vi
+          .fn()
+          .mockResolvedValueOnce({
+            done: false,
+            value: new TextEncoder().encode('event: start\ndata: {}\n\n'),
+          })
           .mockResolvedValueOnce({ done: true }),
         releaseLock: vi.fn(),
       }),
@@ -355,7 +369,8 @@ describe('streamingClient', () => {
 
     const mockReadableStream = {
       getReader: () => ({
-        read: vi.fn()
+        read: vi
+          .fn()
           .mockResolvedValueOnce({ done: false, value: new TextEncoder().encode(sseData) })
           .mockResolvedValueOnce({ done: true }),
         releaseLock: vi.fn(),

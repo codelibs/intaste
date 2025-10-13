@@ -12,7 +12,7 @@
  * limitations under the License.
  */
 
-@import "tailwindcss";
+@import 'tailwindcss';
 
 @layer base {
   :root {

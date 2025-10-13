@@ -37,9 +37,10 @@ def ollama_client():
 async def test_intent_success(ollama_client):
     """Test successful intent extraction"""
     mock_response = {
-        "optimized_query": "company security policy latest version",
-        "intent_tags": ["search", "policy", "security"],
-        "confidence": 0.9,
+        "normalized_query": "company security policy latest version",
+        "filters": {"site": "example.com"},
+        "followups": ["How do I access it?", "When was it updated?"],
+        "ambiguity": "low",
     }
 
     with patch.object(
@@ -48,9 +49,10 @@ async def test_intent_success(ollama_client):
         result = await ollama_client.intent("What is the company security policy?")
 
         assert isinstance(result, IntentOutput)
-        assert result.optimized_query == "company security policy latest version"
-        assert "search" in result.intent_tags
-        assert result.confidence == 0.9
+        assert result.normalized_query == "company security policy latest version"
+        assert result.filters == {"site": "example.com"}
+        assert len(result.followups) == 2
+        assert result.ambiguity == "low"
 
 
 @pytest.mark.unit
@@ -61,8 +63,8 @@ async def test_intent_fallback_on_json_error(ollama_client):
         result = await ollama_client.intent("test query")
 
         # Should fallback to original query
-        assert result.optimized_query == "test query"
-        assert result.confidence == 0.5
+        assert result.normalized_query == "test query"
+        assert result.ambiguity == "medium"  # Fallback uses "medium" ambiguity
 
 
 @pytest.mark.unit
@@ -71,9 +73,10 @@ async def test_intent_retry_on_validation_error(ollama_client):
     """Test intent retry with lower temperature on validation error"""
     # First call returns invalid structure, second call succeeds
     valid_response = {
-        "optimized_query": "test query",
-        "intent_tags": ["search"],
-        "confidence": 0.8,
+        "normalized_query": "test query",
+        "filters": None,
+        "followups": ["Next question?"],
+        "ambiguity": "low",
     }
 
     with patch.object(
@@ -86,8 +89,8 @@ async def test_intent_retry_on_validation_error(ollama_client):
     ):
         result = await ollama_client.intent("test query")
 
-        assert result.optimized_query == "test query"
-        assert result.confidence == 0.8
+        assert result.normalized_query == "test query"
+        assert result.ambiguity == "low"
 
 
 @pytest.mark.unit
@@ -95,13 +98,11 @@ async def test_intent_retry_on_validation_error(ollama_client):
 async def test_compose_success(ollama_client):
     """Test successful answer composition"""
     mock_response = {
-        "answer_text": "The company security policy [1] requires strong passwords [2].",
-        "citations_used": [0, 1],
-        "suggested_followups": [
+        "text": "The company security policy [1] requires strong passwords [2].",
+        "suggested_questions": [
             "What are the password requirements?",
             "How often should passwords be changed?",
         ],
-        "confidence": 0.85,
     }
 
     with patch.object(
@@ -109,17 +110,16 @@ async def test_compose_success(ollama_client):
     ):
         result = await ollama_client.compose(
             query="What is the password policy?",
-            search_hits=[
-                {"title": "Policy 1", "snippet": "Strong passwords required"},
-                {"title": "Policy 2", "snippet": "Change every 90 days"},
+            normalized_query="password policy",
+            citations_data=[
+                {"title": "Policy 1", "snippet": "Strong passwords required", "url": "http://example.com/1"},
+                {"title": "Policy 2", "snippet": "Change every 90 days", "url": "http://example.com/2"},
             ],
         )
 
         assert isinstance(result, ComposeOutput)
-        assert "[1]" in result.answer_text
-        assert 0 in result.citations_used
-        assert len(result.suggested_followups) == 2
-        assert result.confidence == 0.85
+        assert "[1]" in result.text or "[2]" in result.text
+        assert len(result.suggested_questions) == 2
 
 
 @pytest.mark.unit
@@ -129,12 +129,13 @@ async def test_compose_fallback_on_error(ollama_client):
     with patch.object(ollama_client, "_complete", side_effect=Exception("LLM error")):
         result = await ollama_client.compose(
             query="test query",
-            search_hits=[{"title": "Doc", "snippet": "content"}],
+            normalized_query="test query",
+            citations_data=[{"title": "Doc", "snippet": "content", "url": "http://example.com"}],
         )
 
-        # Should return generic fallback
-        assert "found relevant documents" in result.answer_text.lower()
-        assert result.confidence == 0.3
+        # Should return generic fallback message
+        assert "results are displayed" in result.text.lower() or "review the sources" in result.text.lower()
+        assert result.suggested_questions == []
 
 
 @pytest.mark.unit
@@ -152,8 +153,7 @@ async def test_health_check_success(ollama_client):
         is_healthy, details = await ollama_client.health()
 
         assert is_healthy is True
-        assert details["model"] == "test-model"
-        assert "models_available" in details
+        assert details["status"] == "ok"
 
 
 @pytest.mark.unit

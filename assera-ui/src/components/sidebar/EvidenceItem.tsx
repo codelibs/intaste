@@ -23,12 +23,7 @@ interface EvidenceItemProps {
   showFull?: boolean;
 }
 
-export function EvidenceItem({
-  citation,
-  active,
-  onSelect,
-  showFull = false,
-}: EvidenceItemProps) {
+export function EvidenceItem({ citation, active, onSelect, showFull = false }: EvidenceItemProps) {
   return (
     <div
       onClick={onSelect}
@@ -44,9 +39,7 @@ export function EvidenceItem({
       className={cn(
         'rounded-lg border p-3 cursor-pointer transition-all',
         'hover:border-primary/50',
-        active
-          ? 'border-primary bg-primary/5'
-          : 'border-border bg-card'
+        active ? 'border-primary bg-primary/5' : 'border-border bg-card'
       )}
     >
       {/* Citation Number */}
@@ -54,9 +47,7 @@ export function EvidenceItem({
         <span
           className={cn(
             'flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium',
-            active
-              ? 'bg-primary text-primary-foreground'
-              : 'bg-muted text-muted-foreground'
+            active ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
           )}
         >
           {citation.id}
@@ -119,12 +110,7 @@ export function EvidenceItem({
           onClick={(e) => e.stopPropagation()}
         >
           Open in Fess
-          <svg
-            className="ml-1 w-3 h-3"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
+          <svg className="ml-1 w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path
               strokeLinecap="round"
               strokeLinejoin="round"

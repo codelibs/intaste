@@ -13,6 +13,7 @@
 """Tests for Fess search provider"""
 
 import pytest
+import httpx
 from unittest.mock import AsyncMock, patch
 from httpx import Response
 
@@ -86,7 +87,7 @@ async def test_search_success(fess_provider, mock_fess_response):
 @pytest.mark.unit
 @pytest.mark.asyncio
 async def test_search_with_filters(fess_provider, mock_fess_response):
-    """Test search with site and type filters"""
+    """Test search with site and mimetype filters"""
     with patch("httpx.AsyncClient.get") as mock_get:
         mock_response = AsyncMock(spec=Response)
         mock_response.status_code = 200
@@ -97,15 +98,17 @@ async def test_search_with_filters(fess_provider, mock_fess_response):
             q="test query",
             page=1,
             size=10,
-            site="example.com",
-            filetype="pdf",
+            filters={
+                "site": "example.com",
+                "mimetype": "application/pdf",
+            },
         )
         result = await fess_provider.search(query)
 
         # Verify the request was made with correct parameters
         call_args = mock_get.call_args
-        assert "site:example.com" in call_args[1]["params"]["q"]
-        assert "filetype:pdf" in call_args[1]["params"]["q"]
+        assert call_args[1]["params"]["site"] == "example.com"
+        assert call_args[1]["params"]["mimetype"] == "application/pdf"
 
 
 @pytest.mark.unit
@@ -162,11 +165,14 @@ async def test_search_http_error(fess_provider):
         mock_response = AsyncMock(spec=Response)
         mock_response.status_code = 500
         mock_response.text = "Internal Server Error"
+        mock_response.raise_for_status.side_effect = httpx.HTTPStatusError(
+            "500 Server Error", request=AsyncMock(), response=mock_response
+        )
         mock_get.return_value = mock_response
 
         query = SearchQuery(q="test query")
 
-        with pytest.raises(Exception):
+        with pytest.raises(RuntimeError, match="Fess returned 500"):
             await fess_provider.search(query)
 
 
@@ -188,8 +194,10 @@ async def test_search_timeout(fess_provider):
 async def test_health_check_success(fess_provider):
     """Test health check when Fess is healthy"""
     mock_health_response = {
-        "status": 0,
-        "record_count": 100,
+        "data": {
+            "status": "green",
+            "timed_out": False,
+        }
     }
 
     with patch("httpx.AsyncClient.get") as mock_get:
@@ -201,8 +209,8 @@ async def test_health_check_success(fess_provider):
         is_healthy, details = await fess_provider.health()
 
         assert is_healthy is True
-        assert details["status"] == "healthy"
-        assert "indexed_docs" in details
+        assert details["status"] == "green"
+        assert details["timed_out"] is False
 
 
 @pytest.mark.unit
@@ -225,7 +233,7 @@ async def test_normalize_hit_missing_fields(fess_provider):
         "title": "Test",
         "url": "http://example.com/test",
         "score": 0.9,
-        # Missing content_description, site, mimetype
+        # Missing content_description, digest, host, mimetype
     }
 
     with patch("httpx.AsyncClient.get") as mock_get:
@@ -242,8 +250,9 @@ async def test_normalize_hit_missing_fields(fess_provider):
         result = await fess_provider.search(query)
 
         assert len(result.hits) == 1
-        assert result.hits[0].snippet == ""
-        assert result.hits[0].metadata.get("site") == "unknown"
+        assert result.hits[0].snippet is None  # snippet is None when both content_description and digest are missing
+        assert result.hits[0].meta.get("site") is None  # host is missing
+        assert result.hits[0].meta.get("content_type") is None  # mimetype is missing
 
 
 @pytest.mark.unit

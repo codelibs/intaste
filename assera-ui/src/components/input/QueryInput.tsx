@@ -73,12 +73,8 @@ export function QueryInput({
         aria-label="Search query input"
       />
       <div className="mt-2 flex items-center justify-between text-xs text-muted-foreground">
-        <span>
-          Enter to send • Shift+Enter for new line
-        </span>
-        <span>
-          {value.length} / 4096
-        </span>
+        <span>Enter to send • Shift+Enter for new line</span>
+        <span>{value.length} / 4096</span>
       </div>
     </div>
   );

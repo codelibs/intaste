@@ -12,6 +12,11 @@
 
 """Pytest fixtures and configuration"""
 
+# Set required environment variables before importing app modules
+# This prevents ValidationError when Settings() is instantiated globally in app.main
+import os
+os.environ.setdefault("ASSERA_API_TOKEN", "test-token-32-characters-long-secure")
+
 import pytest
 from typing import AsyncGenerator
 from httpx import AsyncClient
@@ -52,7 +57,7 @@ def mock_search_provider() -> AsyncMock:
                 snippet="This is a <em>test</em> document snippet",
                 url="http://example.com/doc1",
                 score=0.95,
-                metadata={"site": "example.com", "type": "html"},
+                meta={"site": "example.com", "type": "html"},
             ),
             SearchHit(
                 id="doc2",
@@ -60,10 +65,12 @@ def mock_search_provider() -> AsyncMock:
                 snippet="Another test document with relevant information",
                 url="http://example.com/doc2",
                 score=0.85,
-                metadata={"site": "example.com", "type": "pdf"},
+                meta={"site": "example.com", "type": "pdf"},
             ),
         ],
         total=2,
+        page=1,
+        size=5,
         took_ms=150,
     )
 
@@ -80,23 +87,33 @@ def mock_llm_client() -> AsyncMock:
 
     # Default intent response
     client.intent.return_value = IntentOutput(
-        optimized_query="test query optimized",
-        intent_tags=["search", "information"],
-        confidence=0.9,
+        normalized_query="test query optimized",
+        filters=None,
+        followups=["What else?", "Tell me more"],
+        ambiguity="low",
     )
 
     # Default compose response
     client.compose.return_value = ComposeOutput(
-        answer_text="This is a test answer based on the search results [1][2].",
-        citations_used=[0, 1],
-        suggested_followups=["How can I learn more?", "What are the benefits?"],
-        confidence=0.85,
+        text="This is a test answer based on the search results [1][2].",
+        suggested_questions=["How can I learn more?", "What are the benefits?"],
     )
 
     # Default health response
     client.health.return_value = (True, {"status": "healthy", "model": "test-model"})
 
     return client
+
+
+@pytest.fixture
+def assist_service(mock_search_provider: AsyncMock, mock_llm_client: AsyncMock):
+    """Create AssistService with mocked dependencies"""
+    from app.services.assist import AssistService
+
+    return AssistService(
+        search_provider=mock_search_provider,
+        llm_client=mock_llm_client,
+    )
 
 
 @pytest.fixture
@@ -108,7 +125,8 @@ def client() -> TestClient:
 @pytest.fixture
 async def async_client() -> AsyncGenerator[AsyncClient, None]:
     """Create async HTTP client for testing"""
-    async with AsyncClient(app=app, base_url="http://test") as client:
+    from httpx import ASGITransport
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         yield client
 
 
@@ -138,6 +156,6 @@ def sample_feedback_request() -> dict:
     return {
         "session_id": "00000000-0000-0000-0000-000000000001",
         "turn": 1,
-        "rating": 5,
+        "rating": "up",
         "comment": "Very helpful response",
     }

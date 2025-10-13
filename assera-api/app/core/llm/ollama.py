@@ -16,7 +16,8 @@ Ollama LLM client implementation.
 
 import json
 import logging
-from typing import Any, AsyncGenerator
+from collections.abc import AsyncGenerator
+from typing import Any
 
 import httpx
 from pydantic import ValidationError
@@ -66,7 +67,9 @@ class OllamaClient:
         filters_json = json.dumps(filters or {}, ensure_ascii=False)
         actual_timeout = timeout_ms or self.timeout_ms
 
-        logger.debug(f"Intent extraction started: model={self.model}, timeout={actual_timeout}ms, temperature={self.temperature}")
+        logger.debug(
+            f"Intent extraction started: model={self.model}, timeout={actual_timeout}ms, temperature={self.temperature}"
+        )
         logger.debug(f"Intent input: query={query!r}, language={lang}, filters={filters}")
 
         user_prompt = INTENT_USER_TEMPLATE.format(
@@ -77,6 +80,7 @@ class OllamaClient:
 
         if logger.isEnabledFor(logging.DEBUG):
             from ..config import settings
+
             max_chars = settings.log_max_prompt_chars
             logger.debug(f"Intent system prompt: {INTENT_SYSTEM_PROMPT[:max_chars]}")
             logger.debug(f"Intent user prompt: {user_prompt[:max_chars]}")
@@ -90,12 +94,16 @@ class OllamaClient:
             logger.debug(f"Intent raw response: {json_output[:500]}")
 
             intent = IntentOutput.model_validate_json(json_output)
-            logger.debug(f"Intent parsed successfully: normalized_query={intent.normalized_query!r}, ambiguity={intent.ambiguity}, filters={intent.filters}, followups_count={len(intent.followups)}")
+            logger.debug(
+                f"Intent parsed successfully: normalized_query={intent.normalized_query!r}, ambiguity={intent.ambiguity}, filters={intent.filters}, followups_count={len(intent.followups)}"
+            )
             return intent
 
         except (json.JSONDecodeError, ValidationError) as e:
             logger.warning(f"Intent extraction failed, retrying with lower temperature: {e}")
-            logger.debug(f"Failed JSON output: {json_output if 'json_output' in locals() else 'N/A'}")
+            logger.debug(
+                f"Failed JSON output: {json_output if 'json_output' in locals() else 'N/A'}"
+            )
 
             # Retry with lower temperature
             try:
@@ -109,11 +117,15 @@ class OllamaClient:
                 logger.debug(f"Intent retry raw response: {json_output[:500]}")
 
                 intent = IntentOutput.model_validate_json(json_output)
-                logger.info(f"Intent extraction retry succeeded: normalized_query={intent.normalized_query!r}")
+                logger.info(
+                    f"Intent extraction retry succeeded: normalized_query={intent.normalized_query!r}"
+                )
                 return intent
             except Exception as retry_error:
                 logger.error(f"Intent extraction retry failed: {retry_error}")
-                logger.debug(f"Retry failed JSON output: {json_output if 'json_output' in locals() else 'N/A'}")
+                logger.debug(
+                    f"Retry failed JSON output: {json_output if 'json_output' in locals() else 'N/A'}"
+                )
 
                 # Fallback: use original query
                 fallback_intent = IntentOutput(
@@ -138,8 +150,12 @@ class OllamaClient:
         """
         actual_timeout = timeout_ms or self.timeout_ms
 
-        logger.debug(f"Compose started: model={self.model}, timeout={actual_timeout}ms, citations_count={len(citations_data)}")
-        logger.debug(f"Compose input: query={query!r}, normalized_query={normalized_query!r}, followups={followups}")
+        logger.debug(
+            f"Compose started: model={self.model}, timeout={actual_timeout}ms, citations_count={len(citations_data)}"
+        )
+        logger.debug(
+            f"Compose input: query={query!r}, normalized_query={normalized_query!r}, followups={followups}"
+        )
 
         # Prepare citations text
         citations_text = self._format_citations(citations_data)
@@ -155,6 +171,7 @@ class OllamaClient:
 
         if logger.isEnabledFor(logging.DEBUG):
             from ..config import settings
+
             max_chars = settings.log_max_prompt_chars
             logger.debug(f"Compose system prompt: {COMPOSE_SYSTEM_PROMPT[:max_chars]}")
             logger.debug(f"Compose user prompt: {user_prompt[:max_chars]}")
@@ -173,26 +190,35 @@ class OllamaClient:
             # 1. Double-encoded: "{\\"text\\":\\"...\\"}"  (starts/ends with quotes)
             # 2. Nested object: {"text": "{\"text\":\"...\"}", "suggested_questions": [...]}
             parsed_output = json_output
-            
+
             # First, try to parse to detect if text field contains JSON
             try:
                 temp_obj = json.loads(json_output)
                 if isinstance(temp_obj, dict) and "text" in temp_obj:
                     text_value = temp_obj["text"]
                     # Check if text field contains a JSON string
-                    if isinstance(text_value, str) and (text_value.startswith('{') or text_value.startswith('"')):
+                    if isinstance(text_value, str) and (
+                        text_value.startswith("{") or text_value.startswith('"')
+                    ):
                         try:
                             # Try to parse the text field as JSON
                             inner_json = json.loads(text_value)
                             if isinstance(inner_json, dict) and "text" in inner_json:
                                 # Text field contains a nested JSON object, extract the inner text
-                                logger.warning(f"Detected malformed LLM output with nested JSON in text field")
+                                logger.warning(
+                                    "Detected malformed LLM output with nested JSON in text field"
+                                )
                                 logger.debug(f"Malformed structure: {json_output[:200]}")
                                 # Reconstruct proper JSON using inner text and outer suggested_questions
-                                parsed_output = json.dumps({
-                                    "text": inner_json.get("text", ""),
-                                    "suggested_questions": temp_obj.get("suggested_questions", inner_json.get("suggested_questions", []))
-                                })
+                                parsed_output = json.dumps(
+                                    {
+                                        "text": inner_json.get("text", ""),
+                                        "suggested_questions": temp_obj.get(
+                                            "suggested_questions",
+                                            inner_json.get("suggested_questions", []),
+                                        ),
+                                    }
+                                )
                                 logger.debug(f"Reconstructed JSON: {parsed_output[:200]}")
                         except (json.JSONDecodeError, ValueError):
                             # text field is not valid JSON, might be double-encoded with quotes
@@ -203,20 +229,26 @@ class OllamaClient:
                     try:
                         decoded = json.loads(json_output)
                         if isinstance(decoded, str):
-                            logger.debug("Detected double-encoded JSON (quoted string), decoding...")
+                            logger.debug(
+                                "Detected double-encoded JSON (quoted string), decoding..."
+                            )
                             parsed_output = decoded
                     except (json.JSONDecodeError, ValueError):
                         pass
 
             compose = ComposeOutput.model_validate_json(parsed_output)
-            logger.debug(f"Compose parsed successfully: text_length={len(compose.text)}, suggested_questions_count={len(compose.suggested_questions)}")
+            logger.debug(
+                f"Compose parsed successfully: text_length={len(compose.text)}, suggested_questions_count={len(compose.suggested_questions)}"
+            )
             logger.debug(f"Compose answer text: {compose.text}")
             logger.debug(f"Compose suggested questions: {compose.suggested_questions}")
             return compose
 
-        except (json.JSONDecodeError, ValidationError) as e:
+        except Exception as e:
             logger.error(f"Compose failed: {e}")
-            logger.debug(f"Failed JSON output: {json_output if 'json_output' in locals() else 'N/A'}")
+            logger.debug(
+                f"Failed JSON output: {json_output if 'json_output' in locals() else 'N/A'}"
+            )
 
             # Fallback: return generic message
             fallback_compose = ComposeOutput(
@@ -264,8 +296,12 @@ class OllamaClient:
             "keep_alive": "60m",  # Keep model loaded for 60 minutes
         }
 
-        logger.debug(f"Ollama API call: url={url}, model={self.model}, temperature={actual_temperature}, top_p={self.top_p}, timeout={timeout_ms}ms")
-        logger.debug(f"Ollama payload messages: system_length={len(system)}, user_length={len(user)}")
+        logger.debug(
+            f"Ollama API call: url={url}, model={self.model}, temperature={actual_temperature}, top_p={self.top_p}, timeout={timeout_ms}ms"
+        )
+        logger.debug(
+            f"Ollama payload messages: system_length={len(system)}, user_length={len(user)}"
+        )
 
         start_time = time.time()
         try:
@@ -276,19 +312,25 @@ class OllamaClient:
             )
             elapsed_ms = int((time.time() - start_time) * 1000)
 
-            logger.debug(f"Ollama response received: status={response.status_code}, elapsed={elapsed_ms}ms")
+            logger.debug(
+                f"Ollama response received: status={response.status_code}, elapsed={elapsed_ms}ms"
+            )
 
             response.raise_for_status()
-            data = response.json()
+            data: dict[str, Any] = response.json()
 
             if logger.isEnabledFor(logging.DEBUG):
                 from ..config import settings
+
                 max_chars = settings.log_max_response_chars
                 logger.debug(f"Ollama response data keys: {list(data.keys())}")
                 logger.debug(f"Ollama response (first {max_chars} chars): {str(data)[:max_chars]}")
 
-            content = data.get("message", {}).get("content", "")
-            logger.debug(f"Ollama content extracted: length={len(content)}, content_preview={content[:200]}")
+            message_data: dict[str, Any] = data.get("message", {})
+            content: str = message_data.get("content", "")
+            logger.debug(
+                f"Ollama content extracted: length={len(content)}, content_preview={content[:200]}"
+            )
 
             return content.strip()
 
@@ -296,12 +338,14 @@ class OllamaClient:
             elapsed_ms = int((time.time() - start_time) * 1000)
             logger.error(f"Ollama timeout after {elapsed_ms}ms: {e}")
             logger.debug(f"Timeout config: requested={timeout_ms}ms, elapsed={elapsed_ms}ms")
-            raise TimeoutError(f"LLM timeout after {timeout_ms}ms")
+            raise TimeoutError(f"LLM timeout after {timeout_ms}ms") from e
         except httpx.HTTPStatusError as e:
             elapsed_ms = int((time.time() - start_time) * 1000)
-            logger.error(f"Ollama HTTP error: status={e.response.status_code}, elapsed={elapsed_ms}ms")
+            logger.error(
+                f"Ollama HTTP error: status={e.response.status_code}, elapsed={elapsed_ms}ms"
+            )
             logger.debug(f"Ollama error response: {e.response.text[:500]}")
-            raise RuntimeError(f"Ollama returned {e.response.status_code}")
+            raise RuntimeError(f"Ollama returned {e.response.status_code}") from e
         except Exception as e:
             elapsed_ms = int((time.time() - start_time) * 1000)
             logger.error(f"Ollama error after {elapsed_ms}ms: {e}")
@@ -335,8 +379,12 @@ class OllamaClient:
 
         actual_timeout = timeout_ms or self.timeout_ms
 
-        logger.debug(f"Compose stream started: model={self.model}, timeout={actual_timeout}ms, citations_count={len(citations_data)}")
-        logger.debug(f"Compose stream input: query={query!r}, normalized_query={normalized_query!r}")
+        logger.debug(
+            f"Compose stream started: model={self.model}, timeout={actual_timeout}ms, citations_count={len(citations_data)}"
+        )
+        logger.debug(
+            f"Compose stream input: query={query!r}, normalized_query={normalized_query!r}"
+        )
 
         # Prepare citations text
         citations_text = self._format_citations(citations_data)
@@ -352,6 +400,7 @@ class OllamaClient:
 
         if logger.isEnabledFor(logging.DEBUG):
             from ..config import settings
+
             max_chars = settings.log_max_prompt_chars
             logger.debug(f"Compose stream user prompt: {user_prompt[:max_chars]}")
 
@@ -395,12 +444,16 @@ class OllamaClient:
                                 if content:
                                     chunk_count += 1
                                     total_chars += len(content)
-                                    logger.debug(f"Compose stream chunk #{chunk_count}: length={len(content)}, total_chars={total_chars}, content={content!r}")
+                                    logger.debug(
+                                        f"Compose stream chunk #{chunk_count}: length={len(content)}, total_chars={total_chars}, content={content!r}"
+                                    )
                                     yield content
                             # Check if done
                             if data.get("done", False):
                                 elapsed_ms = int((time.time() - start_time) * 1000)
-                                logger.debug(f"Compose stream completed: chunks={chunk_count}, total_chars={total_chars}, elapsed={elapsed_ms}ms")
+                                logger.debug(
+                                    f"Compose stream completed: chunks={chunk_count}, total_chars={total_chars}, elapsed={elapsed_ms}ms"
+                                )
                                 logger.debug(f"Compose stream done data: {data}")
                                 break
                         except json.JSONDecodeError:
@@ -410,17 +463,28 @@ class OllamaClient:
         except httpx.TimeoutException as e:
             elapsed_ms = int((time.time() - start_time) * 1000)
             logger.error(f"Ollama streaming timeout after {elapsed_ms}ms: {e}")
-            logger.debug(f"Stream progress before timeout: chunks={chunk_count}, total_chars={total_chars}")
+            logger.debug(
+                f"Stream progress before timeout: chunks={chunk_count}, total_chars={total_chars}"
+            )
             yield "[Error: Response timeout]"
         except httpx.HTTPStatusError as e:
             elapsed_ms = int((time.time() - start_time) * 1000)
-            logger.error(f"Ollama streaming HTTP error: status={e.response.status_code}, elapsed={elapsed_ms}ms")
-            logger.debug(f"Stream error response: {e.response.text[:500] if hasattr(e.response, 'text') else 'N/A'}")
+            logger.error(
+                f"Ollama streaming HTTP error: status={e.response.status_code}, elapsed={elapsed_ms}ms"
+            )
+            try:
+                # Try to read response text, but don't fail if it's a streaming response
+                error_text = e.response.text[:500] if hasattr(e.response, "text") else "N/A"
+                logger.debug(f"Stream error response: {error_text}")
+            except Exception:
+                logger.debug("Stream error response: Unable to read response body")
             yield f"[Error: HTTP {e.response.status_code}]"
         except Exception as e:
             elapsed_ms = int((time.time() - start_time) * 1000)
             logger.error(f"Ollama streaming error after {elapsed_ms}ms: {e}")
-            logger.debug(f"Stream error details: type={type(e).__name__}, chunks_received={chunk_count}")
+            logger.debug(
+                f"Stream error details: type={type(e).__name__}, chunks_received={chunk_count}"
+            )
             yield "[Error: Streaming failed]"
 
     async def close(self) -> None:

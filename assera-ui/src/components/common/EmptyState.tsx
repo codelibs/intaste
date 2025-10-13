@@ -31,14 +31,10 @@ export function EmptyState({
     <div className={cn('text-center py-12', className)}>
       <div className="text-6xl mb-4">🔍</div>
       <h3 className="text-lg font-medium text-foreground mb-2">{title}</h3>
-      <p className="text-sm text-muted-foreground mb-6 max-w-md mx-auto">
-        {message}
-      </p>
+      <p className="text-sm text-muted-foreground mb-6 max-w-md mx-auto">{message}</p>
       {suggestions && suggestions.length > 0 && (
         <div className="max-w-md mx-auto">
-          <p className="text-xs font-medium text-muted-foreground mb-3">
-            Suggestions:
-          </p>
+          <p className="text-xs font-medium text-muted-foreground mb-3">Suggestions:</p>
           <ul className="space-y-2 text-sm text-muted-foreground">
             {suggestions.map((suggestion, idx) => (
               <li key={idx}>• {suggestion}</li>

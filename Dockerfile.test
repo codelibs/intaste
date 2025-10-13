@@ -1,0 +1,44 @@
+# Copyright (c) 2025 CodeLibs
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#     http://www.apache.org/licenses/LICENSE-2.0
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# Lightweight test runner - dependencies installed via volume mounts at runtime
+FROM python:3.11-slim
+
+# Build arguments for user configuration
+ARG UID=1000
+ARG GID=1000
+
+# Install Node.js and system dependencies
+RUN apt-get update && apt-get install -y \
+    curl \
+    git \
+    && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get install -y nodejs \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create non-root user with configurable UID/GID
+# Handle case where GID already exists (like 100 for 'users' group)
+RUN groupadd -g ${GID} assera 2>/dev/null || groupmod -n assera $(getent group ${GID} | cut -d: -f1) && \
+    useradd -m -u ${UID} -g ${GID} assera
+
+# Install uv
+RUN pip install --no-cache-dir uv
+
+WORKDIR /workspace
+
+# Set proper ownership for workspace
+RUN chown -R assera:assera /workspace
+
+USER assera
+
+# Dependencies will be installed via volume mounts and entrypoint script
+CMD ["bash"]

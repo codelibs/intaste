@@ -14,11 +14,11 @@
 Factory for creating LLM client instances based on configuration.
 """
 
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 from .base import LLMClient
 from .ollama import OllamaClient
-
 
 # Type alias for client constructor
 ClientConstructor = Callable[[dict[str, Any]], LLMClient]
@@ -62,9 +62,7 @@ class LLMClientFactory:
         """
         if client_name not in cls._registry:
             available = ", ".join(cls._registry.keys())
-            raise ValueError(
-                f"Unknown LLM client: {client_name}. Available clients: {available}"
-            )
+            raise ValueError(f"Unknown LLM client: {client_name}. Available clients: {available}")
 
         constructor = cls._registry[client_name]
         return constructor(config)
@@ -92,7 +90,7 @@ class LLMClientFactory:
 
 
 # Register built-in clients
-def _create_ollama_client(config: dict[str, Any]) -> OllamaClient:
+def _create_ollama_client(config: dict[str, Any]) -> LLMClient:
     """Create OllamaClient from config dict."""
     return OllamaClient(
         base_url=config["base_url"],

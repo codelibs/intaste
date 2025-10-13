@@ -10,13 +10,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-.PHONY: help up down logs ps restart pull-model clean dev test lint format up-gpu dev-gpu gpu-check
+.PHONY: help up down logs ps restart pull-model clean dev test lint format up-gpu dev-gpu gpu-check \
+        test-docker test-docker-api test-docker-ui lint-docker-api lint-docker-ui \
+        test-docker-build test-docker-clean check-docker init-test-cache
 
 help: ## Show this help message
 	@echo 'Usage: make [target]'
 	@echo ''
 	@echo 'Available targets:'
-	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
+	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 
 up: ## Start all services (production mode)
 	docker compose up -d --build
@@ -85,6 +87,13 @@ init-dirs: ## Initialize data directories with correct permissions (Linux)
 	@sudo chown -R $$(id -u):$$(id -g) data/ollama || sudo chown -R 1000:1000 data/ollama
 	@echo "✓ Data directories initialized"
 
+init-test-cache: ## Initialize test cache directories with correct permissions
+	@echo "Creating test cache directories..."
+	@mkdir -p .cache/uv assera-ui/node_modules
+	@echo "Setting permissions..."
+	@chown -R $$(id -u):$$(id -g) .cache assera-ui/node_modules 2>/dev/null || true
+	@echo "✓ Test cache directories initialized"
+
 up-gpu: ## Start all services with explicit GPU support (production mode)
 	docker compose -f compose.yaml -f compose.gpu.yaml up -d --build
 
@@ -95,3 +104,74 @@ gpu-check: ## Check if Ollama is using GPU
 	@echo "Checking Ollama GPU status..."
 	@echo "Looking for 'Nvidia GPU detected' message in logs:"
 	@docker logs assera-ollama 2>&1 | grep -i "gpu\|cuda" || echo "No GPU-related messages found (may be using CPU)"
+
+## Docker-based Testing (Isolated Environment)
+
+test-docker: ## Run all tests in Docker (API + UI)
+	@echo "=========================================="
+	@echo "Running all tests in Docker..."
+	@echo "=========================================="
+	@UID=$$(id -u) GID=$$(id -g) docker compose -f compose.test.yaml run --rm test-runner
+	@echo ""
+	@echo "✓ All tests completed"
+
+test-docker-api: ## Run API tests in Docker
+	@echo "=========================================="
+	@echo "Running API tests in Docker..."
+	@echo "=========================================="
+	@UID=$$(id -u) GID=$$(id -g) docker compose -f compose.test.yaml run --rm test-api
+	@echo ""
+	@echo "✓ API tests completed"
+
+test-docker-ui: ## Run UI tests in Docker
+	@echo "=========================================="
+	@echo "Running UI tests in Docker..."
+	@echo "=========================================="
+	@UID=$$(id -u) GID=$$(id -g) docker compose -f compose.test.yaml run --rm test-ui
+	@echo ""
+	@echo "✓ UI tests completed"
+
+lint-docker-api: ## Run API lint checks in Docker
+	@echo "=========================================="
+	@echo "Running API lint checks in Docker..."
+	@echo "=========================================="
+	@UID=$$(id -u) GID=$$(id -g) docker compose -f compose.test.yaml run --rm lint-api
+	@echo ""
+	@echo "✓ API lint completed"
+
+lint-docker-ui: ## Run UI lint checks in Docker
+	@echo "=========================================="
+	@echo "Running UI lint checks in Docker..."
+	@echo "=========================================="
+	@UID=$$(id -u) GID=$$(id -g) docker compose -f compose.test.yaml run --rm lint-ui
+	@echo ""
+	@echo "✓ UI lint completed"
+
+test-docker-build: ## Build Docker test image
+	@echo "Building Docker test image..."
+	@UID=$$(id -u) GID=$$(id -g) docker compose -f compose.test.yaml build
+	@echo "✓ Build completed"
+
+test-docker-clean: ## Clean up Docker test containers and volumes
+	@echo "Cleaning up Docker test environment..."
+	@docker compose -f compose.test.yaml down -v
+	@docker rmi assera-test-runner 2>/dev/null || true
+	@echo "✓ Cleanup completed"
+
+check-docker: ## Run all checks (lint + test) in Docker
+	@echo "=========================================="
+	@echo "Running all checks in Docker..."
+	@echo "=========================================="
+	@echo ""
+	@echo "=== Step 1/3: API Lint ==="
+	@$(MAKE) --no-print-directory lint-docker-api
+	@echo ""
+	@echo "=== Step 2/3: UI Lint ==="
+	@$(MAKE) --no-print-directory lint-docker-ui
+	@echo ""
+	@echo "=== Step 3/3: All Tests ==="
+	@$(MAKE) --no-print-directory test-docker
+	@echo ""
+	@echo "=========================================="
+	@echo "✓ All checks passed successfully!"
+	@echo "=========================================="

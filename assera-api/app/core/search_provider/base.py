@@ -70,3 +70,7 @@ class SearchProvider(Protocol):
     async def health(self) -> tuple[bool, dict[str, Any]]:
         """Check provider health status."""
         ...
+
+    async def close(self) -> None:
+        """Close the search provider and release resources."""
+        ...

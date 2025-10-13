@@ -55,9 +55,7 @@ class Settings(BaseSettings):
     assera_llm_top_p: float = Field(default=0.9, validation_alias="ASSERA_LLM_TOP_P")
 
     # Rate Limiting
-    rate_limit_per_minute: int = Field(
-        default=60, validation_alias="ASSERA_RATE_LIMIT_PER_MINUTE"
-    )
+    rate_limit_per_minute: int = Field(default=60, validation_alias="ASSERA_RATE_LIMIT_PER_MINUTE")
 
     # Request Timeout Budget (ms)
     req_timeout_ms: int = Field(default=5000, validation_alias="REQ_TIMEOUT_MS")
@@ -76,7 +74,7 @@ class Settings(BaseSettings):
 
     @field_validator("cors_origins", mode="before")
     @classmethod
-    def parse_cors_origins(cls, v):
+    def parse_cors_origins(cls, v: str | list[str]) -> list[str]:
         """
         Parse CORS_ORIGINS from environment variable.
         Accepts both comma-separated strings and JSON arrays.

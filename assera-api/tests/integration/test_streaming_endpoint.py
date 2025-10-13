@@ -20,7 +20,8 @@ from unittest.mock import AsyncMock
 import pytest
 from httpx import AsyncClient
 
-from app.models.api import IntentOutput, SearchOutput
+from app.core.llm.base import IntentOutput
+from app.core.search_provider.base import SearchResult, SearchHit
 
 
 @pytest.mark.integration
@@ -29,29 +30,32 @@ async def test_stream_query_success(
     async_client: AsyncClient,
     mock_search_provider: AsyncMock,
     mock_llm_client: AsyncMock,
+    assist_service,
     auth_headers: dict,
 ):
     """Test successful streaming query."""
     # Mock intent extraction
     mock_llm_client.intent.return_value = IntentOutput(
-        optimized_query="test query",
-        keywords=["test"],
-        fallback=False,
-        reason=None,
+        normalized_query="test query",
+        filters=None,
+        followups=["How can I test more?"],
+        ambiguity="low",
     )
 
     # Mock search results
-    mock_search_provider.search.return_value = SearchOutput(
-        citations=[
-            {
-                "id": 1,
-                "title": "Test Document",
-                "url": "https://example.com/doc",
-                "content": "Test content",
-                "score": 0.95,
-            }
+    mock_search_provider.search.return_value = SearchResult(
+        total=1,
+        hits=[
+            SearchHit(
+                id="1",
+                title="Test Document",
+                url="https://example.com/doc",
+                snippet="Test content",
+                score=0.95,
+            )
         ],
-        metadata={"total": 1, "page": 1},
+        page=1,
+        size=5,
     )
 
     # Mock streaming response
@@ -63,15 +67,18 @@ async def test_stream_query_success(
 
     mock_llm_client.compose_stream = mock_compose_stream
 
-    # Make streaming request
-    response = await async_client.post(
-        "/api/v1/assist/query/stream",
-        json={"query": "What is a test?"},
-        headers={
-            **auth_headers,
-            "Accept": "text/event-stream",
-        },
-    )
+    # Patch the assist service
+    from unittest.mock import patch
+    with patch("app.main.assist_service", assist_service):
+        # Make streaming request
+        response = await async_client.post(
+            "/api/v1/assist/query/stream",
+            json={"query": "What is a test?"},
+            headers={
+                **auth_headers,
+                "Accept": "text/event-stream",
+            },
+        )
 
     assert response.status_code == 200
     assert response.headers["content-type"] == "text/event-stream; charset=utf-8"
@@ -115,13 +122,19 @@ async def test_stream_query_success(
 
 @pytest.mark.integration
 @pytest.mark.asyncio
-async def test_stream_query_no_auth(async_client: AsyncClient):
+async def test_stream_query_no_auth(
+    async_client: AsyncClient,
+    assist_service,
+):
     """Test streaming query without authentication."""
-    response = await async_client.post(
-        "/api/v1/assist/query/stream",
-        json={"query": "test"},
-        headers={"Accept": "text/event-stream"},
-    )
+    from unittest.mock import patch
+
+    with patch("app.main.assist_service", assist_service):
+        response = await async_client.post(
+            "/api/v1/assist/query/stream",
+            json={"query": "test"},
+            headers={"Accept": "text/event-stream"},
+        )
 
     assert response.status_code == 401
 
@@ -130,14 +143,18 @@ async def test_stream_query_no_auth(async_client: AsyncClient):
 @pytest.mark.asyncio
 async def test_stream_query_empty_query(
     async_client: AsyncClient,
+    assist_service,
     auth_headers: dict,
 ):
     """Test streaming query with empty query string."""
-    response = await async_client.post(
-        "/api/v1/assist/query/stream",
-        json={"query": ""},
-        headers={**auth_headers, "Accept": "text/event-stream"},
-    )
+    from unittest.mock import patch
+
+    with patch("app.main.assist_service", assist_service):
+        response = await async_client.post(
+            "/api/v1/assist/query/stream",
+            json={"query": ""},
+            headers={**auth_headers, "Accept": "text/event-stream"},
+        )
 
     assert response.status_code == 422  # Validation error
 
@@ -148,38 +165,51 @@ async def test_stream_query_intent_fallback(
     async_client: AsyncClient,
     mock_search_provider: AsyncMock,
     mock_llm_client: AsyncMock,
+    assist_service,
     auth_headers: dict,
 ):
-    """Test streaming with intent extraction fallback."""
-    # Mock intent fallback
-    mock_llm_client.intent.return_value = IntentOutput(
-        optimized_query="fallback query",
-        keywords=["fallback"],
-        fallback=True,
-        reason="JSON parsing error",
-    )
+    """Test streaming query with intent extraction fallback."""
+    # Mock intent extraction to fail
+    mock_llm_client.intent.side_effect = Exception("Intent failed")
 
     # Mock search results
-    mock_search_provider.search.return_value = SearchOutput(
-        citations=[],
-        metadata={"total": 0, "page": 1},
+    mock_search_provider.search.return_value = SearchResult(
+        total=1,
+        hits=[
+            SearchHit(
+                id="1",
+                title="Fallback Document",
+                url="https://example.com/fallback",
+                snippet="Fallback content",
+                score=0.8,
+            )
+        ],
+        page=1,
+        size=5,
     )
 
     # Mock streaming response
     async def mock_compose_stream(*args, **kwargs):
-        yield "Fallback response"
+        yield "Fallback answer."
 
     mock_llm_client.compose_stream = mock_compose_stream
 
-    response = await async_client.post(
-        "/api/v1/assist/query/stream",
-        json={"query": "test"},
-        headers={**auth_headers, "Accept": "text/event-stream"},
-    )
+    # Patch the assist service
+    from unittest.mock import patch
+    with patch("app.main.assist_service", assist_service):
+        # Make streaming request
+        response = await async_client.post(
+            "/api/v1/assist/query/stream",
+            json={"query": "test fallback"},
+            headers={
+                **auth_headers,
+                "Accept": "text/event-stream",
+            },
+        )
 
     assert response.status_code == 200
 
-    # Parse events
+    # Parse SSE events
     events = []
     for line in response.text.strip().split("\n\n"):
         if line:
@@ -196,9 +226,16 @@ async def test_stream_query_intent_fallback(
             if event_type and event_data:
                 events.append({"event": event_type, "data": event_data})
 
-    # Verify intent event contains fallback info
-    intent_event = next(e for e in events if e["event"] == "intent")
-    assert intent_event["data"]["fallback"] is True
+    # Intent event should NOT be present due to fallback
+    event_types = [e["event"] for e in events]
+    assert "start" in event_types
+    assert "intent" not in event_types  # Intent failed, so no intent event
+    assert "citations" in event_types
+    assert "complete" in event_types
+
+    # Verify complete event has empty followups due to intent failure
+    complete_event = next(e for e in events if e["event"] == "complete")
+    assert complete_event["data"]["answer"]["suggested_questions"] == []
 
 
 @pytest.mark.integration
@@ -207,39 +244,60 @@ async def test_stream_query_with_session(
     async_client: AsyncClient,
     mock_search_provider: AsyncMock,
     mock_llm_client: AsyncMock,
+    assist_service,
     auth_headers: dict,
 ):
-    """Test streaming query with session continuation."""
-    # Mock responses
+    """Test streaming query with session context."""
+    session_id = "00000000-0000-0000-0000-000000000001"
+
+    # Mock intent extraction
     mock_llm_client.intent.return_value = IntentOutput(
-        optimized_query="test",
-        keywords=["test"],
-        fallback=False,
-        reason=None,
+        normalized_query="session query",
+        filters=None,
+        followups=["What's next?"],
+        ambiguity="low",
     )
 
-    mock_search_provider.search.return_value = SearchOutput(
-        citations=[],
-        metadata={"total": 0, "page": 1},
+    # Mock search results
+    mock_search_provider.search.return_value = SearchResult(
+        total=1,
+        hits=[
+            SearchHit(
+                id="1",
+                title="Session Document",
+                url="https://example.com/session",
+                snippet="Session content",
+                score=0.9,
+            )
+        ],
+        page=1,
+        size=5,
     )
 
+    # Mock streaming response
     async def mock_compose_stream(*args, **kwargs):
-        yield "Response"
+        yield "Session answer."
 
     mock_llm_client.compose_stream = mock_compose_stream
 
-    # First request
-    response1 = await async_client.post(
-        "/api/v1/assist/query/stream",
-        json={"query": "first question"},
-        headers={**auth_headers, "Accept": "text/event-stream"},
-    )
+    # Patch the assist service
+    from unittest.mock import patch
+    with patch("app.main.assist_service", assist_service):
+        # Make streaming request
+        response = await async_client.post(
+            "/api/v1/assist/query/stream",
+            json={"query": "test with session", "session_id": session_id},
+            headers={
+                **auth_headers,
+                "Accept": "text/event-stream",
+            },
+        )
 
-    assert response1.status_code == 200
+    assert response.status_code == 200
 
-    # Extract session ID from complete event
+    # Parse SSE events
     events = []
-    for line in response1.text.strip().split("\n\n"):
+    for line in response.text.strip().split("\n\n"):
         if line:
             lines = line.split("\n")
             event_type = None
@@ -254,18 +312,9 @@ async def test_stream_query_with_session(
             if event_type and event_data:
                 events.append({"event": event_type, "data": event_data})
 
+    # Verify complete event contains session info
     complete_event = next(e for e in events if e["event"] == "complete")
-    session_id = complete_event["data"]["session"]["id"]
-    assert session_id is not None
-
-    # Second request with session
-    response2 = await async_client.post(
-        "/api/v1/assist/query/stream",
-        json={"query": "follow-up question", "session_id": session_id},
-        headers={**auth_headers, "Accept": "text/event-stream"},
-    )
-
-    assert response2.status_code == 200
+    assert complete_event["data"]["session"]["id"] == session_id
 
 
 @pytest.mark.integration
@@ -274,17 +323,43 @@ async def test_stream_query_error_handling(
     async_client: AsyncClient,
     mock_search_provider: AsyncMock,
     mock_llm_client: AsyncMock,
+    assist_service,
     auth_headers: dict,
 ):
-    """Test streaming query with service error."""
+    """Test streaming query with intent extraction error (fallback behavior)."""
     # Mock intent to raise error
     mock_llm_client.intent.side_effect = Exception("Service error")
 
-    response = await async_client.post(
-        "/api/v1/assist/query/stream",
-        json={"query": "test"},
-        headers={**auth_headers, "Accept": "text/event-stream"},
+    # Mock search results for fallback
+    mock_search_provider.search.return_value = SearchResult(
+        total=1,
+        hits=[
+            SearchHit(
+                id="1",
+                title="Fallback Document",
+                url="https://example.com/fallback",
+                snippet="Fallback content",
+                score=0.8,
+            )
+        ],
+        page=1,
+        size=5,
     )
+
+    # Mock streaming response for fallback
+    async def mock_compose_stream(*args, **kwargs):
+        yield "Fallback answer."
+
+    mock_llm_client.compose_stream = mock_compose_stream
+
+    from unittest.mock import patch
+
+    with patch("app.main.assist_service", assist_service):
+        response = await async_client.post(
+            "/api/v1/assist/query/stream",
+            json={"query": "test"},
+            headers={**auth_headers, "Accept": "text/event-stream"},
+        )
 
     assert response.status_code == 200
 
@@ -305,7 +380,14 @@ async def test_stream_query_error_handling(
             if event_type and event_data:
                 events.append({"event": event_type, "data": event_data})
 
-    # Should include error event
-    assert any(e["event"] == "error" for e in events)
-    error_event = next(e for e in events if e["event"] == "error")
-    assert "message" in error_event["data"]
+    # Intent extraction error should not produce error event, but use fallback
+    event_types = [e["event"] for e in events]
+    assert "start" in event_types
+    assert "intent" not in event_types  # Intent failed, so no intent event
+    assert "citations" in event_types  # Fallback continues with search
+    assert "complete" in event_types
+    assert "error" not in event_types  # No error event - fallback used instead
+
+    # Verify complete event has empty followups due to intent failure
+    complete_event = next(e for e in events if e["event"] == "complete")
+    assert complete_event["data"]["answer"]["suggested_questions"] == []

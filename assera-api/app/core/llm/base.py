@@ -14,6 +14,7 @@
 Base protocol and models for LLM clients.
 """
 
+from collections.abc import AsyncGenerator
 from typing import Any, Literal, Protocol
 
 from pydantic import BaseModel, Field
@@ -65,6 +66,21 @@ class LLMClient(Protocol):
         """Compose brief answer from search results."""
         ...
 
+    def compose_stream(
+        self,
+        query: str,
+        normalized_query: str,
+        citations_data: list[dict[str, Any]],
+        followups: list[str] | None = None,
+        timeout_ms: int | None = None,
+    ) -> AsyncGenerator[str, None]:
+        """Compose answer with streaming response. Yields text chunks."""
+        ...
+
     async def health(self) -> tuple[bool, dict[str, Any]]:
         """Check LLM client health status."""
+        ...
+
+    async def close(self) -> None:
+        """Close the LLM client and release resources."""
         ...

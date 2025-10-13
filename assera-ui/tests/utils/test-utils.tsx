@@ -16,10 +16,7 @@ import { render, RenderOptions } from '@testing-library/react';
 /**
  * Custom render function for testing with providers
  */
-export function renderWithProviders(
-  ui: ReactElement,
-  options?: Omit<RenderOptions, 'wrapper'>
-) {
+export function renderWithProviders(ui: ReactElement, options?: Omit<RenderOptions, 'wrapper'>) {
   return render(ui, { ...options });
 }
 
@@ -40,14 +37,14 @@ export function mockApiResponse(data: any, status = 200) {
  */
 export function createMockCitation(id: string = '1') {
   return {
-    id,
+    id: parseInt(id, 10),
     title: `Test Document ${id}`,
     snippet: 'This is a test document snippet',
     url: `http://example.com/doc${id}`,
     score: 0.9,
-    metadata: {
+    meta: {
       site: 'example.com',
-      type: 'html',
+      content_type: 'html',
     },
   };
 }
@@ -58,7 +55,7 @@ export function createMockCitation(id: string = '1') {
 export function createMockAnswer() {
   return {
     text: 'This is a test answer [1][2]',
-    suggested_followups: ['What else?', 'Tell me more'],
+    suggested_questions: ['What else?', 'Tell me more'],
   };
 }
 
@@ -70,14 +67,12 @@ export function createMockQueryResponse() {
     answer: createMockAnswer(),
     citations: [createMockCitation('1'), createMockCitation('2')],
     session: {
-      session_id: 'test-session-id',
+      id: 'test-session-id',
       turn: 1,
-      created_at: new Date().toISOString(),
     },
     timings: {
-      intent_ms: 100,
+      llm_ms: 100,
       search_ms: 150,
-      compose_ms: 80,
       total_ms: 330,
     },
   };

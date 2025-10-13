@@ -1,0 +1,132 @@
+# Copyright (c) 2025 CodeLibs
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#     http://www.apache.org/licenses/LICENSE-2.0
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# Docker Compose file for running tests
+services:
+  test-runner:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+      args:
+        UID: ${UID:-1000}
+        GID: ${GID:-1000}
+    volumes:
+      - ./assera-api:/workspace/assera-api
+      - ./assera-ui:/workspace/assera-ui
+      # Cache directories for faster rebuilds
+      - ./.cache/uv:/home/assera/.cache/uv
+      - ./assera-ui/node_modules:/workspace/assera-ui/node_modules
+    environment:
+      - CI=true
+      - ASSERA_API_TOKEN=test-token-for-ci-32-characters-long
+      - ASSERA_DEFAULT_MODEL=gpt-oss
+      - FESS_BASE_URL=http://fess:8080
+      - OLLAMA_BASE_URL=http://ollama:11434
+    command: >
+      bash -c "
+      echo '=== Installing API Dependencies ===' &&
+      cd /workspace/assera-api && uv sync --all-extras &&
+      echo '=== Running API Tests ===' &&
+      uv run pytest --cov=app --cov-report=term-missing &&
+      echo '=== Installing UI Dependencies ===' &&
+      cd /workspace/assera-ui && npm ci --legacy-peer-deps &&
+      echo '=== Running UI Tests ===' &&
+      npm test -- --run
+      "
+
+  # API unit tests only
+  test-api:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+      args:
+        UID: ${UID:-1000}
+        GID: ${GID:-1000}
+    volumes:
+      - ./assera-api:/workspace/assera-api
+      - ./.cache/uv:/home/assera/.cache/uv
+    environment:
+      - CI=true
+      - ASSERA_API_TOKEN=test-token-for-ci-32-characters-long
+      - ASSERA_DEFAULT_MODEL=gpt-oss
+      - FESS_BASE_URL=http://fess:8080
+      - OLLAMA_BASE_URL=http://ollama:11434
+    command: >
+      bash -c "
+      cd /workspace/assera-api &&
+      uv sync --all-extras &&
+      uv run pytest --cov=app --cov-report=term-missing
+      "
+
+  # UI unit tests only
+  test-ui:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+      args:
+        UID: ${UID:-1000}
+        GID: ${GID:-1000}
+    volumes:
+      - ./assera-ui:/workspace/assera-ui
+      - ./assera-ui/node_modules:/workspace/assera-ui/node_modules
+    environment:
+      - CI=true
+    command: >
+      bash -c "
+      cd /workspace/assera-ui &&
+      npm ci --legacy-peer-deps &&
+      npm test -- --run
+      "
+
+  # Lint checks
+  lint-api:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+      args:
+        UID: ${UID:-1000}
+        GID: ${GID:-1000}
+    volumes:
+      - ./assera-api:/workspace/assera-api
+      - ./.cache/uv:/home/assera/.cache/uv
+    environment:
+      - ASSERA_API_TOKEN=test-token-for-ci-32-characters-long
+      - ASSERA_DEFAULT_MODEL=gpt-oss
+      - FESS_BASE_URL=http://fess:8080
+      - OLLAMA_BASE_URL=http://ollama:11434
+    command: >
+      bash -c "
+      cd /workspace/assera-api &&
+      uv sync --all-extras &&
+      uv run ruff check app/ &&
+      uv run black --check app/ &&
+      uv run mypy app/
+      "
+
+  lint-ui:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+      args:
+        UID: ${UID:-1000}
+        GID: ${GID:-1000}
+    volumes:
+      - ./assera-ui:/workspace/assera-ui
+      - ./assera-ui/node_modules:/workspace/assera-ui/node_modules
+    command: >
+      bash -c "
+      cd /workspace/assera-ui &&
+      npm ci --legacy-peer-deps &&
+      npm run lint &&
+      npm run type-check
+      "
+

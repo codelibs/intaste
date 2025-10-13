@@ -17,9 +17,10 @@ Streaming assist endpoints using Server-Sent Events (SSE).
 import json
 import logging
 import time
-from typing import AsyncGenerator
+from collections.abc import AsyncGenerator
+from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
 
 from app.core.config import settings
@@ -36,10 +37,12 @@ def get_assist_service() -> AssistService:
     """Dependency to get AssistService instance."""
     from app.main import assist_service
 
+    if assist_service is None:
+        raise RuntimeError("AssistService not initialized")
     return assist_service
 
 
-async def format_sse(event: str, data: dict) -> str:
+async def format_sse(event: str, data: dict[str, Any]) -> str:
     """Format Server-Sent Event message."""
     return f"event: {event}\ndata: {json.dumps(data)}\n\n"
 
@@ -66,16 +69,19 @@ async def stream_assist_response(
     # Safely get options
     request_options = request.options or {}
 
-    logger.debug(f"[{session_id}] Streaming query started: query={request.query!r}, options={request_options}")
+    logger.debug(
+        f"[{session_id}] Streaming query started: query={request.query!r}, options={request_options}"
+    )
 
     try:
         # Send start event
         event_count += 1
-        start_event = await format_sse("start", {
-            "message": "Processing query...",
-            "query": request.query
-        })
-        logger.debug(f"[{session_id}] Streaming event #{event_count}: type=start, size={len(start_event)} bytes")
+        start_event = await format_sse(
+            "start", {"message": "Processing query...", "query": request.query}
+        )
+        logger.debug(
+            f"[{session_id}] Streaming event #{event_count}: type=start, size={len(start_event)} bytes"
+        )
         yield start_event
 
         # 1. Intent extraction (non-streaming)
@@ -86,8 +92,7 @@ async def stream_assist_response(
         normalized_query = request.query.strip()
 
         try:
-            from app.main import llm_client
-            intent_result = await llm_client.intent(
+            intent_result = await service.llm_client.intent(
                 query=request.query,
                 language=request_options.get("language"),
                 filters=request_options.get("filters"),
@@ -95,15 +100,22 @@ async def stream_assist_response(
             )
             intent_ms = int((time.time() - intent_start) * 1000)
 
-            logger.debug(f"[{session_id}] Intent extraction completed: {intent_ms}ms, normalized_query={intent_result.normalized_query!r}")
+            logger.debug(
+                f"[{session_id}] Intent extraction completed: {intent_ms}ms, normalized_query={intent_result.normalized_query!r}"
+            )
 
             event_count += 1
-            intent_event = await format_sse("intent", {
-                "normalized_query": intent_result.normalized_query,
-                "filters": intent_result.filters,
-                "timing_ms": intent_ms,
-            })
-            logger.debug(f"[{session_id}] Streaming event #{event_count}: type=intent, size={len(intent_event)} bytes")
+            intent_event = await format_sse(
+                "intent",
+                {
+                    "normalized_query": intent_result.normalized_query,
+                    "filters": intent_result.filters,
+                    "timing_ms": intent_ms,
+                },
+            )
+            logger.debug(
+                f"[{session_id}] Streaming event #{event_count}: type=intent, size={len(intent_event)} bytes"
+            )
             yield intent_event
 
         except Exception as e:
@@ -116,11 +128,14 @@ async def stream_assist_response(
         # 2. Search (non-streaming)
         logger.debug(f"[{session_id}] Starting search for streaming")
         search_start = time.time()
-        from app.main import search_provider
         from app.core.search_provider.base import SearchQuery
 
         # Extract filters safely
-        filters = intent_result.filters if (intent_result and intent_result.filters) else request_options.get("filters", {})
+        filters = (
+            intent_result.filters
+            if (intent_result and intent_result.filters)
+            else request_options.get("filters", {})
+        )
         if filters is None:
             filters = {}
 
@@ -134,10 +149,12 @@ async def stream_assist_response(
 
         logger.debug(f"[{session_id}] SearchQuery: {search_query}")
 
-        search_result = await search_provider.search(search_query)
+        search_result = await service.search_provider.search(search_query)
         search_ms = int((time.time() - search_start) * 1000)
 
-        logger.debug(f"[{session_id}] Search completed: {search_ms}ms, hits={len(search_result.hits)}, total={search_result.total}")
+        logger.debug(
+            f"[{session_id}] Search completed: {search_ms}ms, hits={len(search_result.hits)}, total={search_result.total}"
+        )
 
         # Format citations
         citations = [
@@ -155,12 +172,17 @@ async def stream_assist_response(
         logger.debug(f"[{session_id}] Formatted {len(citations)} citations")
 
         event_count += 1
-        citations_event = await format_sse("citations", {
-            "count": len(citations),
-            "citations": citations,
-            "timing_ms": search_ms,
-        })
-        logger.debug(f"[{session_id}] Streaming event #{event_count}: type=citations, size={len(citations_event)} bytes")
+        citations_event = await format_sse(
+            "citations",
+            {
+                "count": len(citations),
+                "citations": citations,
+                "timing_ms": search_ms,
+            },
+        )
+        logger.debug(
+            f"[{session_id}] Streaming event #{event_count}: type=citations, size={len(citations_event)} bytes"
+        )
         yield citations_event
 
         # 3. Compose answer with streaming
@@ -182,36 +204,43 @@ async def stream_assist_response(
         # Stream answer chunks
         full_text = ""
         chunk_num = 0
-        async for chunk in llm_client.compose_stream(
+        compose_stream = service.llm_client.compose_stream(
             query=request.query,
             normalized_query=intent_result.normalized_query if intent_result else normalized_query,
             citations_data=citations_data,
             followups=intent_result.followups if intent_result else None,
             timeout_ms=settings.compose_timeout_ms,
-        ):
+        )
+        async for chunk in compose_stream:
             full_text += chunk
             chunk_num += 1
             event_count += 1
 
             chunk_event = await format_sse("chunk", {"text": chunk})
-            logger.debug(f"[{session_id}] Streaming event #{event_count}: type=chunk, chunk_num={chunk_num}, chunk_length={len(chunk)}, total_length={len(full_text)}")
+            logger.debug(
+                f"[{session_id}] Streaming event #{event_count}: type=chunk, chunk_num={chunk_num}, chunk_length={len(chunk)}, total_length={len(full_text)}"
+            )
             yield chunk_event
 
         compose_ms = int((time.time() - compose_start) * 1000)
         total_ms = int((time.time() - start_time) * 1000)
 
-        logger.debug(f"[{session_id}] Composition streaming completed: chunks={chunk_num}, total_chars={len(full_text)}, compose_ms={compose_ms}ms")
+        logger.debug(
+            f"[{session_id}] Composition streaming completed: chunks={chunk_num}, total_chars={len(full_text)}, compose_ms={compose_ms}ms"
+        )
         logger.debug(f"[{session_id}] Full text preview: {full_text[:200]}")
 
         # Validate and clean full_text to handle malformed LLM output
         # LLM might return JSON-encoded text instead of plain text
         cleaned_text = full_text
-        if full_text.startswith('{'):
+        if full_text.startswith("{"):
             try:
                 # Try to parse as JSON
                 parsed = json.loads(full_text)
                 if isinstance(parsed, dict) and "text" in parsed:
-                    logger.warning(f"[{session_id}] Detected malformed streaming output with JSON structure")
+                    logger.warning(
+                        f"[{session_id}] Detected malformed streaming output with JSON structure"
+                    )
                     logger.debug(f"[{session_id}] Malformed full_text: {full_text[:200]}")
                     # Extract the actual text from the JSON
                     cleaned_text = parsed.get("text", full_text)
@@ -220,42 +249,58 @@ async def stream_assist_response(
                 # Not JSON, use as-is
                 pass
 
-        logger.debug(f"[{session_id}] Total timings: intent={intent_ms if intent_result else 0}ms, search={search_ms}ms, compose={compose_ms}ms, total={total_ms}ms")
+        logger.debug(
+            f"[{session_id}] Total timings: intent={intent_ms if intent_result else 0}ms, search={search_ms}ms, compose={compose_ms}ms, total={total_ms}ms"
+        )
 
         # Send complete event with summary
         event_count += 1
-        complete_event = await format_sse("complete", {
-            "answer": {
-                "text": cleaned_text,
-                "suggested_questions": intent_result.followups if intent_result else [],
+        complete_event = await format_sse(
+            "complete",
+            {
+                "answer": {
+                    "text": cleaned_text,
+                    "suggested_questions": intent_result.followups if intent_result else [],
+                },
+                "citations": citations,
+                "session": {
+                    "id": session_id,
+                    "turn": 1,
+                },
+                "timings": {
+                    "intent_ms": intent_ms if intent_result else 0,
+                    "search_ms": search_ms,
+                    "compose_ms": compose_ms,
+                    "total_ms": total_ms,
+                },
             },
-            "citations": citations,
-            "session": {
-                "id": session_id,
-                "turn": 1,
-            },
-            "timings": {
-                "intent_ms": intent_ms if intent_result else 0,
-                "search_ms": search_ms,
-                "compose_ms": compose_ms,
-                "total_ms": total_ms,
-            },
-        })
-        logger.debug(f"[{session_id}] Streaming event #{event_count}: type=complete, size={len(complete_event)} bytes")
-        logger.info(f"[{session_id}] Streaming completed: total_events={event_count}, total_ms={total_ms}ms, citations={len(citations)}")
+        )
+        logger.debug(
+            f"[{session_id}] Streaming event #{event_count}: type=complete, size={len(complete_event)} bytes"
+        )
+        logger.info(
+            f"[{session_id}] Streaming completed: total_events={event_count}, total_ms={total_ms}ms, citations={len(citations)}"
+        )
         yield complete_event
 
     except Exception as e:
         elapsed_ms = int((time.time() - start_time) * 1000)
         logger.error(f"[{session_id}] Streaming error after {elapsed_ms}ms: {e}", exc_info=True)
-        logger.debug(f"[{session_id}] Streaming error context: query={request.query!r}, events_sent={event_count}, error_type={type(e).__name__}")
+        logger.debug(
+            f"[{session_id}] Streaming error context: query={request.query!r}, events_sent={event_count}, error_type={type(e).__name__}"
+        )
 
         event_count += 1
-        error_event = await format_sse("error", {
-            "message": str(e),
-            "type": type(e).__name__,
-        })
-        logger.debug(f"[{session_id}] Streaming event #{event_count}: type=error, size={len(error_event)} bytes")
+        error_event = await format_sse(
+            "error",
+            {
+                "message": str(e),
+                "type": type(e).__name__,
+            },
+        )
+        logger.debug(
+            f"[{session_id}] Streaming event #{event_count}: type=error, size={len(error_event)} bytes"
+        )
         yield error_event
 
 
@@ -264,7 +309,7 @@ async def stream_query(
     request: AssistQueryRequest,
     service: AssistService = Depends(get_assist_service),
     _token: str = Depends(verify_api_token),
-):
+) -> StreamingResponse:
     """
     Stream assisted search results using Server-Sent Events.
 

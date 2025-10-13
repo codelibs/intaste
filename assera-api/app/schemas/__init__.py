@@ -25,7 +25,7 @@ from .assist import (
     Timings,
 )
 from .common import ErrorResponse, HealthResponse
-from .models import ModelsResponse, ModelSelectRequest, ModelSelectResponse
+from .models import ModelSelectRequest, ModelSelectResponse, ModelsResponse
 
 __all__ = [
     "Answer",

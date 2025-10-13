@@ -68,7 +68,9 @@ async def query(
     session_id = request.session_id or "new"
 
     logger.debug(f"[{session_id}] POST /assist/query started")
-    logger.debug(f"[{session_id}] Request: query={request.query!r}, session_id={request.session_id}, options={request.options}")
+    logger.debug(
+        f"[{session_id}] Request: query={request.query!r}, session_id={request.session_id}, options={request.options}"
+    )
 
     try:
         response = await assist_service.query(
@@ -78,15 +80,21 @@ async def query(
         )
 
         elapsed_ms = int((time.time() - start_time) * 1000)
-        logger.info(f"[{response.session.id}:{response.session.turn}] POST /assist/query completed: {elapsed_ms}ms, citations={len(response.citations)}")
-        logger.debug(f"[{response.session.id}:{response.session.turn}] Response: timings={response.timings}, notice={response.notice}")
+        logger.info(
+            f"[{response.session.id}:{response.session.turn}] POST /assist/query completed: {elapsed_ms}ms, citations={len(response.citations)}"
+        )
+        logger.debug(
+            f"[{response.session.id}:{response.session.turn}] Response: timings={response.timings}, notice={response.notice}"
+        )
 
         return response
 
     except TimeoutError as e:
         elapsed_ms = int((time.time() - start_time) * 1000)
         logger.error(f"[{session_id}] Query timeout after {elapsed_ms}ms: {e}")
-        logger.debug(f"[{session_id}] Timeout details: query={request.query!r}, options={request.options}")
+        logger.debug(
+            f"[{session_id}] Timeout details: query={request.query!r}, options={request.options}"
+        )
         raise HTTPException(
             status_code=status.HTTP_504_GATEWAY_TIMEOUT,
             detail={
@@ -94,11 +102,13 @@ async def query(
                 "message": "Request timeout exceeded",
                 "details": {"hint": "Try a simpler query or increase timeout"},
             },
-        )
+        ) from e
     except RuntimeError as e:
         elapsed_ms = int((time.time() - start_time) * 1000)
         logger.error(f"[{session_id}] Upstream error after {elapsed_ms}ms: {e}")
-        logger.debug(f"[{session_id}] Upstream error details: query={request.query!r}, error_type={type(e).__name__}")
+        logger.debug(
+            f"[{session_id}] Upstream error details: query={request.query!r}, error_type={type(e).__name__}"
+        )
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail={
@@ -106,18 +116,23 @@ async def query(
                 "message": "Search provider error",
                 "details": {"error": str(e)},
             },
-        )
+        ) from e
     except Exception as e:
         elapsed_ms = int((time.time() - start_time) * 1000)
-        logger.error(f"[{session_id}] Unexpected error in /assist/query after {elapsed_ms}ms: {e}", exc_info=True)
-        logger.debug(f"[{session_id}] Error context: query={request.query!r}, session_id={request.session_id}, error_type={type(e).__name__}")
+        logger.error(
+            f"[{session_id}] Unexpected error in /assist/query after {elapsed_ms}ms: {e}",
+            exc_info=True,
+        )
+        logger.debug(
+            f"[{session_id}] Error context: query={request.query!r}, session_id={request.session_id}, error_type={type(e).__name__}"
+        )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail={
                 "code": "INTERNAL",
                 "message": "Internal server error",
             },
-        )
+        ) from e
 
 
 @router.post(
@@ -142,7 +157,9 @@ async def feedback(request: FeedbackRequest) -> dict[str, str]:
         f"Feedback received: session={request.session_id}, "
         f"turn={request.turn}, rating={request.rating}"
     )
-    comment_value = repr(request.comment) if hasattr(request, 'comment') else 'N/A'
-    logger.debug(f"Feedback details: session={request.session_id}, turn={request.turn}, rating={request.rating}, comment={comment_value}")
+    comment_value = repr(request.comment) if hasattr(request, "comment") else "N/A"
+    logger.debug(
+        f"Feedback details: session={request.session_id}, turn={request.turn}, rating={request.rating}, comment={comment_value}"
+    )
     # TODO: Store in database or metrics system
     return {"status": "accepted"}
