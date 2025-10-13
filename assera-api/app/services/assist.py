@@ -89,7 +89,7 @@ class AssistService:
         # Step 1: Intent extraction
         logger.info(f"[{session_id}:{turn}] Starting intent extraction")
         logger.debug(
-            f"[{session_id}:{turn}] Intent input: query={query!r}, language={options.get('language', 'ja')}, filters={options.get('filters')}, timeout={settings.intent_timeout_ms}ms"
+            f"[{session_id}:{turn}] Intent input: query={query!r}, language={options.get('language', 'en')}, filters={options.get('filters')}, timeout={settings.intent_timeout_ms}ms"
         )
 
         intent_start = time.time()
@@ -97,7 +97,7 @@ class AssistService:
         try:
             intent = await self.llm_client.intent(
                 query=query,
-                language=options.get("language", "ja"),
+                language=options.get("language", "en"),
                 filters=options.get("filters"),
                 timeout_ms=settings.intent_timeout_ms,
             )
@@ -145,7 +145,7 @@ class AssistService:
                 q=intent.normalized_query,
                 page=1,
                 size=options.get("max_results", 5),
-                language=options.get("language", "ja"),
+                language=options.get("language", "en"),
                 filters=intent.filters or options.get("filters"),
                 timeout_ms=settings.search_timeout_ms,
             )

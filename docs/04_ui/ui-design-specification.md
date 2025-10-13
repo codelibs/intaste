@@ -240,7 +240,7 @@ export const assistApi = (query: string) =>
 ## 8. i18n Design
 
 - **Library:** `i18next` + `react-i18next`
-- **Languages:** `ja` default, `en` included
+- **Languages:** `en` default, `ja` included
 - **Resources:** `public/locales/{ja,en}/common.json`
 - **Switching:** Update `useUIStore.lang` with LangThemeSwitch, reflect in `<html lang>`
 - **Date/Number:** `Intl.DateTimeFormat` / `Intl.RelativeTimeFormat`

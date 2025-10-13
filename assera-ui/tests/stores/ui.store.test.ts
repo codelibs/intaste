@@ -21,7 +21,7 @@ describe('UIStore', () => {
 
     // Reset store to initial state
     useUIStore.setState({
-      lang: 'ja',
+      lang: 'en',
       theme: 'system',
       apiToken: null,
       sidebarOpen: true,
@@ -32,7 +32,7 @@ describe('UIStore', () => {
   it('initializes with default state', () => {
     const state = useUIStore.getState();
 
-    expect(state.lang).toBe('ja');
+    expect(state.lang).toBe('en');
     expect(state.theme).toBe('system');
     expect(state.apiToken).toBe(null);
     expect(state.sidebarOpen).toBe(true);

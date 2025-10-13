@@ -96,7 +96,7 @@ Answer: {
   "session_id": "3f3a3f49-0e0b-44a1-ae05-8c1b2e4a2c43", // optional
   "options": {
     "max_results": 10,
-    "language": "ja-JP",
+    "language": "en",
     "filters": { "department": "Security" },
     "timeout_ms": 5000
   }
@@ -243,7 +243,7 @@ Answer: {
     ```json
     {
       "normalized_query": "security policy revision date latest",
-      "filters": {"language": "ja"},
+      "filters": {"language": "en"},
       "followups": ["What's the summary of revisions?", "What's the difference from old version?"]
     }
     ```
