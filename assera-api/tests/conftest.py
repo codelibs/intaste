@@ -151,7 +151,12 @@ def mock_search_agent(mock_search_provider: AsyncMock, mock_llm_client: AsyncMoc
         if hasattr(mock_llm_client.intent, 'side_effect') and mock_llm_client.intent.side_effect is not None:
             # If side_effect is set (e.g., exception), use fallback
             try:
-                intent_output = await mock_llm_client.intent(query=query)
+                from app.core.llm.prompts import INTENT_SYSTEM_PROMPT, INTENT_USER_TEMPLATE
+                intent_output = await mock_llm_client.intent(
+                    query=query,
+                    system_prompt=INTENT_SYSTEM_PROMPT,
+                    user_template=INTENT_USER_TEMPLATE,
+                )
             except Exception:
                 # Fallback intent
                 intent_output = IntentOutput(

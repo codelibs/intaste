@@ -18,6 +18,7 @@ import json
 
 from app.core.llm.ollama import OllamaClient
 from app.core.llm.base import IntentOutput, ComposeOutput
+from app.core.llm.prompts import INTENT_SYSTEM_PROMPT, INTENT_USER_TEMPLATE
 
 
 @pytest.fixture
@@ -46,7 +47,11 @@ async def test_intent_success(ollama_client):
     with patch.object(
         ollama_client, "_complete", return_value=json.dumps(mock_response)
     ):
-        result = await ollama_client.intent("What is the company security policy?")
+        result = await ollama_client.intent(
+            "What is the company security policy?",
+            INTENT_SYSTEM_PROMPT,
+            INTENT_USER_TEMPLATE,
+        )
 
         assert isinstance(result, IntentOutput)
         assert result.normalized_query == "company security policy latest version"
@@ -60,7 +65,11 @@ async def test_intent_success(ollama_client):
 async def test_intent_fallback_on_json_error(ollama_client):
     """Test intent fallback when JSON parsing fails"""
     with patch.object(ollama_client, "_complete", return_value="invalid json"):
-        result = await ollama_client.intent("test query")
+        result = await ollama_client.intent(
+            "test query",
+            INTENT_SYSTEM_PROMPT,
+            INTENT_USER_TEMPLATE,
+        )
 
         # Should fallback to original query
         assert result.normalized_query == "test query"
@@ -87,7 +96,11 @@ async def test_intent_retry_on_validation_error(ollama_client):
             json.dumps(valid_response),  # Retry succeeds
         ],
     ):
-        result = await ollama_client.intent("test query")
+        result = await ollama_client.intent(
+            "test query",
+            INTENT_SYSTEM_PROMPT,
+            INTENT_USER_TEMPLATE,
+        )
 
         assert result.normalized_query == "test query"
         assert result.ambiguity == "low"

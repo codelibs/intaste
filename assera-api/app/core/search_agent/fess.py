@@ -22,6 +22,7 @@ from collections.abc import AsyncGenerator
 from typing import Any
 
 from ..llm.base import IntentOutput, LLMClient
+from ..llm.prompts import INTENT_SYSTEM_PROMPT, INTENT_USER_TEMPLATE
 from ..search_provider.base import SearchProvider, SearchQuery
 from .base import (
     BaseSearchAgent,
@@ -89,6 +90,8 @@ class FessSearchAgent(BaseSearchAgent):
         try:
             intent = await self.llm_client.intent(
                 query=query,
+                system_prompt=INTENT_SYSTEM_PROMPT,
+                user_template=INTENT_USER_TEMPLATE,
                 language=options.get("language", "en"),
                 filters=options.get("filters"),
                 timeout_ms=options.get("intent_timeout_ms", self.intent_timeout_ms),

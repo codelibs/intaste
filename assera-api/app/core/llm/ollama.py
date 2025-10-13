@@ -26,8 +26,6 @@ from .base import ComposeOutput, IntentOutput
 from .prompts import (
     COMPOSE_SYSTEM_PROMPT,
     COMPOSE_USER_TEMPLATE,
-    INTENT_SYSTEM_PROMPT,
-    INTENT_USER_TEMPLATE,
 )
 
 logger = logging.getLogger(__name__)
@@ -56,6 +54,8 @@ class OllamaClient:
     async def intent(
         self,
         query: str,
+        system_prompt: str,
+        user_template: str,
         language: str | None = None,
         filters: dict[str, Any] | None = None,
         timeout_ms: int | None = None,
@@ -72,7 +72,7 @@ class OllamaClient:
         )
         logger.debug(f"Intent input: query={query!r}, language={lang}, filters={filters}")
 
-        user_prompt = INTENT_USER_TEMPLATE.format(
+        user_prompt = user_template.format(
             query=query,
             language=lang,
             filters_json=filters_json,
@@ -82,12 +82,12 @@ class OllamaClient:
             from ..config import settings
 
             max_chars = settings.log_max_prompt_chars
-            logger.debug(f"Intent system prompt: {INTENT_SYSTEM_PROMPT[:max_chars]}")
+            logger.debug(f"Intent system prompt: {system_prompt[:max_chars]}")
             logger.debug(f"Intent user prompt: {user_prompt[:max_chars]}")
 
         try:
             json_output = await self._complete(
-                system=INTENT_SYSTEM_PROMPT,
+                system=system_prompt,
                 user=user_prompt,
                 timeout_ms=actual_timeout,
             )
@@ -109,7 +109,7 @@ class OllamaClient:
             try:
                 logger.debug("Retrying intent extraction with temperature=0.1")
                 json_output = await self._complete(
-                    system=INTENT_SYSTEM_PROMPT,
+                    system=system_prompt,
                     user=user_prompt + "\n\nREMINDER: Output ONLY valid JSON.",
                     timeout_ms=actual_timeout,
                     temperature=0.1,
