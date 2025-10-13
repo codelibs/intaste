@@ -50,7 +50,7 @@ async def format_sse(event: str, data: dict[str, Any]) -> str:
 async def stream_assist_response(
     request: AssistQueryRequest,
     service: AssistService,
-) -> AsyncGenerator[str, None]:
+) -> AsyncGenerator[str]:
     """
     Generate streaming response for assist query.
 

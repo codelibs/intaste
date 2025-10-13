@@ -72,7 +72,7 @@ Assera's development objectives are threefold:
 | Layer | Technology | Primary Role |
 |--------|------|----------|
 | Frontend | Next.js 15 / React 19 / shadcn/ui / TailwindCSS / Zustand / i18next | UI/UX, state management, internationalization |
-| API Server | FastAPI / Python 3.11 / Pydantic / Uvicorn | REST API provision, search & LLM integration |
+| API Server | FastAPI / Python 3.13 / Pydantic / Uvicorn | REST API provision, search & LLM integration |
 | Search Layer | Fess 14.x (OpenAPI) | Search result provision, metadata management |
 | LLM Layer | Ollama (gpt-oss, etc.) | Answer generation, inference processing |
 | Deployment | Docker Compose / GitHub Actions | Startup order management, CI/CD, OSS distribution |

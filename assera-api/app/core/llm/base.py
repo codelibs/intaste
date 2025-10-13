@@ -75,7 +75,7 @@ class LLMClient(Protocol):
         citations_data: list[dict[str, Any]],
         followups: list[str] | None = None,
         timeout_ms: int | None = None,
-    ) -> AsyncGenerator[str, None]:
+    ) -> AsyncGenerator[str]:
         """Compose answer with streaming response. Yields text chunks."""
         ...
 
