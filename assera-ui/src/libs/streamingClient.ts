@@ -65,7 +65,7 @@ export async function queryAssistStream(
       'Content-Type': 'application/json',
       'X-Assera-Token': token,
       'X-Request-ID': generateUUID(),
-      'Accept': 'text/event-stream',
+      Accept: 'text/event-stream',
     },
     body: JSON.stringify(body),
   });
@@ -76,12 +76,7 @@ export async function queryAssistStream(
       message: `HTTP ${response.status}`,
     }));
 
-    throw new APIError(
-      response.status,
-      error.code,
-      error.message,
-      error.details
-    );
+    throw new APIError(response.status, error.code, error.message, error.details);
   }
 
   if (!response.body) {

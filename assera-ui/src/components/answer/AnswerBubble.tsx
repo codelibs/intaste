@@ -51,12 +51,7 @@ export function AnswerBubble({
   };
 
   return (
-    <div
-      className={cn(
-        'rounded-lg border bg-card p-4 shadow-sm',
-        className
-      )}
-    >
+    <div className={cn('rounded-lg border bg-card p-4 shadow-sm', className)}>
       {fallbackNotice && (
         <div className="mb-3 flex items-start gap-2 rounded-md bg-yellow-50 dark:bg-yellow-900/20 p-2 text-xs text-yellow-800 dark:text-yellow-200">
           <span className="text-base">⚠️</span>
@@ -65,22 +60,15 @@ export function AnswerBubble({
       )}
 
       <div className="prose prose-sm dark:prose-invert max-w-none">
-        <p className="text-foreground leading-relaxed">
-          {renderTextWithCitations(answer.text)}
-        </p>
+        <p className="text-foreground leading-relaxed">{renderTextWithCitations(answer.text)}</p>
       </div>
 
       {answer.suggested_questions && answer.suggested_questions.length > 0 && (
         <div className="mt-4 pt-4 border-t">
-          <p className="text-xs font-medium text-muted-foreground mb-2">
-            Related questions:
-          </p>
+          <p className="text-xs font-medium text-muted-foreground mb-2">Related questions:</p>
           <div className="flex flex-wrap gap-2">
             {answer.suggested_questions.map((question, idx) => (
-              <span
-                key={idx}
-                className="text-xs text-muted-foreground"
-              >
+              <span key={idx} className="text-xs text-muted-foreground">
                 • {question}
               </span>
             ))}

@@ -71,9 +71,7 @@ export default function HomePage() {
       {/* Header */}
       <header className="border-b bg-card">
         <div className="container mx-auto px-4 py-3 flex items-center justify-between">
-          <h1 className="text-xl font-bold text-foreground">
-            Assera
-          </h1>
+          <h1 className="text-xl font-bold text-foreground">Assera</h1>
           <div className="flex items-center gap-4">
             {/* Streaming Toggle */}
             <label className="flex items-center gap-2 text-sm cursor-pointer">
@@ -155,9 +153,7 @@ export default function HomePage() {
             {loading && (
               <div className="text-center py-12">
                 <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent"></div>
-                <p className="mt-4 text-sm text-muted-foreground">
-                  Searching...
-                </p>
+                <p className="mt-4 text-sm text-muted-foreground">Searching...</p>
               </div>
             )}
 
@@ -166,11 +162,7 @@ export default function HomePage() {
               <EmptyState
                 title="No sources found"
                 message="Try different keywords or check your search criteria."
-                suggestions={[
-                  'Use broader search terms',
-                  'Check spelling',
-                  'Try related keywords',
-                ]}
+                suggestions={['Use broader search terms', 'Check spelling', 'Try related keywords']}
               />
             )}
           </div>

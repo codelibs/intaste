@@ -95,55 +95,50 @@ export const useAssistStore = create<AssistState>((set, _get) => ({
       const sessionId = useSessionStore.getState().id || undefined;
       let accumulatedText = '';
 
-      await queryAssistStream(
-        query,
-        options,
-        sessionId,
-        {
-          onStart: (data) => {
-            console.log('Stream started:', data);
-          },
-          onIntent: (data) => {
-            console.log('Intent extracted:', data);
-          },
-          onCitations: (data) => {
-            set({
-              citations: data.citations,
-              selectedCitationId: data.citations[0]?.id ?? null,
-            });
-          },
-          onChunk: (data) => {
-            accumulatedText += data.text;
-            set({
-              answer: {
-                text: accumulatedText,
-                suggested_questions: [],
-              },
-            });
-          },
-          onComplete: (data) => {
-            // Update session
-            useSessionStore.getState().set({
-              id: data.session?.id || sessionId,
-              turn: data.session?.turn || 1,
-            });
+      await queryAssistStream(query, options, sessionId, {
+        onStart: (data) => {
+          console.log('Stream started:', data);
+        },
+        onIntent: (data) => {
+          console.log('Intent extracted:', data);
+        },
+        onCitations: (data) => {
+          set({
+            citations: data.citations,
+            selectedCitationId: data.citations[0]?.id ?? null,
+          });
+        },
+        onChunk: (data) => {
+          accumulatedText += data.text;
+          set({
+            answer: {
+              text: accumulatedText,
+              suggested_questions: [],
+            },
+          });
+        },
+        onComplete: (data) => {
+          // Update session
+          useSessionStore.getState().set({
+            id: data.session?.id || sessionId,
+            turn: data.session?.turn || 1,
+          });
 
-            set({
-              answer: data.answer,
-              timings: data.timings,
-              loading: false,
-              streaming: false,
-            });
-          },
-          onError: (data) => {
-            set({
-              error: data.message || 'Streaming failed',
-              loading: false,
-              streaming: false,
-            });
-          },
-        }
-      );
+          set({
+            answer: data.answer,
+            timings: data.timings,
+            loading: false,
+            streaming: false,
+          });
+        },
+        onError: (data) => {
+          set({
+            error: data.message || 'Streaming failed',
+            loading: false,
+            streaming: false,
+          });
+        },
+      });
     } catch (error: any) {
       set({
         error: error.message || 'Streaming failed',

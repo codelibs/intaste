@@ -17,10 +17,13 @@ test.describe('Security - XSS Prevention', () => {
     // Set API token in localStorage
     await page.goto('/');
     await page.evaluate(() => {
-      localStorage.setItem('assera-ui-storage', JSON.stringify({
-        state: { apiToken: 'test-token-123' },
-        version: 0,
-      }));
+      localStorage.setItem(
+        'assera-ui-storage',
+        JSON.stringify({
+          state: { apiToken: 'test-token-123' },
+          version: 0,
+        })
+      );
     });
   });
 
@@ -186,7 +189,8 @@ test.describe('Security - XSS Prevention', () => {
             {
               id: 1,
               title: 'Safe Link Document',
-              snippet: 'Visit <a href="https://docs.example.com/guide">our documentation</a> for details',
+              snippet:
+                'Visit <a href="https://docs.example.com/guide">our documentation</a> for details',
               url: 'https://example.com/doc4',
               score: 0.88,
             },
@@ -231,7 +235,8 @@ test.describe('Security - XSS Prevention', () => {
             {
               id: 1,
               title: 'Mixed Content Document',
-              snippet: '<strong>Important</strong><script>alert("xss")</script> text with <em>emphasis</em>',
+              snippet:
+                '<strong>Important</strong><script>alert("xss")</script> text with <em>emphasis</em>',
               url: 'https://example.com/doc5',
               score: 0.92,
             },

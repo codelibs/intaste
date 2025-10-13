@@ -43,8 +43,7 @@ class APIError extends Error {
  * Generic API fetch wrapper with authentication and error handling.
  */
 async function apiFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
-  const token =
-    typeof window !== 'undefined' ? useUIStore.getState().apiToken : null;
+  const token = typeof window !== 'undefined' ? useUIStore.getState().apiToken : null;
 
   const headers = new Headers(init.headers);
   headers.set('Content-Type', 'application/json');
@@ -71,12 +70,7 @@ async function apiFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
         message: `HTTP ${response.status}`,
       }));
 
-      throw new APIError(
-        response.status,
-        error.code,
-        error.message,
-        error.details
-      );
+      throw new APIError(response.status, error.code, error.message, error.details);
     }
 
     return (await response.json()) as T;
@@ -97,9 +91,7 @@ async function apiFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
 /**
  * Execute assisted search query.
  */
-export async function queryAssist(
-  request: AssistQueryRequest
-): Promise<AssistQueryResponse> {
+export async function queryAssist(request: AssistQueryRequest): Promise<AssistQueryResponse> {
   return apiFetch<AssistQueryResponse>('/assist/query', {
     method: 'POST',
     body: JSON.stringify(request),
@@ -109,9 +101,7 @@ export async function queryAssist(
 /**
  * Submit feedback on a response.
  */
-export async function submitFeedback(
-  request: FeedbackRequest
-): Promise<{ status: string }> {
+export async function submitFeedback(request: FeedbackRequest): Promise<{ status: string }> {
   return apiFetch<{ status: string }>('/assist/feedback', {
     method: 'POST',
     body: JSON.stringify(request),
@@ -128,9 +118,7 @@ export async function getModels(): Promise<ModelsResponse> {
 /**
  * Select a model.
  */
-export async function selectModel(
-  request: ModelSelectRequest
-): Promise<{ status: string }> {
+export async function selectModel(request: ModelSelectRequest): Promise<{ status: string }> {
   return apiFetch<{ status: string }>('/models/select', {
     method: 'POST',
     body: JSON.stringify(request),

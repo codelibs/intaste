@@ -74,9 +74,9 @@ describe('AssistStore', () => {
 
   it('sets error state on failed query', async () => {
     const errorMessage = 'API Error';
-    global.fetch = vi.fn().mockResolvedValue(
-      mockApiResponse({ error: { message: errorMessage } }, 500)
-    );
+    global.fetch = vi
+      .fn()
+      .mockResolvedValue(mockApiResponse({ error: { message: errorMessage } }, 500));
 
     await useAssistStore.getState().send('test query');
 
@@ -186,8 +186,14 @@ describe('AssistStore', () => {
     it('sets streaming state when sending stream query', async () => {
       const mockReadableStream = {
         getReader: () => ({
-          read: vi.fn()
-            .mockResolvedValueOnce({ done: false, value: new TextEncoder().encode('event: complete\ndata: {"answer":{"text":"Done","suggested_questions":[]},"session":{},"timings":{"llm_ms":100,"search_ms":200,"total_ms":300}}\n\n') })
+          read: vi
+            .fn()
+            .mockResolvedValueOnce({
+              done: false,
+              value: new TextEncoder().encode(
+                'event: complete\ndata: {"answer":{"text":"Done","suggested_questions":[]},"session":{},"timings":{"llm_ms":100,"search_ms":200,"total_ms":300}}\n\n'
+              ),
+            })
             .mockResolvedValueOnce({ done: true }),
           releaseLock: vi.fn(),
         }),
@@ -215,7 +221,8 @@ describe('AssistStore', () => {
 
       const mockReadableStream = {
         getReader: () => ({
-          read: vi.fn()
+          read: vi
+            .fn()
             .mockResolvedValueOnce({ done: false, value: new TextEncoder().encode(sseData) })
             .mockResolvedValueOnce({ done: true }),
           releaseLock: vi.fn(),
@@ -242,7 +249,8 @@ describe('AssistStore', () => {
 
       const mockReadableStream = {
         getReader: () => ({
-          read: vi.fn()
+          read: vi
+            .fn()
             .mockResolvedValueOnce({ done: false, value: new TextEncoder().encode(sseData) })
             .mockResolvedValueOnce({ done: true }),
           releaseLock: vi.fn(),
@@ -267,7 +275,8 @@ describe('AssistStore', () => {
 
       const mockReadableStream = {
         getReader: () => ({
-          read: vi.fn()
+          read: vi
+            .fn()
             .mockResolvedValueOnce({ done: false, value: new TextEncoder().encode(sseData) })
             .mockResolvedValueOnce({ done: true }),
           releaseLock: vi.fn(),
@@ -301,8 +310,12 @@ describe('AssistStore', () => {
     it('initializes answer with empty text at stream start', async () => {
       const mockReadableStream = {
         getReader: () => ({
-          read: vi.fn()
-            .mockResolvedValueOnce({ done: false, value: new TextEncoder().encode('event: start\ndata: {}\n\n') })
+          read: vi
+            .fn()
+            .mockResolvedValueOnce({
+              done: false,
+              value: new TextEncoder().encode('event: start\ndata: {}\n\n'),
+            })
             .mockResolvedValueOnce({ done: true }),
           releaseLock: vi.fn(),
         }),
@@ -324,11 +337,13 @@ describe('AssistStore', () => {
     });
 
     it('updates session on stream complete', async () => {
-      const sseData = 'event: complete\ndata: {"answer":{"text":"Done","suggested_questions":[]},"session":{"id":"session-123","turn":2},"timings":{"llm_ms":100,"search_ms":200,"total_ms":300}}\n\n';
+      const sseData =
+        'event: complete\ndata: {"answer":{"text":"Done","suggested_questions":[]},"session":{"id":"session-123","turn":2},"timings":{"llm_ms":100,"search_ms":200,"total_ms":300}}\n\n';
 
       const mockReadableStream = {
         getReader: () => ({
-          read: vi.fn()
+          read: vi
+            .fn()
             .mockResolvedValueOnce({ done: false, value: new TextEncoder().encode(sseData) })
             .mockResolvedValueOnce({ done: true }),
           releaseLock: vi.fn(),

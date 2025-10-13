@@ -41,6 +41,7 @@ logs/
 
 # Data
 data/
+coverage.xml
 
 # MCP
 .serena/

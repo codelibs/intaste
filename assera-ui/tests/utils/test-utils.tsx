@@ -16,10 +16,7 @@ import { render, RenderOptions } from '@testing-library/react';
 /**
  * Custom render function for testing with providers
  */
-export function renderWithProviders(
-  ui: ReactElement,
-  options?: Omit<RenderOptions, 'wrapper'>
-) {
+export function renderWithProviders(ui: ReactElement, options?: Omit<RenderOptions, 'wrapper'>) {
   return render(ui, { ...options });
 }
 

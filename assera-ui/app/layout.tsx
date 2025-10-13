@@ -26,11 +26,7 @@ export const metadata: Metadata = {
   robots: 'noindex, nofollow', // Adjust for production
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>{children}</body>

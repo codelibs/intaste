@@ -17,9 +17,7 @@ import { QueryInput } from '@/components/input/QueryInput';
 
 describe('QueryInput', () => {
   it('renders textarea with placeholder', () => {
-    renderWithProviders(
-      <QueryInput value="" onChange={() => {}} onSubmit={() => {}} />
-    );
+    renderWithProviders(<QueryInput value="" onChange={() => {}} onSubmit={() => {}} />);
 
     const textarea = screen.getByPlaceholderText(/enter your question/i);
     expect(textarea).toBeInTheDocument();
@@ -29,9 +27,7 @@ describe('QueryInput', () => {
     const handleChange = vi.fn();
     const user = userEvent.setup();
 
-    renderWithProviders(
-      <QueryInput value="" onChange={handleChange} onSubmit={() => {}} />
-    );
+    renderWithProviders(<QueryInput value="" onChange={handleChange} onSubmit={() => {}} />);
 
     const textarea = screen.getByPlaceholderText(/enter your question/i);
     await user.type(textarea, 'test query');
@@ -79,9 +75,7 @@ describe('QueryInput', () => {
   });
 
   it('shows character counter', () => {
-    renderWithProviders(
-      <QueryInput value="test" onChange={() => {}} onSubmit={() => {}} />
-    );
+    renderWithProviders(<QueryInput value="test" onChange={() => {}} onSubmit={() => {}} />);
 
     expect(screen.getByText(/4.*4096/)).toBeInTheDocument();
   });
@@ -90,9 +84,7 @@ describe('QueryInput', () => {
     const handleSubmit = vi.fn();
     const user = userEvent.setup();
 
-    renderWithProviders(
-      <QueryInput value="" onChange={() => {}} onSubmit={handleSubmit} />
-    );
+    renderWithProviders(<QueryInput value="" onChange={() => {}} onSubmit={handleSubmit} />);
 
     const textarea = screen.getByPlaceholderText(/enter your question/i);
     await user.click(textarea);
@@ -104,9 +96,7 @@ describe('QueryInput', () => {
   it('enforces max length', async () => {
     const handleChange = vi.fn();
 
-    renderWithProviders(
-      <QueryInput value="" onChange={handleChange} onSubmit={() => {}} />
-    );
+    renderWithProviders(<QueryInput value="" onChange={handleChange} onSubmit={() => {}} />);
 
     const textarea = screen.getByPlaceholderText(/enter your question/i);
     expect(textarea).toHaveAttribute('maxLength', '4096');

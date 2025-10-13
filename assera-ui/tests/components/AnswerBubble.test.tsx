@@ -45,9 +45,7 @@ describe('AnswerBubble', () => {
       suggested_followups: [],
     };
 
-    renderWithProviders(
-      <AnswerBubble answer={answer} onCitationClick={handleCitationClick} />
-    );
+    renderWithProviders(<AnswerBubble answer={answer} onCitationClick={handleCitationClick} />);
 
     const citation = screen.getByRole('button', { name: 'View citation 1' });
     await user.click(citation);

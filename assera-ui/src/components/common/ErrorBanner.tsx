@@ -21,26 +21,16 @@ interface ErrorBannerProps {
   className?: string;
 }
 
-export function ErrorBanner({
-  message,
-  onRetry,
-  onDismiss,
-  className,
-}: ErrorBannerProps) {
+export function ErrorBanner({ message, onRetry, onDismiss, className }: ErrorBannerProps) {
   return (
     <div
-      className={cn(
-        'rounded-lg border border-destructive/50 bg-destructive/10 p-4',
-        className
-      )}
+      className={cn('rounded-lg border border-destructive/50 bg-destructive/10 p-4', className)}
       role="alert"
     >
       <div className="flex items-start gap-3">
         <span className="text-xl">❌</span>
         <div className="flex-1">
-          <p className="text-sm font-medium text-destructive mb-1">
-            Error occurred
-          </p>
+          <p className="text-sm font-medium text-destructive mb-1">Error occurred</p>
           <p className="text-sm text-destructive/90">{message}</p>
         </div>
         <div className="flex gap-2">

@@ -49,9 +49,7 @@ export function LatencyIndicator({ timings, className }: LatencyIndicatorProps) 
       <span className={cn('font-medium', config.color)}>
         {config.icon} {config.text}
       </span>
-      <span className="text-muted-foreground">
-        {timings.total_ms}ms
-      </span>
+      <span className="text-muted-foreground">{timings.total_ms}ms</span>
       <span className="text-muted-foreground text-[10px]">
         (LLM: {timings.llm_ms}ms, Search: {timings.search_ms}ms)
       </span>

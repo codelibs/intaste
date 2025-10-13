@@ -12,6 +12,11 @@
 
 """Pytest fixtures and configuration"""
 
+# Set required environment variables before importing app modules
+# This prevents ValidationError when Settings() is instantiated globally in app.main
+import os
+os.environ.setdefault("ASSERA_API_TOKEN", "test-token-32-characters-long-secure")
+
 import pytest
 from typing import AsyncGenerator
 from httpx import AsyncClient

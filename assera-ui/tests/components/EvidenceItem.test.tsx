@@ -28,7 +28,9 @@ describe('EvidenceItem', () => {
 
   it('renders metadata when showFull is true', () => {
     const citation = createMockCitation('1');
-    renderWithProviders(<EvidenceItem citation={citation} active={false} onSelect={() => {}} showFull={true} />);
+    renderWithProviders(
+      <EvidenceItem citation={citation} active={false} onSelect={() => {}} showFull={true} />
+    );
 
     if (citation.meta?.site) {
       expect(screen.getByText(citation.meta.site)).toBeInTheDocument();
@@ -40,7 +42,9 @@ describe('EvidenceItem', () => {
 
   it('renders score when showFull is true', () => {
     const citation = createMockCitation('1');
-    renderWithProviders(<EvidenceItem citation={citation} active={false} onSelect={() => {}} showFull={true} />);
+    renderWithProviders(
+      <EvidenceItem citation={citation} active={false} onSelect={() => {}} showFull={true} />
+    );
 
     // Score is displayed in the metadata section
     if (citation.score !== undefined) {
@@ -65,7 +69,9 @@ describe('EvidenceItem', () => {
     const user = userEvent.setup();
     const citation = createMockCitation('1');
 
-    renderWithProviders(<EvidenceItem citation={citation} active={false} onSelect={handleSelect} />);
+    renderWithProviders(
+      <EvidenceItem citation={citation} active={false} onSelect={handleSelect} />
+    );
 
     const card = screen.getByText(citation.title).closest('div[role="button"]');
     if (card) {
@@ -76,7 +82,9 @@ describe('EvidenceItem', () => {
 
   it('renders Open in Fess link when showFull is true', () => {
     const citation = createMockCitation('1');
-    renderWithProviders(<EvidenceItem citation={citation} active={false} onSelect={() => {}} showFull={true} />);
+    renderWithProviders(
+      <EvidenceItem citation={citation} active={false} onSelect={() => {}} showFull={true} />
+    );
 
     const link = screen.getByText(/open in fess/i);
     expect(link).toBeInTheDocument();
@@ -102,7 +110,9 @@ describe('EvidenceItem', () => {
       ...createMockCitation('1'),
       snippet: '<div onclick="alert(\'xss\')">Click me</div>',
     };
-    const { container } = renderWithProviders(<EvidenceItem citation={citation} active={false} onSelect={() => {}} />);
+    const { container } = renderWithProviders(
+      <EvidenceItem citation={citation} active={false} onSelect={() => {}} />
+    );
 
     // Should not contain onclick attribute
     const divs = container.querySelectorAll('div[onclick]');
@@ -115,7 +125,9 @@ describe('EvidenceItem', () => {
       ...createMockCitation('1'),
       snippet: '<a href="javascript:alert(\'xss\')">Malicious link</a>',
     };
-    const { container } = renderWithProviders(<EvidenceItem citation={citation} active={false} onSelect={() => {}} />);
+    const { container } = renderWithProviders(
+      <EvidenceItem citation={citation} active={false} onSelect={() => {}} />
+    );
 
     // Should not contain javascript: URLs
     const links = container.querySelectorAll('a[href^="javascript:"]');
@@ -125,7 +137,8 @@ describe('EvidenceItem', () => {
   it('preserves safe formatting tags in snippet', () => {
     const citation = {
       ...createMockCitation('1'),
-      snippet: 'Text with <em>emphasis</em>, <strong>bold</strong>, and <mark>highlighted</mark> content',
+      snippet:
+        'Text with <em>emphasis</em>, <strong>bold</strong>, and <mark>highlighted</mark> content',
     };
     renderWithProviders(<EvidenceItem citation={citation} active={false} onSelect={() => {}} />);
 
@@ -139,7 +152,9 @@ describe('EvidenceItem', () => {
       ...createMockCitation('1'),
       snippet: 'Visit <a href="https://docs.example.com">documentation</a> for details',
     };
-    const { container } = renderWithProviders(<EvidenceItem citation={citation} active={false} onSelect={() => {}} />);
+    const { container } = renderWithProviders(
+      <EvidenceItem citation={citation} active={false} onSelect={() => {}} />
+    );
 
     const link = container.querySelector('a[href="https://docs.example.com"]');
     expect(link).toBeInTheDocument();
@@ -151,7 +166,9 @@ describe('EvidenceItem', () => {
     const user = userEvent.setup();
     const citation = createMockCitation('1');
 
-    renderWithProviders(<EvidenceItem citation={citation} active={false} onSelect={handleSelect} />);
+    renderWithProviders(
+      <EvidenceItem citation={citation} active={false} onSelect={handleSelect} />
+    );
 
     const card = screen.getByText(citation.title).closest('div[role="button"]');
     if (card && card instanceof HTMLElement) {

@@ -27,9 +27,7 @@ export function cn(...inputs: ClassValue[]) {
 /**
  * Format latency timing with color indication.
  */
-export function getLatencyLevel(
-  ms: number
-): 'good' | 'ok' | 'slow' {
+export function getLatencyLevel(ms: number): 'good' | 'ok' | 'slow' {
   if (ms <= 500) return 'good';
   if (ms <= 1500) return 'ok';
   return 'slow';
