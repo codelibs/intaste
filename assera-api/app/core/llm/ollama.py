@@ -58,23 +58,36 @@ class OllamaClient:
         user_template: str,
         language: str | None = None,
         filters: dict[str, Any] | None = None,
+        query_history: list[str] | None = None,
         timeout_ms: int | None = None,
     ) -> IntentOutput:
         """
-        Extract search intent from user query.
+        Extract search intent from user query with optional query history context.
         """
         lang = language or "ja"
         filters_json = json.dumps(filters or {}, ensure_ascii=False)
         actual_timeout = timeout_ms or self.timeout_ms
 
+        # Format query history for prompt
+        if query_history and len(query_history) > 0:
+            history_lines = [f"{i+1}. {q}" for i, q in enumerate(query_history)]
+            query_history_text = "Previous queries (most recent first):\n" + "\n".join(
+                history_lines
+            )
+        else:
+            query_history_text = "No previous queries in this session."
+
         logger.debug(
             f"Intent extraction started: model={self.model}, timeout={actual_timeout}ms, temperature={self.temperature}"
         )
-        logger.debug(f"Intent input: query={query!r}, language={lang}, filters={filters}")
+        logger.debug(
+            f"Intent input: query={query!r}, language={lang}, filters={filters}, history_count={len(query_history) if query_history else 0}"
+        )
 
         user_prompt = user_template.format(
             query=query,
             language=lang,
+            query_history_text=query_history_text,
             filters_json=filters_json,
         )
 

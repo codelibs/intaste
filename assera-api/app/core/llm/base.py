@@ -52,9 +52,10 @@ class LLMClient(Protocol):
         user_template: str,
         language: str | None = None,
         filters: dict[str, Any] | None = None,
+        query_history: list[str] | None = None,
         timeout_ms: int | None = None,
     ) -> IntentOutput:
-        """Extract search intent from user query."""
+        """Extract search intent from user query with optional query history context."""
         ...
 
     async def compose(

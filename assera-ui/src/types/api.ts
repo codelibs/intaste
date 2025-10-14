@@ -77,6 +77,7 @@ export interface Notice {
 export interface AssistQueryRequest {
   query: string;
   session_id?: string;
+  query_history?: string[];
   options?: {
     max_results?: number;
     language?: string;

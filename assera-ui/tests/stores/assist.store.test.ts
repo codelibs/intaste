@@ -362,4 +362,116 @@ describe('AssistStore', () => {
       expect(state.streaming).toBe(false);
     });
   });
+
+  describe('Query History', () => {
+    beforeEach(() => {
+      useAssistStore.setState({ queryHistory: [] });
+    });
+
+    it('initializes with empty query history', () => {
+      const state = useAssistStore.getState();
+      expect(state.queryHistory).toEqual([]);
+    });
+
+    it('adds query to history', () => {
+      useAssistStore.getState().addQueryToHistory('first query');
+
+      const state = useAssistStore.getState();
+      expect(state.queryHistory).toEqual(['first query']);
+    });
+
+    it('adds multiple queries to history', () => {
+      useAssistStore.getState().addQueryToHistory('first query');
+      useAssistStore.getState().addQueryToHistory('second query');
+      useAssistStore.getState().addQueryToHistory('third query');
+
+      const state = useAssistStore.getState();
+      expect(state.queryHistory).toEqual(['third query', 'second query', 'first query']);
+    });
+
+    it('removes duplicate queries (keeps most recent)', () => {
+      useAssistStore.getState().addQueryToHistory('first query');
+      useAssistStore.getState().addQueryToHistory('second query');
+      useAssistStore.getState().addQueryToHistory('first query'); // Duplicate
+
+      const state = useAssistStore.getState();
+      expect(state.queryHistory).toEqual(['first query', 'second query']);
+    });
+
+    it('limits history to 10 items', () => {
+      for (let i = 1; i <= 15; i++) {
+        useAssistStore.getState().addQueryToHistory(`query ${i}`);
+      }
+
+      const state = useAssistStore.getState();
+      expect(state.queryHistory.length).toBe(10);
+      expect(state.queryHistory[0]).toBe('query 15'); // Most recent
+      expect(state.queryHistory[9]).toBe('query 6'); // 10th most recent
+    });
+
+    it('trims whitespace from queries', () => {
+      useAssistStore.getState().addQueryToHistory('  query with spaces  ');
+
+      const state = useAssistStore.getState();
+      expect(state.queryHistory).toEqual(['query with spaces']);
+    });
+
+    it('ignores empty queries', () => {
+      useAssistStore.getState().addQueryToHistory('');
+      useAssistStore.getState().addQueryToHistory('   ');
+
+      const state = useAssistStore.getState();
+      expect(state.queryHistory).toEqual([]);
+    });
+
+    it('clears query history', () => {
+      useAssistStore.getState().addQueryToHistory('first query');
+      useAssistStore.getState().addQueryToHistory('second query');
+      useAssistStore.getState().clearQueryHistory();
+
+      const state = useAssistStore.getState();
+      expect(state.queryHistory).toEqual([]);
+    });
+
+    it('includes query history in API request when sending', async () => {
+      const mockResponse = createMockQueryResponse();
+      global.fetch = vi.fn().mockResolvedValue(mockApiResponse(mockResponse));
+
+      useAssistStore.getState().addQueryToHistory('previous query 1');
+      useAssistStore.getState().addQueryToHistory('previous query 2');
+
+      await useAssistStore.getState().send('current query');
+
+      expect(global.fetch).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({
+          body: expect.stringContaining('"query_history"'),
+        })
+      );
+
+      const fetchCall = (global.fetch as any).mock.calls[0];
+      const body = JSON.parse(fetchCall[1].body);
+      expect(body.query_history).toEqual(['previous query 2', 'previous query 1']);
+    });
+
+    it('does not include query_history when empty', async () => {
+      const mockResponse = createMockQueryResponse();
+      global.fetch = vi.fn().mockResolvedValue(mockApiResponse(mockResponse));
+
+      await useAssistStore.getState().send('test query');
+
+      const fetchCall = (global.fetch as any).mock.calls[0];
+      const body = JSON.parse(fetchCall[1].body);
+      expect(body.query_history).toBeUndefined();
+    });
+
+    it('clears history when clearing store', () => {
+      useAssistStore.getState().addQueryToHistory('query 1');
+      useAssistStore.getState().addQueryToHistory('query 2');
+      useAssistStore.getState().clear();
+
+      const state = useAssistStore.getState();
+      expect(state.queryHistory).toEqual([]);
+    });
+  });
 });

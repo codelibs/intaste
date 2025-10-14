@@ -76,6 +76,7 @@ async def query(
         response = await assist_service.query(
             query=request.query,
             session_id=request.session_id,
+            query_history=request.query_history,
             options=request.options,
         )
 
