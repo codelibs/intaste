@@ -42,22 +42,22 @@ jobs:
 
       - name: Install dependencies
         run: |
-          cd assera-api
+          cd intaste-api
           uv sync --all-extras
 
       - name: Run ruff (linter)
         run: |
-          cd assera-api
+          cd intaste-api
           uv run ruff check app/
 
       - name: Run black (formatter check)
         run: |
-          cd assera-api
+          cd intaste-api
           uv run black --check app/
 
       - name: Run mypy (type checker)
         run: |
-          cd assera-api
+          cd intaste-api
           uv run mypy app/
 
   api-test:
@@ -79,12 +79,12 @@ jobs:
 
       - name: Install dependencies
         run: |
-          cd assera-api
+          cd intaste-api
           uv sync --all-extras
 
       - name: Run tests with coverage
         run: |
-          cd assera-api
+          cd intaste-api
           uv run pytest --cov=app --cov-report=xml --cov-report=term-missing
 
   ui-lint:
@@ -99,26 +99,26 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
-          cache-dependency-path: assera-ui/package-lock.json
+          cache-dependency-path: intaste-ui/package-lock.json
 
       - name: Install dependencies
         run: |
-          cd assera-ui
+          cd intaste-ui
           npm ci
 
       - name: Run ESLint
         run: |
-          cd assera-ui
+          cd intaste-ui
           npm run lint
 
       - name: Run TypeScript type check
         run: |
-          cd assera-ui
+          cd intaste-ui
           npm run type-check
 
       - name: Run Prettier check
         run: |
-          cd assera-ui
+          cd intaste-ui
           npx prettier --check "**/*.{js,jsx,ts,tsx,json,css,md}"
 
   ui-test:
@@ -133,16 +133,16 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
-          cache-dependency-path: assera-ui/package-lock.json
+          cache-dependency-path: intaste-ui/package-lock.json
 
       - name: Install dependencies
         run: |
-          cd assera-ui
+          cd intaste-ui
           npm ci
 
       - name: Run unit tests with coverage
         run: |
-          cd assera-ui
+          cd intaste-ui
           npm test -- --run --coverage
 
   build-api:
@@ -159,10 +159,10 @@ jobs:
       - name: Build Docker image
         uses: docker/build-push-action@v6
         with:
-          context: ./assera-api
-          file: ./assera-api/Dockerfile
+          context: ./intaste-api
+          file: ./intaste-api/Dockerfile
           push: false
-          tags: assera-api:test
+          tags: intaste-api:test
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -180,10 +180,10 @@ jobs:
       - name: Build Docker image
         uses: docker/build-push-action@v6
         with:
-          context: ./assera-ui
-          file: ./assera-ui/Dockerfile
+          context: ./intaste-ui
+          file: ./intaste-ui/Dockerfile
           push: false
-          tags: assera-ui:test
+          tags: intaste-ui:test
           cache-from: type=gha
           cache-to: type=gha,mode=max
 

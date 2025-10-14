@@ -1,17 +1,17 @@
-# Assera Streaming Responses (SSE)
+# Intaste Streaming Responses (SSE)
 
 **Document Version:** 1.0
 **Last Updated:** 2025-10-12
-**Target:** Assera v0.1+
+**Target:** Intaste v0.1+
 
 **Purpose:**
-This document explains the Server-Sent Events (SSE) streaming implementation in Assera, which enables real-time incremental display of LLM-generated answers.
+This document explains the Server-Sent Events (SSE) streaming implementation in Intaste, which enables real-time incremental display of LLM-generated answers.
 
 ---
 
 ## 1. Overview
 
-Assera supports two query modes:
+Intaste supports two query modes:
 
 1. **Standard Mode**: Wait for complete answer before display
 2. **Streaming Mode**: Display answer text incrementally as it's generated
@@ -183,7 +183,7 @@ data: {
 
 #### Streaming Ollama Client
 
-**File**: `assera-api/app/core/llm/ollama.py`
+**File**: `intaste-api/app/core/llm/ollama.py`
 
 Key method: `compose_stream()` - Yields text chunks from Ollama
 
@@ -194,7 +194,7 @@ Key method: `compose_stream()` - Yields text chunks from Ollama
 
 #### Streaming Router
 
-**File**: `assera-api/app/routers/assist_stream.py`
+**File**: `intaste-api/app/routers/assist_stream.py`
 
 Key features:
 - SSE event formatting (`format_sse()`)
@@ -206,7 +206,7 @@ Key features:
 
 #### Streaming Client
 
-**File**: `assera-ui/src/libs/streamingClient.ts`
+**File**: `intaste-ui/src/libs/streamingClient.ts`
 
 Key features:
 - Fetch API with text/event-stream
@@ -216,7 +216,7 @@ Key features:
 
 #### Store Integration
 
-**File**: `assera-ui/src/store/assist.store.ts`
+**File**: `intaste-ui/src/store/assist.store.ts`
 
 Key features:
 - `sendStream()` method for streaming requests
@@ -226,7 +226,7 @@ Key features:
 
 #### UI Toggle
 
-**File**: `assera-ui/app/page.tsx`
+**File**: `intaste-ui/app/page.tsx`
 
 Key features:
 - Streaming mode toggle
@@ -245,7 +245,7 @@ Key features:
 OLLAMA_BASE_URL=http://localhost:11434
 
 # Timeout for streaming requests (ms)
-ASSERA_LLM_TIMEOUT_MS=60000
+INTASTE_LLM_TIMEOUT_MS=60000
 ```
 
 **Frontend** (`.env.local`):
@@ -258,7 +258,7 @@ NEXT_PUBLIC_API_BASE=http://localhost:8000/api/v1
 
 Streaming preference is stored in localStorage:
 ```typescript
-// Key: assera-ui-storage
+// Key: intaste-ui-storage
 {
   "streamingEnabled": true  // Default: true
 }

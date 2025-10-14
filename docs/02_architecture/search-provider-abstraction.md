@@ -1,10 +1,10 @@
-# Assera Search Provider Abstraction Layer Design
+# Intaste Search Provider Abstraction Layer Design
 
 **Document Version:** 1.0
 **Last Updated:** 2025-10-12
-**Target:** Assera OSS Initial Version (API: FastAPI)
+**Target:** Intaste OSS Initial Version (API: FastAPI)
 
-**Important:** Assera **does not connect directly to OpenSearch**. Search is **only via Fess OpenAPI**, with a future-proof abstraction layer for provider replacement.
+**Important:** Intaste **does not connect directly to OpenSearch**. Search is **only via Fess OpenAPI**, with a future-proof abstraction layer for provider replacement.
 
 **Purpose:**
 - Hide search infrastructure differences from UI/service layer (interface boundary)
@@ -64,7 +64,7 @@ export type SearchQuery = {
 ## 3. Abstract Interface
 
 ```python
-# assera-api/app/core/search_provider/base.py
+# intaste-api/app/core/search_provider/base.py
 from typing import Protocol, Tuple
 
 class SearchProvider(Protocol):
@@ -87,11 +87,11 @@ class SearchProvider(Protocol):
   - `sort` (`score` / `last_modified desc`, etc.)
   - `fields.label`, `facet.query`, etc. (as needed)
 
-> Actual implementation follows repository OpenAPI definition: `assera-api/openapi/fess.yaml`
+> Actual implementation follows repository OpenAPI definition: `intaste-api/openapi/fess.yaml`
 
 ### 4.2 Parameter Conversion
 
-| Assera(SearchQuery) | Fess Query | Notes |
+| Intaste(SearchQuery) | Fess Query | Notes |
 |---|---|---|
 | `q` | `q` | Pass as-is (LLM normalized) |
 | `page` | `start = (page-1)*size` | Convert to 0-origin |
@@ -135,7 +135,7 @@ def normalize(fess_json: dict) -> SearchResult:
 ### 4.4 HTTP Design
 - Client: `httpx.AsyncClient(timeout=FESS_TIMEOUT_MS)`
 - Retry: **1 exponential backoff** for `5xx` and `connect/read timeout`
-- Headers: `User-Agent: assera/<version>`, transparent `X-Request-Id`
+- Headers: `User-Agent: intaste/<version>`, transparent `X-Request-Id`
 - Exception mapping on failure:
   - Connection: `FessUnavailableError` → API: `UPSTREAM_FESS_ERROR`
   - Timeout: `FessTimeoutError` → API: `TIMEOUT`
@@ -270,7 +270,7 @@ class FessSearchProvider(SearchProvider):
 ## 10. Future Extensions (Compatibility Policy)
 
 ### 10.1 MCP Passthrough
-- `FessMCPProvider`: Tool calls via `fess-webapp-mcp` plugin. Assera **conversation control only**
+- `FessMCPProvider`: Tool calls via `fess-webapp-mcp` plugin. Intaste **conversation control only**
 - Additional interface example: `tools(query) -> citations`. Normalize return value to `SearchResult`
 
 ### 10.2 External Search Providers
@@ -281,8 +281,8 @@ class FessSearchProvider(SearchProvider):
 
 ## 11. Implementation Location
 
-- Abstract: `assera-api/app/core/search_provider/base.py`
-- Fess: `assera-api/app/core/search_provider/fess.py`
+- Abstract: `intaste-api/app/core/search_provider/base.py`
+- Fess: `intaste-api/app/core/search_provider/fess.py`
 - Dependency injection: Selected via environment variable at `assist` service startup (initial version fixed to `fess`)
 
 ---

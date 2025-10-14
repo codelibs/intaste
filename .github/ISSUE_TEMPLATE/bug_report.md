@@ -32,7 +32,7 @@ Steps to reproduce the behavior:
 
 ## Environment
 
-**Assera Version:**
+**Intaste Version:**
 <!-- e.g., v0.1.0, commit hash, or 'latest' -->
 
 **Deployment Method:**
@@ -64,12 +64,12 @@ Steps to reproduce the behavior:
 
 ### API Logs
 ```
-<!-- docker compose logs assera-api | tail -50 -->
+<!-- docker compose logs intaste-api | tail -50 -->
 ```
 
 ### UI Logs
 ```
-<!-- docker compose logs assera-ui | tail -50 -->
+<!-- docker compose logs intaste-ui | tail -50 -->
 ```
 
 ### Browser Console (if UI issue)
@@ -82,7 +82,7 @@ Steps to reproduce the behavior:
 <!-- Relevant parts of your .env file (remove sensitive data) -->
 
 ```env
-ASSERA_DEFAULT_MODEL=gpt-oss
+INTASTE_DEFAULT_MODEL=gpt-oss
 # Other relevant config...
 ```
 

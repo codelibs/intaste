@@ -1,10 +1,10 @@
-# Assera Testing Guide
+# Intaste Testing Guide
 
-This document provides comprehensive information about testing the Assera application.
+This document provides comprehensive information about testing the Intaste application.
 
 ## Overview
 
-Assera uses a multi-layer testing strategy:
+Intaste uses a multi-layer testing strategy:
 
 1. **Unit Tests** - Test individual components in isolation
 2. **Integration Tests** - Test API endpoints with mocked dependencies
@@ -12,13 +12,13 @@ Assera uses a multi-layer testing strategy:
 
 ## Test Technology Stack
 
-### Backend (assera-api)
+### Backend (intaste-api)
 - **pytest** - Test framework
 - **pytest-cov** - Code coverage
 - **pytest-asyncio** - Async test support
 - **httpx** - HTTP client for testing
 
-### Frontend (assera-ui)
+### Frontend (intaste-ui)
 - **vitest** - Unit test framework
 - **@testing-library/react** - Component testing
 - **@playwright/test** - E2E testing
@@ -30,7 +30,7 @@ Assera uses a multi-layer testing strategy:
 
 ```bash
 # From repository root
-cd assera-api
+cd intaste-api
 
 # Install dependencies including dev dependencies
 uv pip install -e ".[dev]"
@@ -60,8 +60,8 @@ pytest tests/integration/ -m integration
 ### UI Unit Tests
 
 ```bash
-# From assera-ui directory
-cd assera-ui
+# From intaste-ui directory
+cd intaste-ui
 
 # Install dependencies
 npm install
@@ -85,8 +85,8 @@ npm test -- --watch
 ### E2E Tests
 
 ```bash
-# From assera-ui directory
-cd assera-ui
+# From intaste-ui directory
+cd intaste-ui
 
 # Install Playwright browsers (first time only)
 npx playwright install
@@ -112,7 +112,7 @@ npx playwright test --project=chromium
 ### API Test Structure
 
 ```
-assera-api/tests/
+intaste-api/tests/
 ├── conftest.py              # Shared fixtures
 ├── unit/                    # Unit tests
 │   ├── test_ollama_client.py
@@ -125,7 +125,7 @@ assera-api/tests/
 ### UI Test Structure
 
 ```
-assera-ui/
+intaste-ui/
 ├── tests/
 │   ├── setup.ts             # Test setup and globals
 │   ├── utils/
@@ -149,7 +149,7 @@ assera-ui/
 
 ## Streaming Tests
 
-Assera includes comprehensive tests for Server-Sent Events (SSE) streaming functionality:
+Intaste includes comprehensive tests for Server-Sent Events (SSE) streaming functionality:
 
 ### API Streaming Tests
 
@@ -278,12 +278,12 @@ test('should display text incrementally during streaming', async ({ page }) => {
 
 ```bash
 # API streaming tests
-cd assera-api
+cd intaste-api
 pytest tests/unit/test_ollama_stream.py -v
 pytest tests/integration/test_streaming_endpoint.py -v
 
 # UI streaming tests
-cd assera-ui
+cd intaste-ui
 npm test -- tests/libs/streamingClient.test.ts
 npm test -- tests/stores/assist.store.test.ts -t Streaming
 
@@ -296,7 +296,7 @@ npm run test:e2e -- e2e/streaming.spec.ts
 ### API Unit Test Example
 
 ```python
-# assera-api/tests/unit/test_example.py
+# intaste-api/tests/unit/test_example.py
 import pytest
 from app.core.llm.ollama import OllamaClient
 
@@ -314,7 +314,7 @@ async def test_intent_extraction(ollama_client):
 ### UI Component Test Example
 
 ```typescript
-// assera-ui/tests/components/Example.test.tsx
+// intaste-ui/tests/components/Example.test.tsx
 import { describe, it, expect, vi } from 'vitest';
 import { renderWithProviders, screen } from '../utils/test-utils';
 import userEvent from '@testing-library/user-event';
@@ -341,7 +341,7 @@ describe('QueryInput', () => {
 ### E2E Test Example
 
 ```typescript
-// assera-ui/e2e/example.spec.ts
+// intaste-ui/e2e/example.spec.ts
 import { test, expect } from '@playwright/test';
 
 test('should submit query and display results', async ({ page }) => {
@@ -421,7 +421,7 @@ await page.route('**/api/v1/assist/query', async (route) => {
 
 After running `pytest --cov`, view HTML report:
 ```bash
-cd assera-api
+cd intaste-api
 open htmlcov/index.html  # macOS
 xdg-open htmlcov/index.html  # Linux
 ```
@@ -430,7 +430,7 @@ xdg-open htmlcov/index.html  # Linux
 
 After running `npm run test:coverage`, view report:
 ```bash
-cd assera-ui
+cd intaste-ui
 open coverage/index.html  # macOS
 xdg-open coverage/index.html  # Linux
 ```
@@ -443,11 +443,11 @@ From repository root:
 
 ```bash
 # API tests
-cd assera-api
+cd intaste-api
 pytest
 
 # UI unit tests
-cd ../assera-ui
+cd ../intaste-ui
 npm test -- --run
 
 # UI E2E tests
@@ -471,12 +471,12 @@ jobs:
           python-version: '3.13'
       - name: Install dependencies
         run: |
-          cd assera-api
+          cd intaste-api
           pip install uv
           uv pip install -e ".[dev]"
       - name: Run tests
         run: |
-          cd assera-api
+          cd intaste-api
           pytest --cov --cov-report=xml
 
   ui-tests:
@@ -488,15 +488,15 @@ jobs:
           node-version: '20'
       - name: Install dependencies
         run: |
-          cd assera-ui
+          cd intaste-ui
           npm ci
       - name: Run unit tests
         run: |
-          cd assera-ui
+          cd intaste-ui
           npm test -- --run --coverage
       - name: Run E2E tests
         run: |
-          cd assera-ui
+          cd intaste-ui
           npx playwright install --with-deps
           npm run test:e2e
 ```
@@ -570,7 +570,7 @@ npm run test:e2e:debug
 
 ```bash
 # Using Apache Bench
-ab -n 1000 -c 10 -H "X-Assera-Token: $TOKEN" \
+ab -n 1000 -c 10 -H "X-Intaste-Token: $TOKEN" \
    -p query.json -T application/json \
    http://localhost:8000/api/v1/assist/query
 
@@ -596,7 +596,7 @@ npm run analyze
 **API tests fail with import errors**
 ```bash
 # Ensure you're in the right directory and installed dev dependencies
-cd assera-api
+cd intaste-api
 uv pip install -e ".[dev]"
 ```
 

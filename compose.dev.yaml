@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Assera Docker Compose - Development Configuration
+# Intaste Docker Compose - Development Configuration
 # Enables hot reload for both API and UI
 # Usage: docker compose -f compose.yaml -f compose.dev.yaml up
 
@@ -27,15 +27,15 @@ services:
     ports:
       - "11434:11434"
 
-  assera-api:
+  intaste-api:
     build:
-      context: ./assera-api
+      context: ./intaste-api
       dockerfile: Dockerfile
       args:
-        UID: ${ASSERA_UID:-1000}
-        GID: ${ASSERA_GID:-1000}
+        UID: ${INTASTE_UID:-1000}
+        GID: ${INTASTE_GID:-1000}
     volumes:
-      - ./assera-api/app:/app/app:ro
+      - ./intaste-api/app:/app/app:ro
     command: uv run uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload --log-level debug
     environment:
       - DEBUG=true
@@ -43,22 +43,22 @@ services:
     ports:
       - "8000:8000"
 
-  assera-ui:
+  intaste-ui:
     build:
-      context: ./assera-ui
+      context: ./intaste-ui
       dockerfile: Dockerfile
       target: deps
       args:
-        UID: ${ASSERA_UID:-1000}
-        GID: ${ASSERA_GID:-1000}
+        UID: ${INTASTE_UID:-1000}
+        GID: ${INTASTE_GID:-1000}
     volumes:
-      - ./assera-ui:/app:cached
+      - ./intaste-ui:/app:cached
       - /app/node_modules
       - /app/.next
     command: npm run dev
     environment:
       - NODE_ENV=development
       - NEXT_PUBLIC_API_BASE=/api/v1
-      - API_PROXY_URL=http://assera-api:8000
+      - API_PROXY_URL=http://intaste-api:8000
     ports:
       - "3000:3000"

@@ -1,17 +1,17 @@
-# Assera Implementation Status
+# Intaste Implementation Status
 
 **Document Version:** 1.0
 **Last Updated:** 2025-10-12
 **Status:** Active
 
 **Purpose:**
-This document tracks the implementation status of the Assera project components and features.
+This document tracks the implementation status of the Intaste project components and features.
 
 ---
 
 ## 1. Overview
 
-Assera is an open-source AI-assisted search platform combining Fess search with LLM capabilities.
+Intaste is an open-source AI-assisted search platform combining Fess search with LLM capabilities.
 
 **Version**: 0.1.0 (Alpha)
 **License**: Apache License 2.0
@@ -20,7 +20,7 @@ Assera is an open-source AI-assisted search platform combining Fess search with 
 
 ## 2. Implemented Components
 
-### 2.1 Backend API (assera-api) - **Complete**
+### 2.1 Backend API (intaste-api) - **Complete**
 
 #### Core Architecture
 - ✅ FastAPI application with async support
@@ -64,7 +64,7 @@ Assera is an open-source AI-assisted search platform combining Fess search with 
 - ✅ `POST /api/v1/models/select` - Select model
 
 #### Security
-- ✅ X-Assera-Token authentication
+- ✅ X-Intaste-Token authentication
 - ✅ Request ID tracking for observability
 - ✅ CORS configuration
 - ✅ Non-root Docker user
@@ -75,7 +75,7 @@ Assera is an open-source AI-assisted search platform combining Fess search with 
 - ✅ Request/response validation
 - ✅ Error response standardization
 
-### 2.2 Frontend UI (assera-ui) - **Complete**
+### 2.2 Frontend UI (intaste-ui) - **Complete**
 
 #### Next.js Setup
 - ✅ Next.js 15 with App Router
@@ -154,8 +154,8 @@ Assera is an open-source AI-assisted search platform combining Fess search with 
 
 ### 2.5 Docker & DevOps - **Complete**
 
-- ✅ Dockerfile for assera-api (multi-stage, secure)
-- ✅ Dockerfile for assera-ui (multi-stage, secure)
+- ✅ Dockerfile for intaste-api (multi-stage, secure)
+- ✅ Dockerfile for intaste-ui (multi-stage, secure)
 - ✅ compose.yaml for production deployment
 - ✅ compose.dev.yaml for development with hot reload
 - ✅ Healthchecks for all services
@@ -227,8 +227,8 @@ Assera is an open-source AI-assisted search platform combining Fess search with 
 ## 3. Project Structure
 
 ```
-assera/
-├── assera-api/              ✅ Complete
+intaste/
+├── intaste-api/              ✅ Complete
 │   ├── app/
 │   │   ├── core/            ✅ Config, security, providers
 │   │   ├── routers/         ✅ API endpoints
@@ -238,7 +238,7 @@ assera/
 │   ├── tests/               ✅ Unit and integration tests
 │   ├── Dockerfile           ✅ Complete
 │   └── pyproject.toml       ✅ Complete
-├── assera-ui/               ✅ Complete
+├── intaste-ui/               ✅ Complete
 │   ├── app/                 ✅ Next.js pages and layouts
 │   ├── src/
 │   │   ├── components/      ✅ React components
@@ -300,7 +300,7 @@ The implementation closely follows the design documents with optimizations:
 1. **Assisted Search Flow**: Intent → Search → Compose with proper timeout budgets
 2. **Fallback Strategy**: Always returns citations even if LLM fails
 3. **Extensibility**: Provider abstractions allow easy addition of new search engines or LLMs
-4. **Security**: X-Assera-Token auth, CORS, non-root containers, security headers
+4. **Security**: X-Intaste-Token auth, CORS, non-root containers, security headers
 5. **Observability**: Request ID tracking, structured logging, timing metrics
 
 ---

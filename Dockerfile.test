@@ -27,8 +27,8 @@ RUN apt-get update && apt-get install -y \
 
 # Create non-root user with configurable UID/GID
 # Handle case where GID already exists (like 100 for 'users' group)
-RUN groupadd -g ${GID} assera 2>/dev/null || groupmod -n assera $(getent group ${GID} | cut -d: -f1) && \
-    useradd -m -u ${UID} -g ${GID} assera
+RUN groupadd -g ${GID} intaste 2>/dev/null || groupmod -n intaste $(getent group ${GID} | cut -d: -f1) && \
+    useradd -m -u ${UID} -g ${GID} intaste
 
 # Install uv
 RUN pip install --no-cache-dir uv
@@ -36,9 +36,9 @@ RUN pip install --no-cache-dir uv
 WORKDIR /workspace
 
 # Set proper ownership for workspace
-RUN chown -R assera:assera /workspace
+RUN chown -R intaste:intaste /workspace
 
-USER assera
+USER intaste
 
 # Dependencies will be installed via volume mounts and entrypoint script
 CMD ["bash"]

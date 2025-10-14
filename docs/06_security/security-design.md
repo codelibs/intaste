@@ -1,13 +1,13 @@
-# Assera Security Design Specification
+# Intaste Security Design Specification
 
 **Document Version:** 1.0
 **Last Updated:** 2025-10-12
-**Target:** Assera OSS Initial Version (UI: Next.js / API: FastAPI / LLM: Ollama / Search: Fess OpenAPI)
+**Target:** Intaste OSS Initial Version (UI: Next.js / API: FastAPI / LLM: Ollama / Search: Fess OpenAPI)
 
 **Prerequisites:**
-- Assera **does not directly access OpenSearch**. Search only via Fess REST/OpenAPI.
-- UI→API uses API Key authentication (`X-Assera-Token`). Future extensible to OIDC/JWT.
-- Distribution via Docker Compose. External exposure is `assera-ui` only (default).
+- Intaste **does not directly access OpenSearch**. Search only via Fess REST/OpenAPI.
+- UI→API uses API Key authentication (`X-Intaste-Token`). Future extensible to OIDC/JWT.
+- Distribution via Docker Compose. External exposure is `intaste-ui` only (default).
 
 ---
 
@@ -26,7 +26,7 @@
 ### 2.1 UI→API Authentication (Initial Version)
 
 - **Method:** **API Key** (fixed-length random 32+ characters)
-- **Header:** `X-Assera-Token: <api-key>`
+- **Header:** `X-Intaste-Token: <api-key>`
 - **401 conditions:** Header missing, mismatch, expired
 - **Issuance/Storage:** Via `.env`. Do not include actual values in distribution examples
 - **Revocation:** Immediate invalidation on API restart or key replacement (future: keystore/multiple keys)
@@ -47,9 +47,9 @@
 
 ### 3.1 Separation via Compose
 
-- Only `assera-ui` exposes `ports` (e.g., `3000:3000`)
-- `assera-api`, `fess`, `opensearch`, `ollama` only `expose`. **No external exposure**
-- Internal network: All services in `assera-net`
+- Only `intaste-ui` exposes `ports` (e.g., `3000:3000`)
+- `intaste-api`, `fess`, `opensearch`, `ollama` only `expose`. **No external exposure**
+- Internal network: All services in `intaste-net`
 
 ### 3.2 Ingress/TLS (Operational Option)
 
@@ -67,9 +67,9 @@
 
 ### 4.1 CORS (API)
 
-- **Allowed origin:** `assera-ui` only (enumerate in environment variable)
+- **Allowed origin:** `intaste-ui` only (enumerate in environment variable)
 - **Allowed methods:** `GET, POST`
-- **Allowed headers:** `Content-Type, X-Assera-Token, X-Request-Id`
+- **Allowed headers:** `Content-Type, X-Intaste-Token, X-Request-Id`
 - **Credentials:** `false` (no Cookie use)
 
 ### 4.2 CSP (UI)

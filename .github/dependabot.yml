@@ -12,9 +12,9 @@
 
 version: 2
 updates:
-  # Python dependencies (assera-api)
+  # Python dependencies (intaste-api)
   - package-ecosystem: "pip"
-    directory: "/assera-api"
+    directory: "/intaste-api"
     schedule:
       interval: "weekly"
       day: "monday"
@@ -25,9 +25,9 @@ updates:
     commit-message:
       prefix: "chore(deps)"
 
-  # Node dependencies (assera-ui)
+  # Node dependencies (intaste-ui)
   - package-ecosystem: "npm"
-    directory: "/assera-ui"
+    directory: "/intaste-ui"
     schedule:
       interval: "weekly"
       day: "monday"
@@ -46,7 +46,7 @@ updates:
 
   # Docker dependencies
   - package-ecosystem: "docker"
-    directory: "/assera-api"
+    directory: "/intaste-api"
     schedule:
       interval: "weekly"
       day: "monday"
@@ -58,7 +58,7 @@ updates:
       prefix: "chore(deps)"
 
   - package-ecosystem: "docker"
-    directory: "/assera-ui"
+    directory: "/intaste-ui"
     schedule:
       interval: "weekly"
       day: "monday"
