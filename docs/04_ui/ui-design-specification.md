@@ -1,12 +1,12 @@
-# Assera UI Design Specification
+# Intaste UI Design Specification
 
 **Document Version:** 1.0
 **Last Updated:** 2025-10-12
-**Target:** Assera UI (Next.js + shadcn/ui + TailwindCSS + Zustand + i18n)
+**Target:** Intaste UI (Next.js + shadcn/ui + TailwindCSS + Zustand + i18n)
 
-All external integration is **via Assera API**. **No direct access to Fess**.
+All external integration is **via Intaste API**. **No direct access to Fess**.
 
-**License:** Assera provided under **Apache License 2.0**. Include copyright notice in UI source headers and `NOTICE`.
+**License:** Intaste provided under **Apache License 2.0**. Include copyright notice in UI source headers and `NOTICE`.
 
 ---
 
@@ -33,7 +33,7 @@ All external integration is **via Assera API**. **No direct access to Fess**.
 ## 2. Directory Structure
 
 ```
-assera-ui/
+intaste-ui/
 ├─ app/
 │  ├─ layout.tsx
 │  ├─ page.tsx
@@ -174,16 +174,16 @@ export const useAssistStore = create<AssistState>((set, get) => ({
 
 ---
 
-## 5. API Client (via Assera API)
+## 5. API Client (via Intaste API)
 
 ```typescript
 // src/libs/apiClient.ts
 export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
   const base = process.env.NEXT_PUBLIC_API_BASE ?? '/api/v1';
-  const token = typeof window !== 'undefined' ? localStorage.getItem('assera.token') : null;
+  const token = typeof window !== 'undefined' ? localStorage.getItem('intaste.token') : null;
   const headers = new Headers(init.headers);
   headers.set('Content-Type', 'application/json');
-  if (token) headers.set('X-Assera-Token', token);
+  if (token) headers.set('X-Intaste-Token', token);
   headers.set('X-Request-Id', crypto.randomUUID());
   const res = await fetch(`${base}${path}`, { ...init, headers, cache: 'no-store' });
   if (!res.ok) {

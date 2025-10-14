@@ -1,17 +1,17 @@
-# Assera Operations & Monitoring Design
+# Intaste Operations & Monitoring Design
 
 **Document Version:** 1.0
 **Last Updated:** 2025-10-12
-**Target:** Assera OSS Initial Version (UI: Next.js / API: FastAPI / Search: Fess OpenAPI / LLM: Ollama)
+**Target:** Intaste OSS Initial Version (UI: Next.js / API: FastAPI / Search: Fess OpenAPI / LLM: Ollama)
 
 **Purpose:**
-Define monitoring, log, metrics, and alert design guidelines to enable flexible user monitoring and operation of Assera's operational status. As OSS, use **design independent of specific monitoring tools**.
+Define monitoring, log, metrics, and alert design guidelines to enable flexible user monitoring and operation of Intaste's operational status. As OSS, use **design independent of specific monitoring tools**.
 
 ---
 
 ## 1. Premises and Design Policy
 
-- Assera is **OSS middleware**; monitoring tool selection and threshold settings left to users
+- Intaste is **OSS middleware**; monitoring tool selection and threshold settings left to users
 - This document defines monitoring "recommended items, structure, perspectives"
 - Adopt metrics design to facilitate deployment with OSS stack like **Prometheus + Grafana**, assuming operation on container infrastructure (Docker Compose / Kubernetes)
 
@@ -56,15 +56,15 @@ healthcheck:
 
 | Metric Name | Type | Description |
 |--------------|------|------|
-| `assera_request_count_total` | counter | Total requests (path, status, method labels) |
-| `assera_request_latency_ms` | histogram | Request latency (p50/p95/p99 aggregation) |
-| `assera_llm_latency_ms` | histogram | Intent / Compose each call response time |
-| `assera_fess_latency_ms` | histogram | Fess search API response time |
-| `assera_error_total` | counter | Stage-specific error (intent/search/compose) count |
-| `assera_fallback_total` | counter | LLM fallback occurrence count |
-| `assera_rate_limit_count` | counter | Rate limit occurrence count |
-| `assera_active_sessions` | gauge | Current session count |
-| `assera_model_selected_total` | counter | Model selection count (model label) |
+| `intaste_request_count_total` | counter | Total requests (path, status, method labels) |
+| `intaste_request_latency_ms` | histogram | Request latency (p50/p95/p99 aggregation) |
+| `intaste_llm_latency_ms` | histogram | Intent / Compose each call response time |
+| `intaste_fess_latency_ms` | histogram | Fess search API response time |
+| `intaste_error_total` | counter | Stage-specific error (intent/search/compose) count |
+| `intaste_fallback_total` | counter | LLM fallback occurrence count |
+| `intaste_rate_limit_count` | counter | Rate limit occurrence count |
+| `intaste_active_sessions` | gauge | Current session count |
+| `intaste_model_selected_total` | counter | Model selection count (model label) |
 
 > Collectable via OpenTelemetry or Prometheus Exporter.
 
@@ -135,7 +135,7 @@ healthcheck:
 
 ## 9. Operational Guidelines
 
-- **Startup confirmation:** `/health` normal response, confirm `Assera API started` in logs
+- **Startup confirmation:** `/health` normal response, confirm `Intaste API started` in logs
 - **Configuration changes:** Re-apply with `compose down && compose up -d` after `.env` editing
 - **Log rotation:** Recommend forwarding docker logs → fluentd / loki, etc.
 - **Backup targets:** Configuration files (`.env`), search index (Fess/OpenSearch)
@@ -166,7 +166,7 @@ healthcheck:
 
 - Metrics integration via MCP (fess-webapp-mcp)
 - Bundled provision with OpenTelemetry Collector
-- Addition of `asseractl` CLI for status confirmation commands
+- Addition of `intastectl` CLI for status confirmation commands
 
 ---
 

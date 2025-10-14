@@ -1,8 +1,8 @@
-# Assera System Architecture Design
+# Intaste System Architecture Design
 
 **Document Version:** 1.0
 **Last Updated:** 2025-10-12
-**Target:** Assera OSS Initial Version (UI: Next.js / API: FastAPI / Search: Fess OpenAPI / LLM: Ollama)
+**Target:** Intaste OSS Initial Version (UI: Next.js / API: FastAPI / Search: Fess OpenAPI / LLM: Ollama)
 
 **Purpose:**
 Define component configuration, communication paths, network/ports, startup order, and operational modes (on-premises/cloud) as standards, ensuring consistency with other design documents (API/UI/Security/Operations & Monitoring/Testing).
@@ -13,14 +13,14 @@ Define component configuration, communication paths, network/ports, startup orde
 
 ```
 +----------------------+             +--------------------+
-|        User          |  HTTPS      |     Assera UI      |
+|        User          |  HTTPS      |     Intaste UI      |
 |  (Browser: SPA)      +------------>+  Next.js (3000)    |
 +----------------------+             +----------+---------+
                                                 |
                                                 | HTTP (internal, same origin or /api proxy)
                                                 v
                                       +---------+----------+
-                                      |     Assera API     |
+                                      |     Intaste API     |
                                       | FastAPI (8000)     |
                                       +----+---------+-----+
                                            |         |
@@ -40,16 +40,16 @@ Define component configuration, communication paths, network/ports, startup orde
                                 +-------------------------+
 ```
 
-**Principle:** Assera **does not connect directly to OpenSearch**. Search is only via Fess REST/OpenAPI.
+**Principle:** Intaste **does not connect directly to OpenSearch**. Search is only via Fess REST/OpenAPI.
 
 ---
 
 ## 2. Deployment View (Docker Compose)
 
-- **Services:** `assera-ui`, `assera-api`, `fess`, `opensearch`, `ollama`
-- **Network:** All services contained in `assera-net` (bridge)
-- **External Exposure:** Only `assera-ui:3000/tcp` by default. Others only `expose`
-- **Startup Order:** `opensearch → fess → ollama → assera-api → assera-ui` (`depends_on + healthcheck`)
+- **Services:** `intaste-ui`, `intaste-api`, `fess`, `opensearch`, `ollama`
+- **Network:** All services contained in `intaste-net` (bridge)
+- **External Exposure:** Only `intaste-ui:3000/tcp` by default. Others only `expose`
+- **Startup Order:** `opensearch → fess → ollama → intaste-api → intaste-ui` (`depends_on + healthcheck`)
 
 ---
 
@@ -59,7 +59,7 @@ Define component configuration, communication paths, network/ports, startup orde
 
 - **Protocol:** HTTP/1.1 (HTTP/2 compatible in future)
 - **Endpoint:** `/api/v1/*`
-- **Authentication:** Header `X-Assera-Token`
+- **Authentication:** Header `X-Intaste-Token`
 - **CORS:** Only UI origin allowed (same origin recommended / reverse proxy `/api` subpath)
 
 ### 3.2 API → Fess
@@ -84,8 +84,8 @@ Define component configuration, communication paths, network/ports, startup orde
 
 | Service | Port | Protocol | Public | Purpose |
 |---|---:|---|---|---|
-| assera-ui | 3000 | HTTP(S) | **External** | SPA delivery, API proxy (optional) |
-| assera-api | 8000 | HTTP | Internal | REST API (/assist, etc.) |
+| intaste-ui | 3000 | HTTP(S) | **External** | SPA delivery, API proxy (optional) |
+| intaste-api | 8000 | HTTP | Internal | REST API (/assist, etc.) |
 | fess | 8080 | HTTP | Internal | Search REST/OpenAPI, admin UI (internal ops) |
 | opensearch | 9200/9600 | HTTP | Internal | Fess backend |
 | ollama | 11434 | HTTP | Internal | LLM execution |
@@ -96,9 +96,9 @@ Define component configuration, communication paths, network/ports, startup orde
 
 ### 5.1 Environment Variables (Excerpt)
 
-- `ASSERA_API_TOKEN` (required)
-- `ASSERA_DEFAULT_MODEL=gpt-oss`
-- `ASSERA_SEARCH_PROVIDER=fess`
+- `INTASTE_API_TOKEN` (required)
+- `INTASTE_DEFAULT_MODEL=gpt-oss`
+- `INTASTE_SEARCH_PROVIDER=fess`
 - `FESS_BASE_URL=http://fess:8080`
 - `OLLAMA_BASE_URL=http://ollama:11434`
 - `NEXT_PUBLIC_API_BASE=/api/v1`
@@ -141,8 +141,8 @@ Define component configuration, communication paths, network/ports, startup orde
 
 ## 8. Security Boundaries (Summary)
 
-- External exposure only for `assera-ui`. API/LLM/Fess/OS on internal network
-- API authentication: `X-Assera-Token` required. CORS limited to UI origin
+- External exposure only for `intaste-ui`. API/LLM/Fess/OS on internal network
+- API authentication: `X-Intaste-Token` required. CORS limited to UI origin
 - UI: CSP restricts `connect-src` to API only. `frame-ancestors 'none'`
 - HTML sanitization (DOMPurify) protects right pane highlight display
 
@@ -183,12 +183,12 @@ Define component configuration, communication paths, network/ports, startup orde
 
 | Item | Implementation Location |
 |---|---|
-| API routers | `assera-api/app/routers/*.py` |
-| Assist service | `assera-api/app/services/assist.py` |
-| Search Provider abstraction | `assera-api/app/core/search_provider/*` |
-| LLM client | `assera-api/app/core/llm/*` |
-| UI pages | `assera-ui/app/page.tsx` |
-| UI state | `assera-ui/src/stores/*` |
+| API routers | `intaste-api/app/routers/*.py` |
+| Assist service | `intaste-api/app/services/assist.py` |
+| Search Provider abstraction | `intaste-api/app/core/search_provider/*` |
+| LLM client | `intaste-api/app/core/llm/*` |
+| UI pages | `intaste-ui/app/page.tsx` |
+| UI state | `intaste-ui/src/stores/*` |
 
 ---
 

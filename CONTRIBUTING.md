@@ -1,6 +1,6 @@
-# Contributing to Assera
+# Contributing to Intaste
 
-Thank you for your interest in contributing to Assera! This document provides guidelines and instructions for contributing.
+Thank you for your interest in contributing to Intaste! This document provides guidelines and instructions for contributing.
 
 ## Table of Contents
 
@@ -22,12 +22,12 @@ This project adheres to the [Contributor Covenant Code of Conduct](CODE_OF_CONDU
 1. **Fork the repository** on GitHub
 2. **Clone your fork** locally:
    ```bash
-   git clone https://github.com/codelibs/assera.git
-   cd assera
+   git clone https://github.com/codelibs/intaste.git
+   cd intaste
    ```
 3. **Add upstream remote**:
    ```bash
-   git remote add upstream https://github.com/codelibs/assera.git
+   git remote add upstream https://github.com/codelibs/intaste.git
    ```
 
 ## Development Setup
@@ -44,7 +44,7 @@ This project adheres to the [Contributor Covenant Code of Conduct](CODE_OF_CONDU
 1. **Create environment file**:
    ```bash
    make env
-   # Edit .env and set ASSERA_API_TOKEN to a secure random value
+   # Edit .env and set INTASTE_API_TOKEN to a secure random value
    ```
 
 2. **Initialize data directories** (Linux only):
@@ -74,7 +74,7 @@ This project adheres to the [Contributor Covenant Code of Conduct](CODE_OF_CONDU
 #### API Development
 
 ```bash
-cd assera-api
+cd intaste-api
 
 # Install dependencies
 uv pip install -e ".[dev]"
@@ -159,7 +159,7 @@ Fixes #123
 ### API Tests
 
 ```bash
-cd assera-api
+cd intaste-api
 
 # Run all tests
 pytest
@@ -247,7 +247,7 @@ Add screenshots here
 
 ### Versioning
 
-Assera follows [Semantic Versioning](https://semver.org/):
+Intaste follows [Semantic Versioning](https://semver.org/):
 - MAJOR: Breaking changes
 - MINOR: New features (backward compatible)
 - PATCH: Bug fixes

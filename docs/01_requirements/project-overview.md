@@ -1,4 +1,4 @@
-# Assera Project Overview
+# Intaste Project Overview
 
 **Document Version:** 1.0
 **Last Updated:** 2025-10-12
@@ -6,18 +6,18 @@
 
 ## Document Purpose
 
-This document provides a comprehensive overview of the Assera project, including its technical architecture, development policies, key features, and license conditions. It serves as the primary reference for developers, deployers, and community participants.
+This document provides a comprehensive overview of the Intaste project, including its technical architecture, development policies, key features, and license conditions. It serves as the primary reference for developers, deployers, and community participants.
 
 ---
 
 ## 1. Project Overview
 
-**Name:** Assera
+**Name:** Intaste
 **Type:** Open Source AI-Assisted Search Platform
 **License:** Apache License 2.0
 **Development:** GitHub OSS (under CodeLibs organization)
 
-Assera is an **AI-assisted search platform** provided as open-source software. It analyzes user queries in natural language and generates responses by combining Fess search results with LLM (e.g., Ollama). Assera itself does not depend on Fess or OpenSearch; the API layer is abstracted, allowing for easy addition of other search providers.
+Intaste is an **AI-assisted search platform** provided as open-source software. It analyzes user queries in natural language and generates responses by combining Fess search results with LLM (e.g., Ollama). Intaste itself does not depend on Fess or OpenSearch; the API layer is abstracted, allowing for easy addition of other search providers.
 
 ---
 
@@ -25,13 +25,13 @@ Assera is an **AI-assisted search platform** provided as open-source software. I
 
 ```
 +------------------------+
-|      Assera UI         |  ← Next.js / shadcn / Tailwind / i18n
+|      Intaste UI         |  ← Next.js / shadcn / Tailwind / i18n
 +-----------+------------+
             |
-            | (REST / HTTPS, X-Assera-Token)
+            | (REST / HTTPS, X-Intaste-Token)
             v
 +------------------------+
-|      Assera API        |  ← FastAPI / Python / JWT / OpenAPI
+|      Intaste API        |  ← FastAPI / Python / JWT / OpenAPI
 +-----------+------------+
             |
             | (Provider abstraction layer)
@@ -45,16 +45,16 @@ Assera is an **AI-assisted search platform** provided as open-source software. I
 
 **Component Configuration:**
 
-- **Assera UI**: SPA using Next.js + shadcn/ui + TailwindCSS. State management with Zustand, i18n support, accessible search UI.
-- **Assera API**: Lightweight backend using FastAPI. Integrates LLM and Fess, provides Assist API.
-- **Fess**: Search engine. Accessed only via Assera API, no direct access from UI.
+- **Intaste UI**: SPA using Next.js + shadcn/ui + TailwindCSS. State management with Zustand, i18n support, accessible search UI.
+- **Intaste API**: Lightweight backend using FastAPI. Integrates LLM and Fess, provides Assist API.
+- **Fess**: Search engine. Accessed only via Intaste API, no direct access from UI.
 - **Ollama**: Provides LLM as local inference environment (models pulled on demand).
 
 ---
 
 ## 3. Project Objectives
 
-Assera's development objectives are threefold:
+Intaste's development objectives are threefold:
 
 1. **Standardization of LLM-Assisted Search through Open Source**
    Realize an architecture deployable in private environments as OSS.
@@ -76,7 +76,7 @@ Assera's development objectives are threefold:
 | Search Layer | Fess 14.x (OpenAPI) | Search result provision, metadata management |
 | LLM Layer | Ollama (gpt-oss, etc.) | Answer generation, inference processing |
 | Deployment | Docker Compose / GitHub Actions | Startup order management, CI/CD, OSS distribution |
-| Authentication | API Token (X-Assera-Token) | Security between UI and API |
+| Authentication | API Token (X-Intaste-Token) | Security between UI and API |
 
 ---
 
@@ -135,14 +135,14 @@ Assera's development objectives are threefold:
 
 - `compose.yaml`: For production/PoC (with healthcheck and dependency order)
 - `compose.dev.yaml`: Hot-reload configuration for development
-- Network: Unified in `assera-net`, only `assera-ui` exposed externally
+- Network: Unified in `intaste-net`, only `intaste-ui` exposed externally
 - Recommended environment: Linux / Docker Engine 24+, 8GB RAM or more
 
 ---
 
 ## 9. OSS Operations Policy
 
-- **Public Repository**: GitHub (`github.com/codelibs/assera`)
+- **Public Repository**: GitHub (`github.com/codelibs/intaste`)
 - **Issue Management**: Unified in GitHub Issues + Discussions
 - **Release Policy**:
   - v0.1: Basic features (Assist API + UI)
@@ -176,10 +176,10 @@ Assera's development objectives are threefold:
 
 ## 12. Commercial Use and Disclaimer
 
-- Assera is available for commercial use under Apache License 2.0
+- Intaste is available for commercial use under Apache License 2.0
 - Development team does not guarantee operation; deployment is the responsibility of each user
 - Quality of external LLM models and search service results is not covered by guarantee
 
 ---
 
-**End — Assera System Overview v1.0**
+**End — Intaste System Overview v1.0**

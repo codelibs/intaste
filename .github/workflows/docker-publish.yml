@@ -25,8 +25,8 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  API_IMAGE_NAME: ${{ github.repository }}/assera-api
-  UI_IMAGE_NAME: ${{ github.repository }}/assera-ui
+  API_IMAGE_NAME: ${{ github.repository }}/intaste-api
+  UI_IMAGE_NAME: ${{ github.repository }}/intaste-ui
 
 permissions:
   contents: read
@@ -69,8 +69,8 @@ jobs:
       - name: Build and push API image
         uses: docker/build-push-action@v6
         with:
-          context: ./assera-api
-          file: ./assera-api/Dockerfile
+          context: ./intaste-api
+          file: ./intaste-api/Dockerfile
           platforms: linux/amd64,linux/arm64
           push: true
           tags: ${{ steps.meta.outputs.tags }}
@@ -127,8 +127,8 @@ jobs:
       - name: Build and push UI image
         uses: docker/build-push-action@v6
         with:
-          context: ./assera-ui
-          file: ./assera-ui/Dockerfile
+          context: ./intaste-ui
+          file: ./intaste-ui/Dockerfile
           platforms: linux/amd64,linux/arm64
           push: true
           tags: ${{ steps.meta.outputs.tags }}

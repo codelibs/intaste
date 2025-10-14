@@ -31,7 +31,7 @@ down-v: ## Stop and remove all services including volumes
 	docker compose down -v
 
 logs: ## Follow logs for API and UI
-	docker compose logs -f assera-api
+	docker compose logs -f intaste-api
 
 logs-all: ## Follow logs for all services
 	docker compose logs -f
@@ -43,8 +43,8 @@ restart: ## Restart all services
 	docker compose restart
 
 pull-model: ## Pull the default LLM model (gpt-oss)
-	@echo "Pulling default model: $${ASSERA_DEFAULT_MODEL:-gpt-oss}"
-	docker compose exec ollama ollama pull $${ASSERA_DEFAULT_MODEL:-gpt-oss}
+	@echo "Pulling default model: $${INTASTE_DEFAULT_MODEL:-gpt-oss}"
+	docker compose exec ollama ollama pull $${INTASTE_DEFAULT_MODEL:-gpt-oss}
 
 clean: ## Remove all containers, volumes, and images
 	docker compose down -v --rmi all
@@ -53,7 +53,7 @@ dev: ## Start in development mode with hot reload
 	docker compose -f compose.yaml -f compose.dev.yaml up -d --build
 
 dev-logs: ## Follow logs in development mode
-	docker compose -f compose.yaml -f compose.dev.yaml logs -f assera-api
+	docker compose -f compose.yaml -f compose.dev.yaml logs -f intaste-api
 
 health: ## Check health of all services
 	@echo "Checking health..."
@@ -61,26 +61,26 @@ health: ## Check health of all services
 	@curl -fsS http://localhost:8080/api/v1/health >/dev/null 2>&1 && echo "✓ Fess OK" || echo "✗ Fess FAILED"
 
 test: ## Run tests
-	cd assera-api && uv pip install --system -e ".[dev]" && pytest
+	cd intaste-api && uv pip install --system -e ".[dev]" && pytest
 
 lint-api: ## Run API linters
-	cd assera-api && uv run ruff check app/
-	cd assera-api && uv run mypy app/
+	cd intaste-api && uv run ruff check app/
+	cd intaste-api && uv run mypy app/
 
 lint-ui: ## Run UI linters
-	cd assera-ui && npm run lint
-	cd assera-ui && npm run type-check
+	cd intaste-ui && npm run lint
+	cd intaste-ui && npm run type-check
 
 lint: ## Run all linters (API + UI)
 	@$(MAKE) --no-print-directory lint-api
 	@$(MAKE) --no-print-directory lint-ui
 
 format-api: ## Format API code
-	cd assera-api && uv run black app/
-	cd assera-api && uv run ruff check --fix app/
+	cd intaste-api && uv run black app/
+	cd intaste-api && uv run ruff check --fix app/
 
 format-ui: ## Format UI code
-	cd assera-ui && npm run format
+	cd intaste-ui && npm run format
 
 format: ## Format all code (API + UI)
 	@$(MAKE) --no-print-directory format-api
@@ -90,7 +90,7 @@ env: ## Create .env from example
 	@if [ ! -f .env ]; then \
 		cp .env.example .env; \
 		echo ".env created from .env.example"; \
-		echo "⚠️  Please update ASSERA_API_TOKEN in .env"; \
+		echo "⚠️  Please update INTASTE_API_TOKEN in .env"; \
 	else \
 		echo ".env already exists"; \
 	fi
@@ -105,9 +105,9 @@ init-dirs: ## Initialize data directories with correct permissions (Linux)
 
 init-test-cache: ## Initialize test cache directories with correct permissions
 	@echo "Creating test cache directories..."
-	@mkdir -p .cache/uv assera-ui/node_modules
+	@mkdir -p .cache/uv intaste-ui/node_modules
 	@echo "Setting permissions..."
-	@chown -R $$(id -u):$$(id -g) .cache assera-ui/node_modules 2>/dev/null || true
+	@chown -R $$(id -u):$$(id -g) .cache intaste-ui/node_modules 2>/dev/null || true
 	@echo "✓ Test cache directories initialized"
 
 up-gpu: ## Start all services with explicit GPU support (production mode)
@@ -119,7 +119,7 @@ dev-gpu: ## Start in development mode with explicit GPU support
 gpu-check: ## Check if Ollama is using GPU
 	@echo "Checking Ollama GPU status..."
 	@echo "Looking for 'Nvidia GPU detected' message in logs:"
-	@docker logs assera-ollama 2>&1 | grep -i "gpu\|cuda" || echo "No GPU-related messages found (may be using CPU)"
+	@docker logs intaste-ollama 2>&1 | grep -i "gpu\|cuda" || echo "No GPU-related messages found (may be using CPU)"
 
 ## Docker-based Testing (Isolated Environment)
 
@@ -187,7 +187,7 @@ test-docker-build: ## Build Docker test image
 test-docker-clean: ## Clean up Docker test containers and volumes
 	@echo "Cleaning up Docker test environment..."
 	@docker compose -f compose.test.yaml down -v
-	@docker rmi assera-test-runner 2>/dev/null || true
+	@docker rmi intaste-test-runner 2>/dev/null || true
 	@echo "✓ Cleanup completed"
 
 check-docker: ## Run all checks (lint + test) in Docker

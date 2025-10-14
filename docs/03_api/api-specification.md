@@ -1,16 +1,16 @@
-# Assera API Specification
+# Intaste API Specification
 
 **Document Version:** 1.0
 **Last Updated:** 2025-10-12
 **API Base URL:** `/api/v1`
-**Authentication:** API Key (Header: X-Assera-Token)
-**Dependencies:** Fess Search OpenAPI (Assera uses Fess REST only. No OpenSearch connection)
+**Authentication:** API Key (Header: X-Intaste-Token)
+**Dependencies:** Fess Search OpenAPI (Intaste uses Fess REST only. No OpenSearch connection)
 
 ---
 
 ## 0. Design Policy
 
-- Assera follows "guidance over summary" as a basic policy, keeping generated text short and emphasizing evidence (citations) presentation and drill-down.
+- Intaste follows "guidance over summary" as a basic policy, keeping generated text short and emphasizing evidence (citations) presentation and drill-down.
 - LLM uses Ollama (default: `gpt-oss`) with limited use for search intent extraction, suggested question generation, and concise explanations.
 - Search calls Fess REST API (OpenAPI) via Search Provider abstraction.
 - UI→API requires API Key authentication. Initial version uses single role with no authorization.
@@ -20,7 +20,7 @@
 ## 1. Security
 
 ### 1.1 Authentication
-- **Header:** `X-Assera-Token: <api-key>`
+- **Header:** `X-Intaste-Token: <api-key>`
 - **401 (Unauthorized) conditions:**
   - Header missing
   - Invalid token
@@ -28,7 +28,7 @@
   - For future role control (not used in initial version)
 
 ### 1.2 CORS
-- By default, only assera-ui origin allowed. Expandable via environment variables.
+- By default, only intaste-ui origin allowed. Expandable via environment variables.
 
 ### 1.3 Rate Control (Recommended Implementation)
 - **Soft limit:** 60 req/min/key (initial recommended value)
@@ -196,7 +196,7 @@ Answer: {
   "error": {
     "code": "AUTH_INVALID_TOKEN",   // Machine-readable code
     "message": "invalid API token",  // Human-readable
-    "details": { "hint": "check X-Assera-Token" },
+    "details": { "hint": "check X-Intaste-Token" },
     "request_id": "a1b2c3d4"
   }
 }
@@ -227,7 +227,7 @@ Answer: {
 
 ### 5.1 `/assist/query` Processing Stages
 
-1. **Auth:** Verify `X-Assera-Token`
+1. **Auth:** Verify `X-Intaste-Token`
 2. **Intent Extraction:** LLM prompt
    - Output: `normalized_query`, `filters`, `followup_candidates`
 3. **Search:** Execute `normalized_query` with SearchProvider (Fess)
@@ -254,7 +254,7 @@ Answer: {
 
 ## 6. Implementation Notes (FastAPI)
 
-- **Authentication dependency:** Verify `X-Assera-Token` with `Depends(api_key_auth)`
+- **Authentication dependency:** Verify `X-Intaste-Token` with `Depends(api_key_auth)`
 - **Schema:** Define above JSON schema with pydantic v2 (BaseModel)
 - **HTTP client:** Call Fess / Ollama with `httpx.AsyncClient`
 - **Timeout:** Distribute `timeout_ms` within API (e.g., 60% LLM, 40% Fess)
@@ -274,7 +274,7 @@ Answer: {
 
 - **Fess OpenAPI Schema (User Search API):**
   `https://raw.githubusercontent.com/codelibs/fess/refs/heads/master/src/main/config/openapi/openapi-user.yaml`
-- **Assera** does not directly access OpenSearch (design constraint)
+- **Intaste** does not directly access OpenSearch (design constraint)
 
 ---
 

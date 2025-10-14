@@ -1,8 +1,8 @@
-# Assera Environment Configuration Management
+# Intaste Environment Configuration Management
 
 **Document Version:** 1.0
 **Last Updated:** 2025-10-12
-**Target:** Assera OSS Initial Version (UI: Next.js / API: FastAPI / Search: Fess OpenAPI / LLM: Ollama)
+**Target:** Intaste OSS Initial Version (UI: Next.js / API: FastAPI / Search: Fess OpenAPI / LLM: Ollama)
 
 **Purpose:**
 Unify **definition, defaults, validation, priority, and secret management** of environment variables and configuration to prevent misconfig and confidential exposure in local/distribution (PoC)/future operational environments.
@@ -32,10 +32,10 @@ Unify **definition, defaults, validation, priority, and secret management** of e
 | Variable | Type | Default | Required | Description |
 |---|---|---|---|---|
 | `TZ` | string | `UTC` | Optional | Timezone |
-| `ASSERA_PROFILE` | enum(`dev`,`dist`) | `dist` | Optional | Configuration profile (development/distribution) |
-| `ASSERA_API_TOKEN` | secret | — | **Required** | UI→API API Key (32+ characters) |
-| `ASSERA_SEARCH_PROVIDER` | enum | `fess` | Optional | Search provider (initial version fixed to `fess`) |
-| `ASSERA_DEFAULT_MODEL` | string | `gpt-oss` | Optional | Ollama default model name |
+| `INTASTE_PROFILE` | enum(`dev`,`dist`) | `dist` | Optional | Configuration profile (development/distribution) |
+| `INTASTE_API_TOKEN` | secret | — | **Required** | UI→API API Key (32+ characters) |
+| `INTASTE_SEARCH_PROVIDER` | enum | `fess` | Optional | Search provider (initial version fixed to `fess`) |
+| `INTASTE_DEFAULT_MODEL` | string | `gpt-oss` | Optional | Ollama default model name |
 
 ### 2.2 API (FastAPI)
 
@@ -74,8 +74,8 @@ Unify **definition, defaults, validation, priority, and secret management** of e
 from pydantic import BaseModel, Field, HttpUrl
 
 class Settings(BaseModel):
-    assera_api_token: str = Field(min_length=32, alias='ASSERA_API_TOKEN')
-    assera_default_model: str = Field(default='gpt-oss', alias='ASSERA_DEFAULT_MODEL')
+    intaste_api_token: str = Field(min_length=32, alias='INTASTE_API_TOKEN')
+    intaste_default_model: str = Field(default='gpt-oss', alias='INTASTE_DEFAULT_MODEL')
     allowed_origins: list[str] = Field(default=['http://localhost:3000'], alias='ALLOWED_ORIGINS')
     req_timeout_ms: int = Field(default=5000, ge=1000, le=20000, alias='REQ_TIMEOUT_MS')
     fess_base_url: HttpUrl = Field(default='http://fess:8080', alias='FESS_BASE_URL')
@@ -98,7 +98,7 @@ class Settings(BaseModel):
 | `dev` | Local development (`compose.dev.yaml`) | `LOG_LEVEL=DEBUG`, `ALLOWED_ORIGINS=*` (caution) |
 | `dist` | Distribution (PoC/evaluation) | Minimum privilege (CORS UI origin only, strict CSP), log at `INFO` |
 
-> Mechanism to inject **safe defaults** by overriding at startup with `ASSERA_PROFILE` (code-side preset).
+> Mechanism to inject **safe defaults** by overriding at startup with `INTASTE_PROFILE` (code-side preset).
 
 ---
 
@@ -114,11 +114,11 @@ class Settings(BaseModel):
 ## 6. `.env.example` Template
 
 ```dotenv
-# === Assera common ===
-ASSERA_PROFILE=dist
-ASSERA_API_TOKEN=change-me
-ASSERA_DEFAULT_MODEL=gpt-oss
-ASSERA_SEARCH_PROVIDER=fess
+# === Intaste common ===
+INTASTE_PROFILE=dist
+INTASTE_API_TOKEN=change-me
+INTASTE_DEFAULT_MODEL=gpt-oss
+INTASTE_SEARCH_PROVIDER=fess
 TZ=UTC
 
 # === Endpoints (internal) ===
@@ -148,9 +148,9 @@ NEXT_PUBLIC_LATENCY_THRESHOLDS=500,1500
 - Example:
 ```yaml
 services:
-  assera-api:
+  intaste-api:
     environment:
-      - ASSERA_API_TOKEN=${ASSERA_API_TOKEN}
+      - INTASTE_API_TOKEN=${INTASTE_API_TOKEN}
       - FESS_BASE_URL=${FESS_BASE_URL}
 ```
 

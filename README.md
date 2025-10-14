@@ -1,15 +1,17 @@
-# Assera - AI-Assisted Search Platform
+# Intaste — Intelligent Assistive Search Technology
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 
-> **Assera** is an open-source **Assisted Search** platform that combines search with AI generation. It uses Fess search results as evidence and limits LLM usage to intent extraction and brief guidance with follow-up suggestions. Built with Next.js (UI) and FastAPI (API).
+> **An open platform for intelligent, assistive, and human-centered search**
+
+**Intaste** is an open-source platform that combines enterprise search with intelligent assistance. Designed with a human-centered philosophy, Intaste keeps users in control while providing AI-powered intent extraction and evidence-based guidance. Search results from Fess serve as transparent evidence, with LLM usage carefully limited to assistance rather than replacement. Built with Next.js (UI) and FastAPI (API).
 
 ---
 
 ## 1. Overview
 
-- **Architecture**: `assera-ui` (Next.js) / `assera-api` (FastAPI) / `fess` (Search) / `opensearch` (For Fess) / `ollama` (LLM)
-- **Principle**: Assera **does not directly access OpenSearch** (only via Fess REST/OpenAPI)
+- **Architecture**: `intaste-ui` (Next.js) / `intaste-api` (FastAPI) / `fess` (Search) / `opensearch` (For Fess) / `ollama` (LLM)
+- **Principle**: Intaste **does not directly access OpenSearch** (only via Fess REST/OpenAPI)
 - **Default Model**: Ollama `gpt-oss` (configurable)
 - **License**: Apache License 2.0
 
@@ -27,15 +29,15 @@
 
 ```bash
 # 1) Clone repository
-$ git clone https://github.com/codelibs/assera.git
-$ cd assera
+$ git clone https://github.com/codelibs/intaste.git
+$ cd intaste
 
 # 2) Setup environment variables
 $ cp .env.example .env
 $ sed -i.bak \
-  -e "s/ASSERA_API_TOKEN=.*/ASSERA_API_TOKEN=$(openssl rand -hex 24)/" \
-  -e "s/ASSERA_UID=.*/ASSERA_UID=$(id -u)/" \
-  -e "s/ASSERA_GID=.*/ASSERA_GID=$(id -g)/" \
+  -e "s/INTASTE_API_TOKEN=.*/INTASTE_API_TOKEN=$(openssl rand -hex 24)/" \
+  -e "s/INTASTE_UID=.*/INTASTE_UID=$(id -u)/" \
+  -e "s/INTASTE_GID=.*/INTASTE_GID=$(id -g)/" \
   .env
 
 # 3) Initialize data directories (Linux only)
@@ -62,7 +64,7 @@ $ curl -fsS http://localhost:8000/api/v1/health && echo 'API OK'
 
 ## 4. Health Checks
 
-Assera provides multiple health check endpoints for monitoring and orchestration:
+Intaste provides multiple health check endpoints for monitoring and orchestration:
 
 ### 4.1 Basic Health Check
 
@@ -128,7 +130,7 @@ Example response:
 - `degraded` - Some dependencies are degraded but service still operational
 - `unhealthy` - Critical dependencies are down
 
-See [assera-api/kubernetes-example.yaml](assera-api/kubernetes-example.yaml) for Kubernetes deployment configuration.
+See [intaste-api/kubernetes-example.yaml](intaste-api/kubernetes-example.yaml) for Kubernetes deployment configuration.
 
 ---
 
@@ -137,10 +139,10 @@ See [assera-api/kubernetes-example.yaml](assera-api/kubernetes-example.yaml) for
 ### 5.1 API Smoke Test
 
 ```bash
-# Use ASSERA_API_TOKEN from .env for X-Assera-Token header
-TOKEN=$(grep ^ASSERA_API_TOKEN .env | cut -d= -f2)
+# Use INTASTE_API_TOKEN from .env for X-Intaste-Token header
+TOKEN=$(grep ^INTASTE_API_TOKEN .env | cut -d= -f2)
 
-curl -sS -H "X-Assera-Token: $TOKEN" \
+curl -sS -H "X-Intaste-Token: $TOKEN" \
      -H 'Content-Type: application/json' \
      -X POST http://localhost:8000/api/v1/assist/query \
      -d '{"query":"What is the latest security policy?"}' | jq .
@@ -151,10 +153,10 @@ curl -sS -H "X-Assera-Token: $TOKEN" \
 ### 5.2 Model List / Selection
 
 ```bash
-curl -sS -H "X-Assera-Token: $TOKEN" http://localhost:8000/api/v1/models | jq .
+curl -sS -H "X-Intaste-Token: $TOKEN" http://localhost:8000/api/v1/models | jq .
 # Example: {"default":"gpt-oss","available":["gpt-oss","mistral","llama3"]}
 
-curl -sS -H "X-Assera-Token: $TOKEN" \
+curl -sS -H "X-Intaste-Token: $TOKEN" \
      -H 'Content-Type: application/json' \
      -X POST http://localhost:8000/api/v1/models/select \
      -d '{"model":"mistral","scope":"session","session_id":"00000000-0000-0000-0000-000000000000"}'
@@ -162,7 +164,7 @@ curl -sS -H "X-Assera-Token: $TOKEN" \
 
 ### 5.3 Streaming Responses (SSE)
 
-Assera can stream LLM responses in real-time.
+Intaste can stream LLM responses in real-time.
 
 **Using the UI**:
 - Toggle streaming mode with the "⚡ Stream" checkbox in the header (default: enabled)
@@ -172,7 +174,7 @@ Assera can stream LLM responses in real-time.
 **Testing the API**:
 ```bash
 # Server-Sent Events (SSE) endpoint
-curl -sS -H "X-Assera-Token: $TOKEN" \
+curl -sS -H "X-Intaste-Token: $TOKEN" \
      -H 'Content-Type: application/json' \
      -H 'Accept: text/event-stream' \
      -X POST http://localhost:8000/api/v1/assist/query/stream \
@@ -206,11 +208,11 @@ See [STREAMING.md](STREAMING.md) for detailed documentation.
 $ docker compose -f compose.yaml -f compose.dev.yaml up -d --build
 
 # Follow logs
-$ docker compose logs -f assera-api assera-ui
+$ docker compose logs -f intaste-api intaste-ui
 ```
 
-- `assera-api`: `uvicorn --reload`
-- `assera-ui`: `npm run dev -p 3000`
+- `intaste-api`: `uvicorn --reload`
+- `intaste-ui`: `npm run dev -p 3000`
 
 ---
 
@@ -218,31 +220,31 @@ $ docker compose logs -f assera-api assera-ui
 
 | Variable | Default | Description |
 |---|---|---|
-| `ASSERA_API_TOKEN` | — | UI→API authentication key (required) |
-| `ASSERA_DEFAULT_MODEL` | `gpt-oss` | Default Ollama model |
-| `ASSERA_SEARCH_PROVIDER` | `fess` | Search provider (v0.1 supports fess only) |
+| `INTASTE_API_TOKEN` | — | UI→API authentication key (required) |
+| `INTASTE_DEFAULT_MODEL` | `gpt-oss` | Default Ollama model |
+| `INTASTE_SEARCH_PROVIDER` | `fess` | Search provider (v0.1 supports fess only) |
 | `FESS_BASE_URL` | `http://fess:8080` | Internal URL for API to call Fess |
 | `OLLAMA_BASE_URL` | `http://ollama:11434` | Internal URL for API to call Ollama |
 | `NEXT_PUBLIC_API_BASE` | `/api/v1` | API base path from UI |
 | `TZ` | `UTC` | Timezone |
 
-> **Security**: Set `ASSERA_API_TOKEN` to a sufficiently long random value.
+> **Security**: Set `INTASTE_API_TOKEN` to a sufficiently long random value.
 
 ---
 
 ## 8. Directory Structure
 
 ```
-assera/
+intaste/
 ├─ compose.yaml                # Production deployment
 ├─ compose.dev.yaml            # Development (hot reload)
 ├─ .env.example                # Environment variables sample
 ├─ Makefile                    # Common commands (up/down/logs)
-├─ assera-ui/                  # Next.js (App Router)
+├─ intaste-ui/                  # Next.js (App Router)
 │   ├─ app/                    # Pages
 │   ├─ src/                    # State/Components
 │   └─ Dockerfile
-├─ assera-api/                 # FastAPI
+├─ intaste-api/                 # FastAPI
 │   ├─ app/                    # Routers/Services
 │   ├─ core/                   # LLM/Search provider abstractions
 │   └─ Dockerfile
@@ -265,8 +267,8 @@ assera/
 
 ## 10. Security Considerations
 
-- Only `assera-ui:3000` should be externally exposed. Keep `assera-api`, `fess`, `opensearch`, and `ollama` on internal network
-- UI→API authentication uses `X-Assera-Token` header (no cookies)
+- Only `intaste-ui:3000` should be externally exposed. Keep `intaste-api`, `fess`, `opensearch`, and `ollama` on internal network
+- UI→API authentication uses `X-Intaste-Token` header (no cookies)
 - UI CSP/CORS configured with minimal privileges (see Security Design Document v0.1)
 
 ---
@@ -276,10 +278,10 @@ assera/
 | Symptom | Cause / Solution |
 |---|---|
 | Permission denied on data/ directory (Linux) | Container UID/GID mismatch with host. Run `make init-dirs` or manually: `sudo chown -R 1000:1000 data/{opensearch,dictionary}` |
-| UI returns 404/timeout | API health check failed. Check `docker compose ps` and `docker compose logs assera-api` |
+| UI returns 404/timeout | API health check failed. Check `docker compose ps` and `docker compose logs intaste-api` |
 | Search always returns 0 results | Fess index not built. Check Fess admin panel / Crawl configuration |
 | LLM error 503 | `ollama pull gpt-oss` not executed / insufficient memory. Switch to lighter model |
-| API 401 error | `X-Assera-Token` not set or mismatch. Sync `.env` value with UI |
+| API 401 error | `X-Intaste-Token` not set or mismatch. Sync `.env` value with UI |
 | Slow startup | OpenSearch/Fess initialization in progress. Wait until health status shows `green/yellow` |
 
 ---
@@ -313,15 +315,15 @@ Copyright (c) 2025 CodeLibs
 
 ```bash
 # API tests
-cd assera-api
+cd intaste-api
 pytest --cov
 
 # UI unit tests
-cd assera-ui
+cd intaste-ui
 npm test
 
 # E2E tests
-cd assera-ui
+cd intaste-ui
 npm run test:e2e
 ```
 
@@ -336,6 +338,6 @@ See [TESTING.md](TESTING.md) for detailed documentation.
   - [Streaming Responses](docs/02_architecture/streaming-responses.md)
   - [Implementation Status](docs/01_requirements/implementation-status.md)
   - [Development Guidelines](docs/08_development/development-guidelines.md)
-- [assera-api/README.md](assera-api/README.md) - API specification and development guide
-- [assera-ui/README.md](assera-ui/README.md) - UI specification and development guide
+- [intaste-api/README.md](intaste-api/README.md) - API specification and development guide
+- [intaste-ui/README.md](intaste-ui/README.md) - UI specification and development guide
 

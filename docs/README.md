@@ -1,9 +1,9 @@
-# Assera Documentation Index
+# Intaste Documentation Index
 
 **Last Updated:** 2025-10-12
 **Version:** 1.0
 
-Welcome to the Assera documentation! This index provides a comprehensive guide to all technical documentation for the Assera AI-assisted search platform.
+Welcome to the Intaste documentation! This index provides a comprehensive guide to all technical documentation for the Intaste AI-assisted search platform.
 
 ---
 
@@ -85,13 +85,13 @@ Development workflows and contribution guidelines.
 
 ```
 ┌─────────────────────────────────────────────────────┐
-│                    Assera UI                        │
+│                    Intaste UI                        │
 │            (Next.js + shadcn/ui)                    │
 └──────────────────┬──────────────────────────────────┘
-                   │ REST/HTTPS (X-Assera-Token)
+                   │ REST/HTTPS (X-Intaste-Token)
                    ↓
 ┌─────────────────────────────────────────────────────┐
-│                  Assera API                         │
+│                  Intaste API                         │
 │              (FastAPI + Python)                     │
 └──────────────┬─────────────────┬────────────────────┘
                │                 │
@@ -104,7 +104,7 @@ Development workflows and contribution guidelines.
 ```
 
 **Key Principles:**
-- Assera **does not directly access OpenSearch** - only via Fess API
+- Intaste **does not directly access OpenSearch** - only via Fess API
 - Search provider abstraction enables future extensibility
 - API-first design with comprehensive OpenAPI specification
 - Security-first with API token authentication and strict CORS/CSP
@@ -157,7 +157,7 @@ Please refer to **[Development Guidelines](08_development/development-guidelines
 
 ## 📝 License
 
-Assera is licensed under the Apache License 2.0. See the LICENSE file in the repository root for details.
+Intaste is licensed under the Apache License 2.0. See the LICENSE file in the repository root for details.
 
 ---
 
@@ -190,4 +190,4 @@ Assera is licensed under the Apache License 2.0. See the LICENSE file in the rep
 
 ---
 
-*Generated: 2025-10-12 | Assera Documentation Team*
+*Generated: 2025-10-12 | Intaste Documentation Team*

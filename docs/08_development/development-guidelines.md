@@ -1,8 +1,8 @@
-# Assera Development & Contribution Guidelines
+# Intaste Development & Contribution Guidelines
 
 **Document Version:** 1.0
 **Last Updated:** 2025-10-12
-**Target:** Assera OSS Initial Version (UI: Next.js / API: FastAPI)
+**Target:** Intaste OSS Initial Version (UI: Next.js / API: FastAPI)
 
 **Purpose:**
 Define branch operations, coding standards, commit conventions, PR/review procedures, CI execution, and release procedures so external/internal contributors can develop/review/release with consistent quality.
@@ -74,7 +74,7 @@ Define branch operations, coding standards, commit conventions, PR/review proced
 
 ## 6. CI/CD (GitHub Actions)
 
-Assera uses GitHub Actions for automated testing, security scanning, and deployment. All workflows are defined in `.github/workflows/`.
+Intaste uses GitHub Actions for automated testing, security scanning, and deployment. All workflows are defined in `.github/workflows/`.
 
 ### 6.1 CI Workflow (`ci.yml`)
 
@@ -86,8 +86,8 @@ Assera uses GitHub Actions for automated testing, security scanning, and deploym
 - **UI Lint & Type Check**: Runs ESLint, TypeScript, and Prettier checks
 - **UI Unit Tests**: Runs vitest with coverage
 - **UI E2E Tests**: Executes Playwright tests across browsers
-- **Build API**: Builds Docker image for assera-api
-- **Build UI**: Builds Docker image for assera-ui
+- **Build API**: Builds Docker image for intaste-api
+- **Build UI**: Builds Docker image for intaste-ui
 - **Integration Test**: Full stack testing with Docker Compose
 - **All Checks Passed**: Summary job that fails if any check fails
 
@@ -125,8 +125,8 @@ Assera uses GitHub Actions for automated testing, security scanning, and deploym
 **Trigger:** Tag push (`v*.*.*`), Manual dispatch
 
 **Jobs:**
-- **Build and Push API**: Builds multi-platform image for assera-api
-- **Build and Push UI**: Builds multi-platform image for assera-ui
+- **Build and Push API**: Builds multi-platform image for intaste-api
+- **Build and Push UI**: Builds multi-platform image for intaste-ui
 - **Update Docker Compose**: Creates PR to update image tags
 - **Publish Summary**: Reports published image details
 
@@ -229,7 +229,7 @@ Assera uses GitHub Actions for automated testing, security scanning, and deploym
 4. Create GitHub Release:
    - Changes, known issues, upgrade procedures
    - Attachments: SBOM (optional), compose.yaml, .env.example
-5. Publish container (optional): `ghcr.io/codelibs/assera-api:sha` / `assera-ui:sha`
+5. Publish container (optional): `ghcr.io/codelibs/intaste-api:sha` / `intaste-ui:sha`
 
 ### 8.1 Versioning
 
@@ -282,7 +282,7 @@ Assera uses GitHub Actions for automated testing, security scanning, and deploym
 
 ## 14. Migration Policy
 
-- Data persistence only in Fess/OpenSearch area (Assera is stateless)
+- Data persistence only in Fess/OpenSearch area (Intaste is stateless)
 - Document procedures in `MIGRATIONS.md` for breaking changes
 
 ---

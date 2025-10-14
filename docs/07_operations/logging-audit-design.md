@@ -1,8 +1,8 @@
-# Assera Logging & Audit Design
+# Intaste Logging & Audit Design
 
 **Document Version:** 1.0
 **Last Updated:** 2025-10-12
-**Target:** Assera OSS Initial Version (UI: Next.js / API: FastAPI / LLM: Ollama / Search: Fess OpenAPI)
+**Target:** Intaste OSS Initial Version (UI: Next.js / API: FastAPI / LLM: Ollama / Search: Fess OpenAPI)
 
 **Purpose:** Define specifications for structured logs, distributed traces, metrics, and audit logs aimed at **production-grade observability**.
 
@@ -18,9 +18,9 @@
 
 | Component | Log Medium | Format | Purpose |
 |--------------------|--------|------|----------------------------------|
-| assera-ui (Next.js) | stdout | JSON | Main UI events (send, click, error). Do not send PII |
-| assera-api (FastAPI) | stdout | JSON | API receive/send, Fess/Ollama calls, exceptions, performance |
-| fess | stdout | default | Reference (Assera side generally does not aggregate) |
+| intaste-ui (Next.js) | stdout | JSON | Main UI events (send, click, error). Do not send PII |
+| intaste-api (FastAPI) | stdout | JSON | API receive/send, Fess/Ollama calls, exceptions, performance |
+| fess | stdout | default | Reference (Intaste side generally does not aggregate) |
 | opensearch | stdout | default | Reference |
 | ollama | stdout | default | Reference |
 
@@ -36,7 +36,7 @@ Required keys (common across all layers):
 {
   "ts": "2025-10-09T12:34:56.789Z",   // ISO8601 with ms
   "level": "INFO",                      // TRACE|DEBUG|INFO|WARN|ERROR
-  "service": "assera-api",             // assera-ui|assera-api|...
+  "service": "intaste-api",             // intaste-ui|intaste-api|...
   "component": "assist",               // optional: http|assist|llm|search|auth|ui
   "event": "assist.query",             // audit event name (see below)
   "request_id": "b2f7...",             // X-Request-Id (generate if none)
@@ -111,7 +111,7 @@ Required keys (common across all layers):
 {
   "ts":"2025-10-09T12:00:01.123Z",
   "level":"INFO",
-  "service":"assera-api",
+  "service":"intaste-api",
   "component":"assist",
   "event":"assist.success",
   "request_id":"8c2f...",
@@ -130,7 +130,7 @@ Required keys (common across all layers):
 {
   "ts":"2025-10-09T12:00:01.000Z",
   "level":"WARN",
-  "service":"assera-api",
+  "service":"intaste-api",
   "component":"llm",
   "event":"assist.fallback",
   "request_id":"8c2f...",
@@ -162,24 +162,24 @@ assist.query (server)
 - `llm.*`: `model`, `timeout_ms`, `tokens_out?`, `status`
 
 **Sampling:**
-- Default 10% (`ASSERA_TRACE_SAMPLE=0.1`). **Always sample** on error.
+- Default 10% (`INTASTE_TRACE_SAMPLE=0.1`). **Always sample** on error.
 
 ---
 
 ## 6. Metrics (Prometheus Style)
 
 ### 6.1 Counters
-- `assera_requests_total{route="/assist/query",code}`
-- `assera_ratelimit_blocked_total{key}`
-- `assera_llm_fallback_total{reason,stage}`
+- `intaste_requests_total{route="/assist/query",code}`
+- `intaste_ratelimit_blocked_total{key}`
+- `intaste_llm_fallback_total{reason,stage}`
 
 ### 6.2 Histogram/Summary
-- `assera_request_duration_ms_bucket{route}`
-- `assera_search_duration_ms_bucket` / `assera_llm_duration_ms_bucket{stage}`
-- `assera_citations_count_bucket`
+- `intaste_request_duration_ms_bucket{route}`
+- `intaste_search_duration_ms_bucket` / `intaste_llm_duration_ms_bucket{stage}`
+- `intaste_citations_count_bucket`
 
 ### 6.3 Gauges
-- `assera_inflight_requests{route}`
+- `intaste_inflight_requests{route}`
 
 **UI side (optional):** `navigation_latency_ms_bucket`, `ui_errors_total{code}`
 

@@ -10,8 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Assera Docker Compose - Production/Distribution Configuration
-# External access: assera-ui only (port 3000)
+# Intaste Docker Compose - Production/Distribution Configuration
+# External access: intaste-ui only (port 3000)
 # All other services communicate via internal network
 
 x-health: &curl-health
@@ -21,17 +21,17 @@ x-health: &curl-health
   retries: 30
 
 networks:
-  assera-net:
+  intaste-net:
     driver: bridge
 
 services:
   opensearch:
     image: ghcr.io/codelibs/fess-opensearch:3.2.0
-    container_name: assera-opensearch
+    container_name: intaste-opensearch
     environment:
-      - node.name=assera-opensearch
-      - discovery.seed_hosts=assera-opensearch
-      - cluster.initial_cluster_manager_nodes=assera-opensearch
+      - node.name=intaste-opensearch
+      - discovery.seed_hosts=intaste-opensearch
+      - cluster.initial_cluster_manager_nodes=intaste-opensearch
       - cluster.name=fess-search
       - bootstrap.memory_lock=true
       - node.roles=cluster_manager,data,ingest,ml
@@ -51,7 +51,7 @@ services:
       - ./data/opensearch:/usr/share/opensearch/data
       - ./data/dictionary:/usr/share/opensearch/config/dictionary
     networks:
-      - assera-net
+      - intaste-net
     healthcheck:
       <<: *curl-health
       test: ["CMD-SHELL", "curl -fsS http://localhost:9200/_cluster/health || exit 1"]
@@ -59,16 +59,16 @@ services:
 
   fess:
     image: ghcr.io/codelibs/fess:15.2.0
-    container_name: assera-fess
+    container_name: intaste-fess
     depends_on:
       opensearch:
         condition: service_healthy
     environment:
-      - SEARCH_ENGINE_HTTP_URL=http://assera-opensearch:9200
+      - SEARCH_ENGINE_HTTP_URL=http://intaste-opensearch:9200
       - FESS_DICTIONARY_PATH=${FESS_DICTIONARY_PATH:-/usr/share/opensearch/config/dictionary/}
       - TZ=${TZ:-UTC}
     networks:
-      - assera-net
+      - intaste-net
     expose:
       - "8080"
     healthcheck:
@@ -78,9 +78,9 @@ services:
 
   ollama:
     image: ollama/ollama:latest
-    container_name: assera-ollama
+    container_name: intaste-ollama
     networks:
-      - assera-net
+      - intaste-net
     volumes:
       - ./data/ollama:/root/.ollama
     expose:
@@ -92,14 +92,14 @@ services:
       retries: 30
     restart: unless-stopped
 
-  assera-api:
+  intaste-api:
     build:
-      context: ./assera-api
+      context: ./intaste-api
       dockerfile: Dockerfile
       args:
-        UID: ${ASSERA_UID:-1000}
-        GID: ${ASSERA_GID:-1000}
-    container_name: assera-api
+        UID: ${INTASTE_UID:-1000}
+        GID: ${INTASTE_GID:-1000}
+    container_name: intaste-api
     depends_on:
       fess:
         condition: service_healthy
@@ -107,23 +107,23 @@ services:
         condition: service_healthy
     environment:
       - TZ=${TZ:-UTC}
-      - ASSERA_API_TOKEN=${ASSERA_API_TOKEN:?ASSERA_API_TOKEN is required}
-      - ASSERA_DEFAULT_MODEL=${ASSERA_DEFAULT_MODEL:-gpt-oss}
-      - ASSERA_SEARCH_PROVIDER=${ASSERA_SEARCH_PROVIDER:-fess}
-      - FESS_BASE_URL=${FESS_BASE_URL:-http://assera-fess:8080}
+      - INTASTE_API_TOKEN=${INTASTE_API_TOKEN:?INTASTE_API_TOKEN is required}
+      - INTASTE_DEFAULT_MODEL=${INTASTE_DEFAULT_MODEL:-gpt-oss}
+      - INTASTE_SEARCH_PROVIDER=${INTASTE_SEARCH_PROVIDER:-fess}
+      - FESS_BASE_URL=${FESS_BASE_URL:-http://intaste-fess:8080}
       - FESS_TIMEOUT_MS=${FESS_TIMEOUT_MS:-2000}
-      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-http://assera-ollama:11434}
-      - ASSERA_LLM_TIMEOUT_MS=${ASSERA_LLM_TIMEOUT_MS:-3000}
-      - ASSERA_LLM_TEMPERATURE=${ASSERA_LLM_TEMPERATURE:-0.2}
-      - ASSERA_LLM_TOP_P=${ASSERA_LLM_TOP_P:-0.9}
+      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-http://intaste-ollama:11434}
+      - INTASTE_LLM_TIMEOUT_MS=${INTASTE_LLM_TIMEOUT_MS:-3000}
+      - INTASTE_LLM_TEMPERATURE=${INTASTE_LLM_TEMPERATURE:-0.2}
+      - INTASTE_LLM_TOP_P=${INTASTE_LLM_TOP_P:-0.9}
       - REQ_TIMEOUT_MS=${REQ_TIMEOUT_MS:-5000}
-      - ASSERA_RATE_LIMIT_PER_MINUTE=${ASSERA_RATE_LIMIT_PER_MINUTE:-60}
+      - INTASTE_RATE_LIMIT_PER_MINUTE=${INTASTE_RATE_LIMIT_PER_MINUTE:-60}
       - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3000}
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
       - LOG_PII_MASKING=${LOG_PII_MASKING:-true}
       - DEBUG=${DEBUG:-false}
     networks:
-      - assera-net
+      - intaste-net
     expose:
       - "8000"
     healthcheck:
@@ -133,23 +133,23 @@ services:
       - no-new-privileges:true
     restart: unless-stopped
 
-  assera-ui:
+  intaste-ui:
     build:
-      context: ./assera-ui
+      context: ./intaste-ui
       dockerfile: Dockerfile
       args:
-        UID: ${ASSERA_UID:-1000}
-        GID: ${ASSERA_GID:-1000}
-    container_name: assera-ui
+        UID: ${INTASTE_UID:-1000}
+        GID: ${INTASTE_GID:-1000}
+    container_name: intaste-ui
     depends_on:
-      assera-api:
+      intaste-api:
         condition: service_healthy
     environment:
       - NEXT_PUBLIC_API_BASE=${NEXT_PUBLIC_API_BASE:-/api/v1}
-      - API_PROXY_URL=http://assera-api:8000
+      - API_PROXY_URL=http://intaste-api:8000
       - TZ=${TZ:-UTC}
     networks:
-      - assera-net
+      - intaste-net
     ports:
       - "3000:3000"
     healthcheck:

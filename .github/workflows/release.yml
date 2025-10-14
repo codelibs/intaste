@@ -68,7 +68,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           body: |
-            # Assera ${{ github.ref_name }}
+            # Intaste ${{ github.ref_name }}
 
             ${{ steps.changelog.outputs.changelog }}
 
@@ -83,7 +83,7 @@ jobs:
 
             # Configure
             cp .env.example .env
-            # Edit .env and set ASSERA_API_TOKEN
+            # Edit .env and set INTASTE_API_TOKEN
 
             # Start services
             docker compose up -d
@@ -94,14 +94,14 @@ jobs:
 
             ### Docker Images
 
-            - API: `ghcr.io/${{ github.repository }}/assera-api:${{ github.ref_name }}`
-            - UI: `ghcr.io/${{ github.repository }}/assera-ui:${{ github.ref_name }}`
+            - API: `ghcr.io/${{ github.repository }}/intaste-api:${{ github.ref_name }}`
+            - UI: `ghcr.io/${{ github.repository }}/intaste-ui:${{ github.ref_name }}`
 
             ## 📚 Documentation
 
             - [README](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/README.md)
-            - [API Documentation](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/assera-api/README.md)
-            - [UI Documentation](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/assera-ui/README.md)
+            - [API Documentation](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/intaste-api/README.md)
+            - [UI Documentation](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/intaste-ui/README.md)
             - [Testing Guide](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/TESTING.md)
 
             ## 🔒 Security
@@ -129,26 +129,26 @@ jobs:
           VERSION=${GITHUB_REF#refs/tags/v}
 
           # Create distribution directory
-          mkdir -p assera-${VERSION}
+          mkdir -p intaste-${VERSION}
 
           # Copy essential files
-          cp compose.yaml assera-${VERSION}/
-          cp .env.example assera-${VERSION}/
-          cp README.md assera-${VERSION}/
-          cp LICENSE assera-${VERSION}/
-          cp NOTICE assera-${VERSION}/
-          cp Makefile assera-${VERSION}/
+          cp compose.yaml intaste-${VERSION}/
+          cp .env.example intaste-${VERSION}/
+          cp README.md intaste-${VERSION}/
+          cp LICENSE intaste-${VERSION}/
+          cp NOTICE intaste-${VERSION}/
+          cp Makefile intaste-${VERSION}/
 
           # Create archive
-          tar -czf assera-${VERSION}.tar.gz assera-${VERSION}
-          zip -r assera-${VERSION}.zip assera-${VERSION}
+          tar -czf intaste-${VERSION}.tar.gz intaste-${VERSION}
+          zip -r intaste-${VERSION}.zip intaste-${VERSION}
 
       - name: Upload release assets
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            assera-*.tar.gz
-            assera-*.zip
+            intaste-*.tar.gz
+            intaste-*.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

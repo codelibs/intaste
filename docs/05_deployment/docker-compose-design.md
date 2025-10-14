@@ -1,8 +1,8 @@
-# Assera Docker Compose Deployment Design
+# Intaste Docker Compose Deployment Design
 
 **Document Version:** 1.0
 **Last Updated:** 2025-10-12
-**Target:** Assera OSS deployment (local/PoC distribution). UI: Next.js, API: FastAPI, Search: Fess (OpenAPI), LLM: Ollama. Assera API **does not connect to OpenSearch** (Fess only).
+**Target:** Intaste OSS deployment (local/PoC distribution). UI: Next.js, API: FastAPI, Search: Fess (OpenAPI), LLM: Ollama. Intaste API **does not connect to OpenSearch** (Fess only).
 
 **Purpose:**
 Enable one-command startup with `docker compose up -d`, with development hot-reload, healthcheck/dependency order, and network isolation standardization.
@@ -16,10 +16,10 @@ repo-root/
 ├─ compose.yaml                  # Distribution/PoC (production-equivalent behavior)
 ├─ compose.dev.yaml              # Developer local (hot-reload)
 ├─ .env.example                  # Required environment variable template
-├─ assera-api/                   # FastAPI (uv managed)
+├─ intaste-api/                   # FastAPI (uv managed)
 │  ├─ Dockerfile
 │  └─ app/ ...
-├─ assera-ui/                    # Next.js
+├─ intaste-ui/                    # Next.js
 │  ├─ Dockerfile
 │  └─ app/ ...
 └─ docs/ ...
@@ -29,8 +29,8 @@ repo-root/
 
 ## 2. Common Network and Exposure Policy
 
-- All services belong to `assera-net` (bridge)
-- **External exposure is `assera-ui` only** (default). API/Ollama/Fess/OpenSearch only `expose`, no external ports
+- All services belong to `intaste-net` (bridge)
+- **External exposure is `intaste-ui` only** (default). API/Ollama/Fess/OpenSearch only `expose`, no external ports
 - Reverse proxy (Nginx/Caddy/Traefik) optional in user environment (HTTPS termination)
 
 ---
@@ -38,41 +38,41 @@ repo-root/
 ## 3. compose.yaml (Distribution/PoC)
 
 **Key Points:**
-- Startup order: `opensearch → fess → ollama → assera-api → assera-ui` (`depends_on` + `healthcheck`)
-- Exposure policy: `assera-ui:3000` only. Others `expose` only (internal network)
+- Startup order: `opensearch → fess → ollama → intaste-api → intaste-ui` (`depends_on` + `healthcheck`)
+- Exposure policy: `intaste-ui:3000` only. Others `expose` only (internal network)
 - Permissions: Non-root execution, `no-new-privileges` for hardening
 
 ```yaml
 version: "3.9"
-name: assera
+name: intaste
 
 services:
-  assera-ui:
-    build: ./assera-ui
-    image: ghcr.io/codelibs/assera-ui:latest
+  intaste-ui:
+    build: ./intaste-ui
+    image: ghcr.io/codelibs/intaste-ui:latest
     ports:
       - "3000:3000"    # Only external exposure port
     environment:
       NEXT_PUBLIC_API_BASE: "/api/v1"
       NEXT_PUBLIC_LATENCY_THRESHOLDS: "500,1500"
     depends_on:
-      assera-api:
+      intaste-api:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://localhost:3000/"]
       interval: 30s
       timeout: 5s
       retries: 5
-    networks: [assera-net]
+    networks: [intaste-net]
 
-  assera-api:
-    build: ./assera-api
-    image: ghcr.io/codelibs/assera-api:latest
+  intaste-api:
+    build: ./intaste-api
+    image: ghcr.io/codelibs/intaste-api:latest
     expose: ["8000"]
     environment:
       TZ: ${TZ:-UTC}
-      ASSERA_API_TOKEN: ${ASSERA_API_TOKEN}
-      ASSERA_DEFAULT_MODEL: ${ASSERA_DEFAULT_MODEL:-gpt-oss}
+      INTASTE_API_TOKEN: ${INTASTE_API_TOKEN}
+      INTASTE_DEFAULT_MODEL: ${INTASTE_DEFAULT_MODEL:-gpt-oss}
       FESS_BASE_URL: ${FESS_BASE_URL:-http://fess:8080}
       OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://ollama:11434}
       ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:3000}
@@ -87,7 +87,7 @@ services:
       interval: 30s
       timeout: 5s
       retries: 5
-    networks: [assera-net]
+    networks: [intaste-net]
 
   fess:
     image: ghcr.io/codelibs/fess:latest
@@ -105,7 +105,7 @@ services:
       retries: 10
     volumes:
       - fess-data:/var/lib/fess
-    networks: [assera-net]
+    networks: [intaste-net]
 
   opensearch:
     image: opensearchproject/opensearch:2
@@ -124,7 +124,7 @@ services:
       retries: 10
     volumes:
       - os-data:/usr/share/opensearch/data
-    networks: [assera-net]
+    networks: [intaste-net]
 
   ollama:
     image: ollama/ollama:latest
@@ -136,7 +136,7 @@ services:
       interval: 30s
       timeout: 5s
       retries: 5
-    networks: [assera-net]
+    networks: [intaste-net]
 
 volumes:
   os-data:
@@ -144,7 +144,7 @@ volumes:
   ollama-models:
 
 networks:
-  assera-net:
+  intaste-net:
     driver: bridge
 ```
 
@@ -156,21 +156,21 @@ networks:
 version: "3.9"
 
 services:
-  assera-ui:
+  intaste-ui:
     build:
-      context: ./assera-ui
+      context: ./intaste-ui
     volumes:
-      - ./assera-ui:/app
+      - ./intaste-ui:/app
       - /app/node_modules
     environment:
       NEXT_PUBLIC_API_BASE: "http://localhost:8000/api/v1"
     command: ["npm", "run", "dev"]
 
-  assera-api:
+  intaste-api:
     build:
-      context: ./assera-api
+      context: ./intaste-api
     volumes:
-      - ./assera-api:/app
+      - ./intaste-api:/app
     environment:
       LOG_LEVEL: DEBUG
     command: ["uv", "run", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
@@ -187,11 +187,11 @@ docker compose -f compose.yaml -f compose.dev.yaml up --build
 ## 5. Environment Variables (.env.example)
 
 ```dotenv
-# === Assera common ===
-ASSERA_PROFILE=dist
-ASSERA_API_TOKEN=change-me
-ASSERA_DEFAULT_MODEL=gpt-oss
-ASSERA_SEARCH_PROVIDER=fess
+# === Intaste common ===
+INTASTE_PROFILE=dist
+INTASTE_API_TOKEN=change-me
+INTASTE_DEFAULT_MODEL=gpt-oss
+INTASTE_SEARCH_PROVIDER=fess
 TZ=UTC
 
 # === Endpoints (internal) ===
@@ -214,7 +214,7 @@ Initial model fetch required for first time (PoC uses `gpt-oss`):
 
 ```bash
 # After starting containers
-docker exec -it assera-ollama-1 ollama pull gpt-oss
+docker exec -it intaste-ollama-1 ollama pull gpt-oss
 ```
 
 Or use init container (alternative):
@@ -225,7 +225,7 @@ Or use init container (alternative):
     depends_on:
       ollama:
         condition: service_healthy
-    networks: [assera-net]
+    networks: [intaste-net]
     restart: "no"
 ```
 
@@ -234,7 +234,7 @@ Or use init container (alternative):
 ## 7. Security Considerations
 
 - External exposure **UI only**. API/Ollama/Fess/OS limited to internal network
-- Terminate TLS/HSTS with reverse proxy, reverse proxy `/api` to `assera-api:8000`
+- Terminate TLS/HSTS with reverse proxy, reverse proxy `/api` to `intaste-api:8000`
 - Apply `X-Frame-Options`/`frame-ancestors 'none'` to UI (clickjacking prevention)
 - Do not output URL/token in logs (hash/mask)
 
@@ -247,7 +247,7 @@ Or use init container (alternative):
 | opensearch | 1–2 vCPU | 2–4 GB | Adjust Java heap `-Xms/-Xmx` |
 | fess | 1 vCPU | 1–2 GB | Increases during initial crawling |
 | ollama | 2–4 vCPU | 4–8 GB | Model size dependent |
-| assera-api/ui | 0.5 vCPU | 256–512 MB | Lightweight |
+| intaste-api/ui | 0.5 vCPU | 256–512 MB | Lightweight |
 
 ---
 
@@ -260,11 +260,11 @@ Or use init container (alternative):
 
   @api path /api/*
   handle @api {
-    reverse_proxy assera-api:8000
+    reverse_proxy intaste-api:8000
   }
 
   handle {
-    reverse_proxy assera-ui:3000
+    reverse_proxy intaste-ui:3000
   }
 }
 ```
@@ -283,7 +283,7 @@ docker compose up -d --build
 docker compose ps
 
 # Logs
-docker compose logs -f assera-api
+docker compose logs -f intaste-api
 
 # Cleanup (preserve persistent data)
 docker compose down

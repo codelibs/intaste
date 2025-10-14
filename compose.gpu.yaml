@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Assera Docker Compose - GPU Override Configuration
+# Intaste Docker Compose - GPU Override Configuration
 # Explicitly enables NVIDIA GPU support for Ollama
 # Usage: docker compose -f compose.yaml -f compose.gpu.yaml up
 

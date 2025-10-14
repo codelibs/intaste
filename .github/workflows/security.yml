@@ -37,7 +37,7 @@ jobs:
         uses: aquasecurity/trivy-action@master
         with:
           scan-type: 'fs'
-          scan-ref: './assera-api'
+          scan-ref: './intaste-api'
           format: 'sarif'
           output: 'trivy-api-results.sarif'
           severity: 'CRITICAL,HIGH'
@@ -53,7 +53,7 @@ jobs:
         uses: aquasecurity/trivy-action@master
         with:
           scan-type: 'fs'
-          scan-ref: './assera-ui'
+          scan-ref: './intaste-ui'
           format: 'sarif'
           output: 'trivy-ui-results.sarif'
           severity: 'CRITICAL,HIGH'
@@ -78,16 +78,16 @@ jobs:
       - name: Build API image for scanning
         uses: docker/build-push-action@v5
         with:
-          context: ./assera-api
-          file: ./assera-api/Dockerfile
+          context: ./intaste-api
+          file: ./intaste-api/Dockerfile
           push: false
           load: true
-          tags: assera-api:scan
+          tags: intaste-api:scan
 
       - name: Run Trivy scanner on API image
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: 'assera-api:scan'
+          image-ref: 'intaste-api:scan'
           format: 'sarif'
           output: 'trivy-api-image.sarif'
           severity: 'CRITICAL,HIGH'
@@ -102,16 +102,16 @@ jobs:
       - name: Build UI image for scanning
         uses: docker/build-push-action@v5
         with:
-          context: ./assera-ui
-          file: ./assera-ui/Dockerfile
+          context: ./intaste-ui
+          file: ./intaste-ui/Dockerfile
           push: false
           load: true
-          tags: assera-ui:scan
+          tags: intaste-ui:scan
 
       - name: Run Trivy scanner on UI image
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: 'assera-ui:scan'
+          image-ref: 'intaste-ui:scan'
           format: 'sarif'
           output: 'trivy-ui-image.sarif'
           severity: 'CRITICAL,HIGH'
@@ -165,7 +165,7 @@ jobs:
 
       - name: Check Python dependencies licenses
         run: |
-          cd assera-api
+          cd intaste-api
           pip install -e .
           licensecheck --format json > ../api-licenses.json || true
 
@@ -176,7 +176,7 @@ jobs:
 
       - name: Check Node dependencies licenses
         run: |
-          cd assera-ui
+          cd intaste-ui
           npm ci
           npx license-checker --json > ../ui-licenses.json || true
 

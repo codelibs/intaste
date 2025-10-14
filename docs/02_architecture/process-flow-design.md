@@ -1,22 +1,22 @@
-# Assera Process Flow Design
+# Intaste Process Flow Design
 
 **Document Version:** 1.0
 **Last Updated:** 2025-10-12
 
 ## Architecture Overview
 
-Assera is an AI-assisted search system that understands natural language search queries and provides appropriate search results and answers.
+Intaste is an AI-assisted search system that understands natural language search queries and provides appropriate search results and answers.
 
 ### Main Components
 
-- **Assera UI**: Next.js/React-based frontend, real-time updates via Server-Sent Events (SSE)
-- **Assera API**: FastAPI-based backend, integrating LLM and Fess search
+- **Intaste UI**: Next.js/React-based frontend, real-time updates via Server-Sent Events (SSE)
+- **Intaste API**: FastAPI-based backend, integrating LLM and Fess search
 - **LLM Client**: Interface with LLM providers like Ollama
 - **Search Provider**: Interface with Fess search engine
 
 ---
 
-## Assera UI
+## Intaste UI
 
 ### Search Query Processing Flow
 
@@ -52,11 +52,11 @@ Assera is an AI-assisted search system that understands natural language search 
 
 ---
 
-## Assera API
+## Intaste API
 
 ### Search Query Processing Flow
 
-Assera API processes search queries through a 3-stage pipeline:
+Intaste API processes search queries through a 3-stage pipeline:
 
 #### Overall Flow (Streaming Mode)
 
@@ -296,4 +296,4 @@ Currently sequential processing, but consider for future:
 
 ## Summary
 
-Assera's search processing flow combines LLM-based intent understanding and answer generation with Fess fast search and SSE real-time updates for a user-friendly design. Future enhancements like re-search, conversation history utilization, and re-ranking will provide even more advanced search experiences.
+Intaste's search processing flow combines LLM-based intent understanding and answer generation with Fess fast search and SSE real-time updates for a user-friendly design. Future enhancements like re-search, conversation history utilization, and re-ranking will provide even more advanced search experiences.
