@@ -70,8 +70,12 @@ async def stream_assist_response(
     request_options = request.options or {}
     request_options["session_id"] = session_id
 
+    # Add query_history if provided
+    if request.query_history:
+        request_options["query_history"] = request.query_history
+
     logger.debug(
-        f"[{session_id}] Streaming query started: query={request.query!r}, options={request_options}"
+        f"[{session_id}] Streaming query started: query={request.query!r}, options={request_options}, query_history_count={len(request.query_history) if request.query_history else 0}"
     )
 
     try:

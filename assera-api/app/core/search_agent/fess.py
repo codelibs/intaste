@@ -94,6 +94,7 @@ class FessSearchAgent(BaseSearchAgent):
                 user_template=INTENT_USER_TEMPLATE,
                 language=options.get("language", "en"),
                 filters=options.get("filters"),
+                query_history=options.get("query_history"),
                 timeout_ms=options.get("intent_timeout_ms", self.intent_timeout_ms),
             )
             intent_ms = int((time.time() - intent_start) * 1000)

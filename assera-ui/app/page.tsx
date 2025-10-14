@@ -16,6 +16,7 @@ import { useState } from 'react';
 import { useAssistStore } from '@/store/assist.store';
 import { useUIStore } from '@/store/ui.store';
 import { QueryInput } from '@/components/input/QueryInput';
+import { QueryHistory } from '@/components/history/QueryHistory';
 import { AnswerBubble } from '@/components/answer/AnswerBubble';
 import { EvidencePanel } from '@/components/sidebar/EvidencePanel';
 import { LatencyIndicator } from '@/components/common/LatencyIndicator';
@@ -38,9 +39,12 @@ export default function HomePage() {
     selectedCitationId,
     timings,
     fallbackNotice,
+    queryHistory,
     send,
     sendStream,
     selectCitation,
+    addQueryToHistory,
+    clearQueryHistory,
   } = useAssistStore();
 
   const handleSubmit = async () => {
@@ -52,6 +56,9 @@ export default function HomePage() {
       return;
     }
 
+    // Add query to history before sending
+    addQueryToHistory(query);
+
     // Use streaming or standard query based on setting
     if (streamingEnabled) {
       await sendStream(query);
@@ -60,6 +67,10 @@ export default function HomePage() {
     }
     // Optionally clear query after send
     // setQuery('');
+  };
+
+  const handleHistoryQueryClick = (historicalQuery: string) => {
+    setQuery(historicalQuery);
   };
 
   const handleCitationClick = (id: number) => {
@@ -109,6 +120,15 @@ export default function HomePage() {
         {/* Left Panel - Main Search */}
         <main className="flex-1 flex flex-col p-6 overflow-y-auto">
           <div className="max-w-3xl mx-auto w-full space-y-6">
+            {/* Query History */}
+            {queryHistory.length > 0 && (
+              <QueryHistory
+                history={queryHistory}
+                onQueryClick={handleHistoryQueryClick}
+                onClear={clearQueryHistory}
+              />
+            )}
+
             {/* Query Input */}
             <QueryInput
               value={query}

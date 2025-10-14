@@ -40,6 +40,7 @@ export async function queryAssistStream(
   query: string,
   options: Record<string, any> = {},
   sessionId?: string,
+  queryHistory?: string[],
   callbacks?: StreamCallbacks
 ): Promise<void> {
   const API_BASE = process.env.NEXT_PUBLIC_API_BASE || '/api/v1';
@@ -56,6 +57,7 @@ export async function queryAssistStream(
     query,
     options,
     ...(sessionId && { session_id: sessionId }),
+    ...(queryHistory && queryHistory.length > 0 && { query_history: queryHistory }),
   };
 
   // Make POST request with SSE

@@ -29,14 +29,17 @@ interface AssistState {
   selectedCitationId: number | null;
   timings: Timings | null;
   fallbackNotice: string | null;
+  queryHistory: string[];
 
   send: (query: string, options?: Record<string, any>) => Promise<void>;
   sendStream: (query: string, options?: Record<string, any>) => Promise<void>;
   selectCitation: (id: number | null) => void;
+  addQueryToHistory: (query: string) => void;
+  clearQueryHistory: () => void;
   clear: () => void;
 }
 
-export const useAssistStore = create<AssistState>((set, _get) => ({
+export const useAssistStore = create<AssistState>((set, get) => ({
   loading: false,
   streaming: false,
   error: null,
@@ -45,15 +48,18 @@ export const useAssistStore = create<AssistState>((set, _get) => ({
   selectedCitationId: null,
   timings: null,
   fallbackNotice: null,
+  queryHistory: [],
 
   send: async (query: string, options?: Record<string, any>) => {
     set({ loading: true, error: null, fallbackNotice: null });
 
     try {
       const sessionId = useSessionStore.getState().id || undefined;
+      const queryHistory = get().queryHistory;
       const response = await queryAssist({
         query,
         session_id: sessionId,
+        query_history: queryHistory.length > 0 ? queryHistory : undefined,
         options,
       });
 
@@ -93,52 +99,59 @@ export const useAssistStore = create<AssistState>((set, _get) => ({
 
     try {
       const sessionId = useSessionStore.getState().id || undefined;
+      const queryHistory = get().queryHistory;
       let accumulatedText = '';
 
-      await queryAssistStream(query, options, sessionId, {
-        onStart: (data) => {
-          console.log('Stream started:', data);
-        },
-        onIntent: (data) => {
-          console.log('Intent extracted:', data);
-        },
-        onCitations: (data) => {
-          set({
-            citations: data.citations,
-            selectedCitationId: data.citations[0]?.id ?? null,
-          });
-        },
-        onChunk: (data) => {
-          accumulatedText += data.text;
-          set({
-            answer: {
-              text: accumulatedText,
-              suggested_questions: [],
-            },
-          });
-        },
-        onComplete: (data) => {
-          // Update session
-          useSessionStore.getState().set({
-            id: data.session?.id || sessionId,
-            turn: data.session?.turn || 1,
-          });
+      await queryAssistStream(
+        query,
+        options,
+        sessionId,
+        queryHistory.length > 0 ? queryHistory : undefined,
+        {
+          onStart: (data) => {
+            console.log('Stream started:', data);
+          },
+          onIntent: (data) => {
+            console.log('Intent extracted:', data);
+          },
+          onCitations: (data) => {
+            set({
+              citations: data.citations,
+              selectedCitationId: data.citations[0]?.id ?? null,
+            });
+          },
+          onChunk: (data) => {
+            accumulatedText += data.text;
+            set({
+              answer: {
+                text: accumulatedText,
+                suggested_questions: [],
+              },
+            });
+          },
+          onComplete: (data) => {
+            // Update session
+            useSessionStore.getState().set({
+              id: data.session?.id || sessionId,
+              turn: data.session?.turn || 1,
+            });
 
-          set({
-            answer: data.answer,
-            timings: data.timings,
-            loading: false,
-            streaming: false,
-          });
-        },
-        onError: (data) => {
-          set({
-            error: data.message || 'Streaming failed',
-            loading: false,
-            streaming: false,
-          });
-        },
-      });
+            set({
+              answer: data.answer,
+              timings: data.timings,
+              loading: false,
+              streaming: false,
+            });
+          },
+          onError: (data) => {
+            set({
+              error: data.message || 'Streaming failed',
+              loading: false,
+              streaming: false,
+            });
+          },
+        }
+      );
     } catch (error: any) {
       set({
         error: error.message || 'Streaming failed',
@@ -152,6 +165,24 @@ export const useAssistStore = create<AssistState>((set, _get) => ({
     set({ selectedCitationId: id });
   },
 
+  addQueryToHistory: (query: string) => {
+    const trimmedQuery = query.trim();
+    if (!trimmedQuery) return;
+
+    set((state) => {
+      // Add to beginning (most recent first), limit to 10 items
+      const newHistory = [
+        trimmedQuery,
+        ...state.queryHistory.filter((q) => q !== trimmedQuery),
+      ].slice(0, 10);
+      return { queryHistory: newHistory };
+    });
+  },
+
+  clearQueryHistory: () => {
+    set({ queryHistory: [] });
+  },
+
   clear: () =>
     set({
       loading: false,
@@ -162,5 +193,6 @@ export const useAssistStore = create<AssistState>((set, _get) => ({
       selectedCitationId: null,
       timings: null,
       fallbackNotice: null,
+      queryHistory: [],
     }),
 }));

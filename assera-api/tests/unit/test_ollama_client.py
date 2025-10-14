@@ -108,6 +108,72 @@ async def test_intent_retry_on_validation_error(ollama_client):
 
 @pytest.mark.unit
 @pytest.mark.asyncio
+async def test_intent_with_query_history(ollama_client):
+    """Test intent extraction with query history"""
+    mock_response = {
+        "normalized_query": "security policy version 2",
+        "filters": {},
+        "followups": ["What changed?"],
+        "ambiguity": "low",
+    }
+
+    query_history = [
+        "What is the security policy?",
+        "Where can I find it?",
+    ]
+
+    with patch.object(
+        ollama_client, "_complete", return_value=json.dumps(mock_response)
+    ) as mock_complete:
+        result = await ollama_client.intent(
+            "Show me version 2",
+            INTENT_SYSTEM_PROMPT,
+            INTENT_USER_TEMPLATE,
+            query_history=query_history,
+        )
+
+        assert isinstance(result, IntentOutput)
+        assert result.normalized_query == "security policy version 2"
+
+        # Verify that query history was included in the prompt
+        call_args = mock_complete.call_args
+        user_prompt = call_args.kwargs['user']  # user keyword argument
+        assert "Previous queries" in user_prompt
+        assert "What is the security policy?" in user_prompt
+        assert "Where can I find it?" in user_prompt
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_intent_without_query_history(ollama_client):
+    """Test intent extraction without query history"""
+    mock_response = {
+        "normalized_query": "test query",
+        "filters": {},
+        "followups": [],
+        "ambiguity": "low",
+    }
+
+    with patch.object(
+        ollama_client, "_complete", return_value=json.dumps(mock_response)
+    ) as mock_complete:
+        result = await ollama_client.intent(
+            "test query",
+            INTENT_SYSTEM_PROMPT,
+            INTENT_USER_TEMPLATE,
+            query_history=None,
+        )
+
+        assert isinstance(result, IntentOutput)
+
+        # Verify that "No previous queries" message was included
+        call_args = mock_complete.call_args
+        user_prompt = call_args.kwargs['user']  # user keyword argument
+        assert "No previous queries" in user_prompt
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
 async def test_compose_success(ollama_client):
     """Test successful answer composition"""
     mock_response = {

@@ -29,6 +29,9 @@ INTENT_USER_TEMPLATE = """# Input
 User's question: "{query}"
 Language: {language}
 
+# Query history (context from previous queries in this session)
+{query_history_text}
+
 # Known filters (optional)
 {filters_json}
 
@@ -42,7 +45,7 @@ Language: {language}
 
 # Output requirements
 - **Output JSON only**.
-- normalized_query: Remove punctuation/honorifics; make it search-friendly.
+- normalized_query: Remove punctuation/honorifics; make it search-friendly. Use context from query history to better understand user intent.
 - filters: Populate if inferrable (site/mimetype/date range); empty object if unknown.
 - followups: Up to 3 brief clarifying questions if ambiguous.
 """

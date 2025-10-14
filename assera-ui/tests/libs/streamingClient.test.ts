@@ -62,7 +62,7 @@ describe('streamingClient', () => {
       body: mockReadableStream,
     });
 
-    await queryAssistStream('test query', {}, undefined, {});
+    await queryAssistStream('test query', {}, undefined, undefined, {});
 
     expect(global.fetch).toHaveBeenCalledWith(
       expect.stringContaining('/api/v1/assist/query/stream'),
@@ -83,7 +83,7 @@ describe('streamingClient', () => {
       apiToken: null,
     } as any);
 
-    await expect(queryAssistStream('test', {}, undefined, {})).rejects.toThrow(
+    await expect(queryAssistStream('test', {}, undefined, undefined, {})).rejects.toThrow(
       'API token not configured'
     );
   });
@@ -99,10 +99,10 @@ describe('streamingClient', () => {
       }),
     });
 
-    await expect(queryAssistStream('test', {}, undefined, {})).rejects.toThrow(APIError);
+    await expect(queryAssistStream('test', {}, undefined, undefined, {})).rejects.toThrow(APIError);
 
     try {
-      await queryAssistStream('test', {}, undefined, {});
+      await queryAssistStream('test', {}, undefined, undefined, {});
     } catch (error) {
       expect(error).toBeInstanceOf(APIError);
       expect((error as APIError).status).toBe(500);
@@ -122,7 +122,7 @@ describe('streamingClient', () => {
     });
 
     try {
-      await queryAssistStream('test', {}, undefined, {});
+      await queryAssistStream('test', {}, undefined, undefined, {});
     } catch (error) {
       expect(error).toBeInstanceOf(APIError);
       expect((error as APIError).status).toBe(503);
@@ -151,7 +151,7 @@ describe('streamingClient', () => {
       body: mockReadableStream,
     });
 
-    await queryAssistStream('test', {}, undefined, { onStart });
+    await queryAssistStream('test', {}, undefined, undefined, { onStart });
 
     expect(onStart).toHaveBeenCalledWith({ message: 'Starting' });
   });
@@ -175,7 +175,7 @@ describe('streamingClient', () => {
       body: mockReadableStream,
     });
 
-    await queryAssistStream('test', {}, undefined, { onIntent });
+    await queryAssistStream('test', {}, undefined, undefined, { onIntent });
 
     expect(onIntent).toHaveBeenCalledWith({ optimized_query: 'test query' });
   });
@@ -199,7 +199,7 @@ describe('streamingClient', () => {
       body: mockReadableStream,
     });
 
-    await queryAssistStream('test', {}, undefined, { onCitations });
+    await queryAssistStream('test', {}, undefined, undefined, { onCitations });
 
     expect(onCitations).toHaveBeenCalledWith({ citations: [{ id: 1, title: 'Test' }] });
   });
@@ -224,7 +224,7 @@ describe('streamingClient', () => {
       body: mockReadableStream,
     });
 
-    await queryAssistStream('test', {}, undefined, { onChunk });
+    await queryAssistStream('test', {}, undefined, undefined, { onChunk });
 
     expect(onChunk).toHaveBeenCalledTimes(2);
     expect(onChunk).toHaveBeenNthCalledWith(1, { text: 'Hello ' });
@@ -250,7 +250,7 @@ describe('streamingClient', () => {
       body: mockReadableStream,
     });
 
-    await queryAssistStream('test', {}, undefined, { onComplete });
+    await queryAssistStream('test', {}, undefined, undefined, { onComplete });
 
     expect(onComplete).toHaveBeenCalledWith({
       answer: { text: 'Done' },
@@ -277,7 +277,7 @@ describe('streamingClient', () => {
       body: mockReadableStream,
     });
 
-    await queryAssistStream('test', {}, undefined, { onError });
+    await queryAssistStream('test', {}, undefined, undefined, { onError });
 
     expect(onError).toHaveBeenCalledWith({ message: 'Error occurred' });
   });
@@ -305,7 +305,7 @@ describe('streamingClient', () => {
       body: mockReadableStream,
     });
 
-    await queryAssistStream('test', {}, undefined, { onChunk });
+    await queryAssistStream('test', {}, undefined, undefined, { onChunk });
 
     expect(onChunk).toHaveBeenCalledWith({ text: 'split' });
   });
@@ -330,7 +330,7 @@ describe('streamingClient', () => {
       body: mockReadableStream,
     });
 
-    await queryAssistStream('test', {}, undefined, { onChunk });
+    await queryAssistStream('test', {}, undefined, undefined, { onChunk });
 
     expect(onChunk).toHaveBeenCalledTimes(2);
     expect(onChunk).toHaveBeenNthCalledWith(1, { text: 'First' });
@@ -356,7 +356,7 @@ describe('streamingClient', () => {
       body: mockReadableStream,
     });
 
-    await queryAssistStream('test', {}, 'session-123', {});
+    await queryAssistStream('test', {}, 'session-123', undefined, {});
 
     const fetchCall = (global.fetch as any).mock.calls[0];
     const body = JSON.parse(fetchCall[1].body);
@@ -382,8 +382,87 @@ describe('streamingClient', () => {
       body: mockReadableStream,
     });
 
-    await queryAssistStream('test', {}, undefined, { onChunk });
+    await queryAssistStream('test', {}, undefined, undefined, { onChunk });
 
     expect(onChunk).toHaveBeenCalledWith({ text: '日本語 🚀' });
+  });
+
+  it('should include query_history in request if provided', async () => {
+    const mockReadableStream = {
+      getReader: () => ({
+        read: vi
+          .fn()
+          .mockResolvedValueOnce({
+            done: false,
+            value: new TextEncoder().encode('event: start\ndata: {}\n\n'),
+          })
+          .mockResolvedValueOnce({ done: true }),
+        releaseLock: vi.fn(),
+      }),
+    };
+
+    (global.fetch as any).mockResolvedValue({
+      ok: true,
+      body: mockReadableStream,
+    });
+
+    const queryHistory = ['previous query 1', 'previous query 2'];
+    await queryAssistStream('test', {}, undefined, queryHistory, {});
+
+    const fetchCall = (global.fetch as any).mock.calls[0];
+    const body = JSON.parse(fetchCall[1].body);
+    expect(body.query_history).toEqual(queryHistory);
+  });
+
+  it('should not include query_history in request if not provided', async () => {
+    const mockReadableStream = {
+      getReader: () => ({
+        read: vi
+          .fn()
+          .mockResolvedValueOnce({
+            done: false,
+            value: new TextEncoder().encode('event: start\ndata: {}\n\n'),
+          })
+          .mockResolvedValueOnce({ done: true }),
+        releaseLock: vi.fn(),
+      }),
+    };
+
+    (global.fetch as any).mockResolvedValue({
+      ok: true,
+      body: mockReadableStream,
+    });
+
+    await queryAssistStream('test', {}, undefined, undefined, {});
+
+    const fetchCall = (global.fetch as any).mock.calls[0];
+    const body = JSON.parse(fetchCall[1].body);
+    expect(body.query_history).toBeUndefined();
+  });
+
+  it('should not include query_history in request if empty array', async () => {
+    const mockReadableStream = {
+      getReader: () => ({
+        read: vi
+          .fn()
+          .mockResolvedValueOnce({
+            done: false,
+            value: new TextEncoder().encode('event: start\ndata: {}\n\n'),
+          })
+          .mockResolvedValueOnce({ done: true }),
+        releaseLock: vi.fn(),
+      }),
+    };
+
+    (global.fetch as any).mockResolvedValue({
+      ok: true,
+      body: mockReadableStream,
+    });
+
+    await queryAssistStream('test', {}, undefined, [], {});
+
+    const fetchCall = (global.fetch as any).mock.calls[0];
+    const body = JSON.parse(fetchCall[1].body);
+    expect(body.query_history).toBeUndefined();
   });
 });

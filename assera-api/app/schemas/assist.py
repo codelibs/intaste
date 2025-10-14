@@ -81,6 +81,11 @@ class AssistQueryRequest(BaseModel):
 
     query: str = Field(..., min_length=1, max_length=4096, description="Natural language query")
     session_id: str | None = Field(None, description="Session ID (UUID v4)")
+    query_history: list[str] | None = Field(
+        None,
+        max_length=10,
+        description="Previous queries in this session (most recent first, max 10)",
+    )
     options: dict[str, Any] | None = Field(
         None,
         description="Optional parameters: max_results, language, filters, timeout_ms",

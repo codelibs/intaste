@@ -42,19 +42,21 @@ class AssistService:
         self,
         query: str,
         session_id: str | None = None,
+        query_history: list[str] | None = None,
         options: dict[str, Any] | None = None,
     ) -> AssistQueryResponse:
         """
-        Execute assisted search query.
+        Execute assisted search query with optional query history context.
 
         Flow:
-        1. Search execution via SearchAgent (intent + search)
+        1. Search execution via SearchAgent (intent + search with history context)
         2. Answer composition (LLM)
         3. Assemble response with citations
 
         Args:
             query: Natural language query
             session_id: Optional session ID for conversation tracking
+            query_history: Optional list of previous queries for context
             options: Optional parameters (max_results, language, filters, timeout_ms)
 
         Returns:
@@ -77,10 +79,14 @@ class AssistService:
         self.sessions[session_id]["turn"] += 1
         turn = self.sessions[session_id]["turn"]
         logger.debug(f"[{session_id}:{turn}] Session turn incremented")
-        logger.debug(f"[{session_id}:{turn}] Request options: {options}")
+        logger.debug(
+            f"[{session_id}:{turn}] Request options: {options}, query_history_count: {len(query_history) if query_history else 0}"
+        )
 
-        # Add session_id to options for logging in SearchAgent
+        # Add session_id and query_history to options for SearchAgent
         options_with_session = {**options, "session_id": session_id}
+        if query_history:
+            options_with_session["query_history"] = query_history
 
         # Step 1: Execute search via SearchAgent (intent + search)
         logger.info(f"[{session_id}:{turn}] Starting search via SearchAgent")
