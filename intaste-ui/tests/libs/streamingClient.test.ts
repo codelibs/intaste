@@ -65,12 +65,13 @@ describe('streamingClient', () => {
     await queryAssistStream('test query', {}, undefined, undefined, {});
 
     expect(global.fetch).toHaveBeenCalledWith(
-      expect.stringContaining('/api/v1/assist/query/stream'),
+      expect.stringContaining('/api/v1/assist/query'),
       expect.objectContaining({
         method: 'POST',
         headers: expect.objectContaining({
           'Content-Type': 'application/json',
           'X-Intaste-Token': 'test-token',
+          'X-Request-ID': expect.any(String),
           Accept: 'text/event-stream',
         }),
       })

@@ -80,6 +80,18 @@ class LLMClient(Protocol):
         """Compose answer with streaming response. Yields text chunks."""
         ...
 
+    async def warmup(self, timeout_ms: int = 30000) -> bool:
+        """
+        Warm up the LLM model by preloading it into memory.
+
+        Args:
+            timeout_ms: Timeout for warmup request (default: 30000ms = 30s)
+
+        Returns:
+            True if warmup succeeded, False otherwise
+        """
+        ...
+
     async def health(self) -> tuple[bool, dict[str, Any]]:
         """Check LLM client health status."""
         ...

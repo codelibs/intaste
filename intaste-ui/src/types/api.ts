@@ -67,6 +67,9 @@ export interface Timings {
   llm_ms: number;
   search_ms: number;
   total_ms: number;
+  // Detailed breakdown (optional)
+  intent_ms?: number;
+  compose_ms?: number;
 }
 
 export interface Notice {

@@ -14,6 +14,6 @@
 API routers.
 """
 
-from . import assist, health, models
+from . import assist_stream, health, models
 
-__all__ = ["assist", "health", "models"]
+__all__ = ["assist_stream", "health", "models"]

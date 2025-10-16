@@ -58,7 +58,15 @@ class Settings(BaseSettings):
     rate_limit_per_minute: int = Field(default=60, validation_alias="INTASTE_RATE_LIMIT_PER_MINUTE")
 
     # Request Timeout Budget (ms)
-    req_timeout_ms: int = Field(default=5000, validation_alias="REQ_TIMEOUT_MS")
+    req_timeout_ms: int = Field(default=15000, validation_alias="REQ_TIMEOUT_MS")
+
+    # LLM Warmup
+    intaste_llm_warmup_enabled: bool = Field(
+        default=True, validation_alias="INTASTE_LLM_WARMUP_ENABLED"
+    )
+    intaste_llm_warmup_timeout_ms: int = Field(
+        default=30000, validation_alias="INTASTE_LLM_WARMUP_TIMEOUT_MS"
+    )
 
     # CORS
     cors_origins: str | list[str] = Field(

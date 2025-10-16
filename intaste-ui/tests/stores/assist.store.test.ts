@@ -60,7 +60,25 @@ describe('AssistStore', () => {
 
   it('updates state with response data on successful query', async () => {
     const mockResponse = createMockQueryResponse();
-    global.fetch = vi.fn().mockResolvedValue(mockApiResponse(mockResponse));
+    // Stream should include both citations event and complete event
+    const sseData =
+      `event: citations\ndata: ${JSON.stringify({ citations: mockResponse.citations })}\n\n` +
+      `event: complete\ndata: ${JSON.stringify(mockResponse)}\n\n`;
+
+    const mockReadableStream = {
+      getReader: () => ({
+        read: vi
+          .fn()
+          .mockResolvedValueOnce({ done: false, value: new TextEncoder().encode(sseData) })
+          .mockResolvedValueOnce({ done: true }),
+        releaseLock: vi.fn(),
+      }),
+    };
+
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      body: mockReadableStream,
+    });
 
     await useAssistStore.getState().send('test query');
 
@@ -74,16 +92,19 @@ describe('AssistStore', () => {
 
   it('sets error state on failed query', async () => {
     const errorMessage = 'API Error';
-    global.fetch = vi
-      .fn()
-      .mockResolvedValue(mockApiResponse({ error: { message: errorMessage } }, 500));
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 500,
+      json: async () => ({ code: 'INTERNAL_ERROR', message: errorMessage }),
+    });
 
     await useAssistStore.getState().send('test query');
 
     const state = useAssistStore.getState();
     expect(state.loading).toBe(false);
     expect(state.error).toBeTruthy();
-    expect(state.answer).toBe(null);
+    // Answer is initialized to empty object when stream starts
+    expect(state.answer).toEqual({ text: '', suggested_questions: [] });
   });
 
   it('handles network errors', async () => {
@@ -139,7 +160,22 @@ describe('AssistStore', () => {
 
   it('includes options in API request', async () => {
     const mockResponse = createMockQueryResponse();
-    global.fetch = vi.fn().mockResolvedValue(mockApiResponse(mockResponse));
+    const sseData = `event: complete\ndata: ${JSON.stringify(mockResponse)}\n\n`;
+
+    const mockReadableStream = {
+      getReader: () => ({
+        read: vi
+          .fn()
+          .mockResolvedValueOnce({ done: false, value: new TextEncoder().encode(sseData) })
+          .mockResolvedValueOnce({ done: true }),
+        releaseLock: vi.fn(),
+      }),
+    };
+
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      body: mockReadableStream,
+    });
 
     // Set session ID
     const { useSessionStore } = await import('@/store/session.store');
@@ -148,21 +184,31 @@ describe('AssistStore', () => {
     const options = { max_results: 10, site: 'example.com' };
     await useAssistStore.getState().send('test query', options);
 
-    expect(global.fetch).toHaveBeenCalledWith(
-      expect.any(String),
-      expect.objectContaining({
-        body: JSON.stringify({
-          query: 'test query',
-          session_id: 'test-session-id',
-          options,
-        }),
-      })
-    );
+    const fetchCall = (global.fetch as any).mock.calls[0];
+    const body = JSON.parse(fetchCall[1].body);
+    expect(body.query).toBe('test query');
+    expect(body.session_id).toBe('test-session-id');
+    expect(body.options).toEqual(options);
   });
 
   it('retrieves session_id from session store', async () => {
     const mockResponse = createMockQueryResponse();
-    global.fetch = vi.fn().mockResolvedValue(mockApiResponse(mockResponse));
+    const sseData = `event: complete\ndata: ${JSON.stringify(mockResponse)}\n\n`;
+
+    const mockReadableStream = {
+      getReader: () => ({
+        read: vi
+          .fn()
+          .mockResolvedValueOnce({ done: false, value: new TextEncoder().encode(sseData) })
+          .mockResolvedValueOnce({ done: true }),
+        releaseLock: vi.fn(),
+      }),
+    };
+
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      body: mockReadableStream,
+    });
 
     // Set session ID in session store
     const { useSessionStore } = await import('@/store/session.store');
@@ -170,16 +216,11 @@ describe('AssistStore', () => {
 
     await useAssistStore.getState().send('test query', {});
 
-    expect(global.fetch).toHaveBeenCalledWith(
-      expect.any(String),
-      expect.objectContaining({
-        body: JSON.stringify({
-          query: 'test query',
-          session_id: 'session-123',
-          options: {},
-        }),
-      })
-    );
+    const fetchCall = (global.fetch as any).mock.calls[0];
+    const body = JSON.parse(fetchCall[1].body);
+    expect(body.query).toBe('test query');
+    expect(body.session_id).toBe('session-123');
+    expect(body.options).toEqual({});
   });
 
   describe('Streaming', () => {
@@ -204,9 +245,9 @@ describe('AssistStore', () => {
         body: mockReadableStream,
       });
 
-      const promise = useAssistStore.getState().sendStream('test query');
+      const promise = useAssistStore.getState().send('test query');
 
-      // Check streaming state immediately after calling sendStream
+      // Check streaming state immediately after calling send
       expect(useAssistStore.getState().streaming).toBe(true);
       expect(useAssistStore.getState().loading).toBe(true);
 
@@ -234,7 +275,7 @@ describe('AssistStore', () => {
         body: mockReadableStream,
       });
 
-      await useAssistStore.getState().sendStream('test query');
+      await useAssistStore.getState().send('test query');
 
       const state = useAssistStore.getState();
       expect(state.answer?.text).toBe('Hello world');
@@ -262,7 +303,7 @@ describe('AssistStore', () => {
         body: mockReadableStream,
       });
 
-      await useAssistStore.getState().sendStream('test query');
+      await useAssistStore.getState().send('test query');
 
       const state = useAssistStore.getState();
       expect(state.citations.length).toBe(1);
@@ -288,7 +329,7 @@ describe('AssistStore', () => {
         body: mockReadableStream,
       });
 
-      await useAssistStore.getState().sendStream('test query');
+      await useAssistStore.getState().send('test query');
 
       const state = useAssistStore.getState();
       expect(state.error).toBe('Streaming error');
@@ -299,7 +340,7 @@ describe('AssistStore', () => {
     it('handles streaming network error', async () => {
       global.fetch = vi.fn().mockRejectedValue(new Error('Network error'));
 
-      await useAssistStore.getState().sendStream('test query');
+      await useAssistStore.getState().send('test query');
 
       const state = useAssistStore.getState();
       expect(state.error).toBeTruthy();
@@ -326,7 +367,7 @@ describe('AssistStore', () => {
         body: mockReadableStream,
       });
 
-      const promise = useAssistStore.getState().sendStream('test query');
+      const promise = useAssistStore.getState().send('test query');
 
       // Check answer is initialized to empty
       await new Promise((resolve) => setTimeout(resolve, 10));
@@ -355,7 +396,7 @@ describe('AssistStore', () => {
         body: mockReadableStream,
       });
 
-      await useAssistStore.getState().sendStream('test query');
+      await useAssistStore.getState().send('test query');
 
       // Session should be updated (this would need session store integration)
       const state = useAssistStore.getState();

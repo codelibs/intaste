@@ -226,9 +226,13 @@ async def stream_assist_response(
                 # Not JSON, use as-is
                 pass
 
+        # Calculate total LLM time (intent extraction + answer composition)
+        llm_ms = intent_data.timing_ms + compose_ms
+
         logger.debug(
             f"[{session_id}] Total timings: intent={intent_data.timing_ms}ms, "
-            f"search={citations_data.timing_ms}ms, compose={compose_ms}ms, total={total_ms}ms"
+            f"search={citations_data.timing_ms}ms, compose={compose_ms}ms, "
+            f"llm={llm_ms}ms, total={total_ms}ms"
         )
 
         # Send complete event with summary
@@ -246,10 +250,11 @@ async def stream_assist_response(
                     "turn": 1,
                 },
                 "timings": {
-                    "intent_ms": intent_data.timing_ms,
+                    "llm_ms": llm_ms,
                     "search_ms": citations_data.timing_ms,
-                    "compose_ms": compose_ms,
                     "total_ms": total_ms,
+                    "intent_ms": intent_data.timing_ms,
+                    "compose_ms": compose_ms,
                 },
             },
         )
@@ -286,7 +291,7 @@ async def stream_assist_response(
         yield error_event
 
 
-@router.post("/query/stream")
+@router.post("/query")
 async def stream_query(
     request: AssistQueryRequest,
     service: AssistService = Depends(get_assist_service),
@@ -312,7 +317,7 @@ async def stream_query(
     - error: Error occurred
     """
     session_id = request.session_id or "new"
-    logger.debug(f"[{session_id}] POST /assist/query/stream started: query={request.query!r}")
+    logger.debug(f"[{session_id}] POST /assist/query started: query={request.query!r}")
 
     return StreamingResponse(
         stream_assist_response(request, service),
