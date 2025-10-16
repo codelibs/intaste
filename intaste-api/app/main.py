@@ -29,7 +29,7 @@ from .core.search_agent.factory import create_search_agent
 from .core.search_provider.base import SearchProvider
 from .core.search_provider.factory import SearchProviderFactory
 from .core.security.middleware import add_request_id_middleware, setup_cors
-from .routers import assist, assist_stream, health, models
+from .routers import assist_stream, health, models
 from .services.assist import AssistService
 
 # Configure logging
@@ -109,6 +109,28 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
     )
     logger.debug("Assist service initialized")
 
+    # Warm up LLM model if enabled
+    if settings.intaste_llm_warmup_enabled:
+        logger.info("LLM warmup enabled, preloading model...")
+        try:
+            warmup_success = await assist_service.warmup(
+                timeout_ms=settings.intaste_llm_warmup_timeout_ms
+            )
+            if warmup_success:
+                logger.info("LLM warmup completed successfully")
+            else:
+                logger.warning(
+                    "LLM warmup failed, but continuing startup. "
+                    "First requests may be slower while model loads."
+                )
+        except Exception as e:
+            logger.error(
+                f"LLM warmup error: {e}. Continuing startup, but first requests may be slower.",
+                exc_info=True,
+            )
+    else:
+        logger.info("LLM warmup disabled (INTASTE_LLM_WARMUP_ENABLED=false)")
+
     logger.info("Intaste API started successfully")
 
     yield
@@ -139,7 +161,6 @@ add_request_id_middleware(app)
 
 # Include routers
 app.include_router(health.router, prefix="/api/v1")
-app.include_router(assist.router, prefix="/api/v1")
 app.include_router(assist_stream.router, prefix="/api/v1")
 app.include_router(models.router, prefix="/api/v1")
 

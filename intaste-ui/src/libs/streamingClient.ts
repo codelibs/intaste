@@ -44,7 +44,7 @@ export async function queryAssistStream(
   callbacks?: StreamCallbacks
 ): Promise<void> {
   const API_BASE = process.env.NEXT_PUBLIC_API_BASE || '/api/v1';
-  const url = `${API_BASE}/assist/query/stream`;
+  const url = `${API_BASE}/assist/query`;
 
   // Get API token from store
   const token = useUIStore.getState().apiToken;

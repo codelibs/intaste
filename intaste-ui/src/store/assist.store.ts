@@ -16,7 +16,6 @@
 
 import { create } from 'zustand';
 import type { Answer, Citation, Timings } from '@/types/api';
-import { queryAssist } from '@/libs/apiClient';
 import { queryAssistStream } from '@/libs/streamingClient';
 import { useSessionStore } from './session.store';
 
@@ -32,7 +31,6 @@ interface AssistState {
   queryHistory: string[];
 
   send: (query: string, options?: Record<string, any>) => Promise<void>;
-  sendStream: (query: string, options?: Record<string, any>) => Promise<void>;
   selectCitation: (id: number | null) => void;
   addQueryToHistory: (query: string) => void;
   clearQueryHistory: () => void;
@@ -51,44 +49,6 @@ export const useAssistStore = create<AssistState>((set, get) => ({
   queryHistory: [],
 
   send: async (query: string, options?: Record<string, any>) => {
-    set({ loading: true, error: null, fallbackNotice: null });
-
-    try {
-      const sessionId = useSessionStore.getState().id || undefined;
-      const queryHistory = get().queryHistory;
-      const response = await queryAssist({
-        query,
-        session_id: sessionId,
-        query_history: queryHistory.length > 0 ? queryHistory : undefined,
-        options,
-      });
-
-      // Update session
-      useSessionStore.getState().set({
-        id: response.session.id,
-        turn: response.session.turn,
-      });
-
-      // Set results
-      set({
-        answer: response.answer,
-        citations: response.citations,
-        selectedCitationId: response.citations[0]?.id ?? null,
-        timings: response.timings,
-        fallbackNotice: response.notice?.fallback
-          ? `LLM fallback: ${response.notice.reason}`
-          : null,
-        loading: false,
-      });
-    } catch (error: any) {
-      set({
-        error: error.message || 'Request failed',
-        loading: false,
-      });
-    }
-  },
-
-  sendStream: async (query: string, options?: Record<string, any>) => {
     set({
       loading: true,
       streaming: true,

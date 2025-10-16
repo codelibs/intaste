@@ -15,8 +15,6 @@
  */
 
 import type {
-  AssistQueryRequest,
-  AssistQueryResponse,
   ErrorResponse,
   FeedbackRequest,
   ModelSelectRequest,
@@ -86,16 +84,6 @@ async function apiFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
       error instanceof Error ? error.message : 'Network error occurred'
     );
   }
-}
-
-/**
- * Execute assisted search query.
- */
-export async function queryAssist(request: AssistQueryRequest): Promise<AssistQueryResponse> {
-  return apiFetch<AssistQueryResponse>('/assist/query', {
-    method: 'POST',
-    body: JSON.stringify(request),
-  });
 }
 
 /**

@@ -27,8 +27,6 @@ export default function HomePage() {
   const [query, setQuery] = useState('');
   const apiToken = useUIStore((state) => state.apiToken);
   const setApiToken = useUIStore((state) => state.setApiToken);
-  const streamingEnabled = useUIStore((state) => state.streamingEnabled);
-  const setStreamingEnabled = useUIStore((state) => state.setStreamingEnabled);
 
   const {
     loading,
@@ -41,7 +39,6 @@ export default function HomePage() {
     fallbackNotice,
     queryHistory,
     send,
-    sendStream,
     selectCitation,
     addQueryToHistory,
     clearQueryHistory,
@@ -59,14 +56,10 @@ export default function HomePage() {
     // Add query to history before sending
     addQueryToHistory(query);
 
-    // Use streaming or standard query based on setting
-    if (streamingEnabled) {
-      await sendStream(query);
-    } else {
-      await send(query);
-    }
-    // Optionally clear query after send
-    // setQuery('');
+    // All queries use streaming (no separate non-streaming endpoint)
+    await send(query);
+    // Clear query input after successful submission
+    setQuery('');
   };
 
   const handleHistoryQueryClick = (historicalQuery: string) => {
@@ -84,18 +77,8 @@ export default function HomePage() {
         <div className="container mx-auto px-4 py-3 flex items-center justify-between">
           <h1 className="text-xl font-bold text-foreground">Intaste</h1>
           <div className="flex items-center gap-4">
-            {/* Streaming Toggle */}
-            <label className="flex items-center gap-2 text-sm cursor-pointer">
-              <input
-                type="checkbox"
-                checked={streamingEnabled}
-                onChange={(e) => setStreamingEnabled(e.target.checked)}
-                className="w-4 h-4"
-              />
-              <span className="text-muted-foreground">
-                {streaming ? '⚡ Streaming...' : streamingEnabled ? '⚡ Stream' : 'Standard'}
-              </span>
-            </label>
+            {/* Streaming indicator */}
+            {streaming && <span className="text-sm text-muted-foreground">⚡ Streaming...</span>}
 
             {!apiToken && (
               <button

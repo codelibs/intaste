@@ -72,7 +72,7 @@ async def test_stream_query_success(
     with patch("app.main.assist_service", assist_service):
         # Make streaming request
         response = await async_client.post(
-            "/api/v1/assist/query/stream",
+            "/api/v1/assist/query",
             json={"query": "What is a test?"},
             headers={
                 **auth_headers,
@@ -131,7 +131,7 @@ async def test_stream_query_no_auth(
 
     with patch("app.main.assist_service", assist_service):
         response = await async_client.post(
-            "/api/v1/assist/query/stream",
+            "/api/v1/assist/query",
             json={"query": "test"},
             headers={"Accept": "text/event-stream"},
         )
@@ -151,7 +151,7 @@ async def test_stream_query_empty_query(
 
     with patch("app.main.assist_service", assist_service):
         response = await async_client.post(
-            "/api/v1/assist/query/stream",
+            "/api/v1/assist/query",
             json={"query": ""},
             headers={**auth_headers, "Accept": "text/event-stream"},
         )
@@ -199,7 +199,7 @@ async def test_stream_query_intent_fallback(
     with patch("app.main.assist_service", assist_service):
         # Make streaming request
         response = await async_client.post(
-            "/api/v1/assist/query/stream",
+            "/api/v1/assist/query",
             json={"query": "test fallback"},
             headers={
                 **auth_headers,
@@ -289,7 +289,7 @@ async def test_stream_query_with_session(
     with patch("app.main.assist_service", assist_service):
         # Make streaming request
         response = await async_client.post(
-            "/api/v1/assist/query/stream",
+            "/api/v1/assist/query",
             json={"query": "test with session", "session_id": session_id},
             headers={
                 **auth_headers,
@@ -360,7 +360,7 @@ async def test_stream_query_error_handling(
 
     with patch("app.main.assist_service", assist_service):
         response = await async_client.post(
-            "/api/v1/assist/query/stream",
+            "/api/v1/assist/query",
             json={"query": "test"},
             headers={**auth_headers, "Accept": "text/event-stream"},
         )

@@ -376,6 +376,80 @@ class OllamaClient:
         except Exception as e:
             return (False, {"error": str(e)})
 
+    async def warmup(self, timeout_ms: int = 30000) -> bool:
+        """
+        Warm up the model by sending a dummy request.
+        This loads the model into memory and keeps it warm with keep_alive.
+
+        Args:
+            timeout_ms: Timeout for warmup request (default: 30000ms = 30s)
+
+        Returns:
+            True if warmup succeeded, False otherwise
+        """
+        import time
+
+        logger.info(f"Warming up Ollama model: {self.model}")
+        logger.debug(f"Warmup timeout: {timeout_ms}ms")
+
+        url = f"{self.base_url}/api/chat"
+        payload = {
+            "model": self.model,
+            "messages": [
+                {"role": "system", "content": "You are a helpful assistant."},
+                {"role": "user", "content": "Hello"},
+            ],
+            "options": {
+                "temperature": 0.1,
+                "top_p": 0.9,
+            },
+            "stream": False,
+            "keep_alive": "60m",  # Keep model loaded for 60 minutes
+        }
+
+        start_time = time.time()
+        try:
+            logger.debug(f"Sending warmup request to {url}")
+            response = await self.client.post(
+                url,
+                json=payload,
+                timeout=timeout_ms / 1000.0,
+            )
+            elapsed_ms = int((time.time() - start_time) * 1000)
+
+            logger.debug(f"Warmup response: status={response.status_code}, elapsed={elapsed_ms}ms")
+
+            response.raise_for_status()
+            data: dict[str, Any] = response.json()
+
+            message_data: dict[str, Any] = data.get("message", {})
+            content: str = message_data.get("content", "")
+
+            logger.info(
+                f"Warmup completed successfully: model={self.model}, "
+                f"elapsed={elapsed_ms}ms, response_length={len(content)}"
+            )
+            logger.debug(f"Warmup response preview: {content[:100]}")
+
+            return True
+
+        except httpx.TimeoutException as e:
+            elapsed_ms = int((time.time() - start_time) * 1000)
+            logger.error(f"Warmup timeout after {elapsed_ms}ms: {e}")
+            return False
+        except httpx.HTTPStatusError as e:
+            elapsed_ms = int((time.time() - start_time) * 1000)
+            logger.error(
+                f"Warmup HTTP error: status={e.response.status_code}, elapsed={elapsed_ms}ms"
+            )
+            logger.debug(f"Warmup error response: {e.response.text[:500]}")
+            return False
+        except Exception as e:
+            elapsed_ms = int((time.time() - start_time) * 1000)
+            logger.error(f"Warmup error after {elapsed_ms}ms: {e}")
+            logger.debug(f"Warmup error details: type={type(e).__name__}, args={e.args}")
+            return False
+
     async def compose_stream(
         self,
         query: str,

@@ -272,14 +272,3 @@ def sample_query_request() -> dict:
             "max_results": 5,
         },
     }
-
-
-@pytest.fixture
-def sample_feedback_request() -> dict:
-    """Sample feedback request payload"""
-    return {
-        "session_id": "00000000-0000-0000-0000-000000000001",
-        "turn": 1,
-        "rating": "up",
-        "comment": "Very helpful response",
-    }
