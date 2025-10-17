@@ -27,7 +27,7 @@ Intaste is an AI-assisted search system that understands natural language search
 #### 2. API Request Submission
 - Calls `sendStream()` method from `assist.store.ts`
 - If Session ID exists, send as conversation context
-- POST request to `/api/v1/assist/query/stream` endpoint
+- POST request to `/api/v1/assist/query` endpoint (unified streaming endpoint)
 
 #### 3. Processing Streaming Response
 `streamingClient.ts` receives Server-Sent Events (SSE) for real-time updates:

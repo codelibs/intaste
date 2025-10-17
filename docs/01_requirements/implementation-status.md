@@ -57,8 +57,7 @@ Intaste is an open-source AI-assisted search platform combining Fess search with
 
 #### API Endpoints
 - ✅ `GET /api/v1/health` - Health check endpoints (basic, live, ready, detailed)
-- ✅ `POST /api/v1/assist/query` - Main assisted search
-- ✅ `POST /api/v1/assist/query/stream` - Streaming SSE endpoint
+- ✅ `POST /api/v1/assist/query` - Unified streaming SSE endpoint for assisted search
 - ✅ `POST /api/v1/assist/feedback` - User feedback
 - ✅ `GET /api/v1/models` - List available models
 - ✅ `POST /api/v1/models/select` - Select model
@@ -111,7 +110,7 @@ Intaste is an open-source AI-assisted search platform combining Fess search with
 #### Backend Streaming
 - ✅ OllamaClient streaming with `compose_stream()` method
 - ✅ NDJSON parsing for Ollama streaming API
-- ✅ SSE endpoint at `/api/v1/assist/query/stream`
+- ✅ SSE endpoint at `/api/v1/assist/query` (unified streaming endpoint)
 - ✅ Event types: start, intent, citations, chunk, complete, error
 - ✅ StreamingResponse with proper headers
 - ✅ Error handling with fallback messages

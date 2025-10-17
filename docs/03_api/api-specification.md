@@ -40,11 +40,13 @@
 
 | Method | Path | Purpose |
 |--------|------|---------|
-| POST | `/assist/query` | Receive natural language query, extract intent with LLM → Fess search → return answer + evidence + suggestions |
+| POST | `/assist/query` | Unified streaming endpoint: Receive natural language query, extract intent with LLM → Fess search → return answer + evidence + suggestions via SSE |
 | POST | `/assist/feedback` | Record user evaluation of answer/evidence |
 | GET | `/models` | List available models (enumerate from Ollama) |
 | POST | `/models/select` | Switch default or session-scoped model |
-| GET | `/health` | Health check (can be unauthenticated) |
+| GET | `/health` | Health check (basic, live, ready, detailed - unauthenticated) |
+
+**Note**: All queries use streaming via Server-Sent Events (SSE) by default. See [Streaming Responses](../02_architecture/streaming-responses.md) for details.
 
 Appendix: Future extensions like GET `/sessions/:id`, etc. (out of initial scope)
 
@@ -89,6 +91,12 @@ Answer: {
 
 ### 3.2 `/assist/query` I/O
 
+**Endpoint**: `POST /api/v1/assist/query`
+
+**Content-Type**: `application/json`
+
+**Response Format**: `text/event-stream` (Server-Sent Events)
+
 **Request**
 ```json
 {
@@ -97,15 +105,33 @@ Answer: {
   "options": {
     "max_results": 10,
     "language": "en",
-    "filters": { "department": "Security" },
-    "timeout_ms": 5000
+    "filters": { "department": "Security" }
   }
 }
 ```
 
-**Response**
-```json
-{
+**Streaming Response** (Server-Sent Events)
+
+The endpoint returns a stream of events:
+
+```
+event: start
+data: {"message": "Processing query..."}
+
+event: intent
+data: {"normalized_query": "security policy 2024", "filters": {...}, "timing_ms": 500}
+
+event: citations
+data: {"count": 2, "citations": [...], "timing_ms": 150}
+
+event: chunk
+data: {"text": "Latest version is July 2024 revision"}
+
+event: chunk
+data: {"text": " [1][2]. Compare revision points?"}
+
+event: complete
+data: {
   "answer": {
     "text": "Latest version is July 2024 revision [1][2]. Compare revision points?",
     "suggested_questions": [
@@ -132,9 +158,17 @@ Answer: {
     }
   ],
   "session": { "id": "3f3a3f49-0e0b-44a1-ae05-8c1b2e4a2c43", "turn": 2 },
-  "timings": { "llm_ms": 210, "search_ms": 180, "total_ms": 480 }
+  "timings": {
+    "llm_ms": 710,
+    "search_ms": 150,
+    "total_ms": 980,
+    "intent_ms": 500,
+    "compose_ms": 210
+  }
 }
 ```
+
+**Note**: All queries use Server-Sent Events (SSE) streaming by default. See [Streaming Responses](../02_architecture/streaming-responses.md) for detailed event specifications.
 
 ### 3.3 `/assist/feedback` I/O
 
