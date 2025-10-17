@@ -164,20 +164,19 @@ curl -sS -H "X-Intaste-Token: $TOKEN" \
 
 ### 5.3 Streaming Responses (SSE)
 
-Intaste can stream LLM responses in real-time.
+Intaste streams LLM responses in real-time using Server-Sent Events (SSE).
 
 **Using the UI**:
-- Toggle streaming mode with the "⚡ Stream" checkbox in the header (default: enabled)
-- During streaming, displays "⚡ Streaming..."
+- Streaming is enabled by default
 - Answer text appears incrementally as it's generated
+- Citations are displayed as soon as search completes
 
 **Testing the API**:
 ```bash
 # Server-Sent Events (SSE) endpoint
 curl -sS -H "X-Intaste-Token: $TOKEN" \
      -H 'Content-Type: application/json' \
-     -H 'Accept: text/event-stream' \
-     -X POST http://localhost:8000/api/v1/assist/query/stream \
+     -X POST http://localhost:8000/api/v1/assist/query \
      -d '{"query":"What is the latest security policy?"}'
 
 # Event stream format:
@@ -185,7 +184,7 @@ curl -sS -H "X-Intaste-Token: $TOKEN" \
 # data: {"message":"Processing query..."}
 #
 # event: intent
-# data: {"optimized_query":"...","keywords":[...]}
+# data: {"normalized_query":"...","filters":{...}}
 #
 # event: citations
 # data: {"citations":[...]}
@@ -197,7 +196,7 @@ curl -sS -H "X-Intaste-Token: $TOKEN" \
 # data: {"answer":{...},"session":{...},"timings":{...}}
 ```
 
-See [STREAMING.md](STREAMING.md) for detailed documentation.
+**Note**: All queries use streaming by default. The unified `/api/v1/assist/query` endpoint supports SSE for real-time updates.
 
 ---
 
@@ -223,9 +222,14 @@ $ docker compose logs -f intaste-api intaste-ui
 | `INTASTE_API_TOKEN` | — | UI→API authentication key (required) |
 | `INTASTE_DEFAULT_MODEL` | `gpt-oss` | Default Ollama model |
 | `INTASTE_SEARCH_PROVIDER` | `fess` | Search provider (v0.1 supports fess only) |
-| `FESS_BASE_URL` | `http://fess:8080` | Internal URL for API to call Fess |
-| `OLLAMA_BASE_URL` | `http://ollama:11434` | Internal URL for API to call Ollama |
+| `INTASTE_LLM_PROVIDER` | `ollama` | LLM provider (v0.1 supports ollama only) |
+| `FESS_BASE_URL` | `http://intaste-fess:8080` | Internal URL for API to call Fess |
+| `OLLAMA_BASE_URL` | `http://intaste-ollama:11434` | Internal URL for API to call Ollama |
+| `INTASTE_LLM_WARMUP_ENABLED` | `true` | Preload model on startup for faster first requests |
+| `INTASTE_UID` | `1000` | Docker user ID for file permissions |
+| `INTASTE_GID` | `1000` | Docker group ID for file permissions |
 | `NEXT_PUBLIC_API_BASE` | `/api/v1` | API base path from UI |
+| `REQ_TIMEOUT_MS` | `15000` | Total request timeout budget (ms) |
 | `TZ` | `UTC` | Timezone |
 
 > **Security**: Set `INTASTE_API_TOKEN` to a sufficiently long random value.
@@ -238,17 +242,23 @@ $ docker compose logs -f intaste-api intaste-ui
 intaste/
 ├─ compose.yaml                # Production deployment
 ├─ compose.dev.yaml            # Development (hot reload)
+├─ compose.gpu.yaml            # GPU support configuration
+├─ compose.test.yaml           # Docker-based testing
 ├─ .env.example                # Environment variables sample
-├─ Makefile                    # Common commands (up/down/logs)
+├─ Makefile                    # Common commands (up/down/logs/test)
 ├─ intaste-ui/                  # Next.js (App Router)
 │   ├─ app/                    # Pages
-│   ├─ src/                    # State/Components
+│   ├─ src/                    # State/Components/Libs
+│   │   ├─ components/         # UI components (answer/history/input/sidebar/common)
+│   │   ├─ libs/               # Utilities (apiClient/streamingClient/sanitizer)
+│   │   ├─ store/              # Zustand state management
+│   │   └─ types/              # TypeScript type definitions
 │   └─ Dockerfile
 ├─ intaste-api/                 # FastAPI
 │   ├─ app/                    # Routers/Services
 │   ├─ core/                   # LLM/Search provider abstractions
 │   └─ Dockerfile
-└─ ops/                        # Health scripts/Monitoring
+└─ docs/                       # Comprehensive design documentation
 ```
 
 ---
@@ -314,17 +324,23 @@ Copyright (c) 2025 CodeLibs
 ## 14. Testing
 
 ```bash
-# API tests
+# API tests (local)
 cd intaste-api
-pytest --cov
+uv run pytest --cov
 
-# UI unit tests
+# UI unit tests (local)
 cd intaste-ui
 npm test
 
-# E2E tests
+# E2E tests (local)
 cd intaste-ui
 npm run test:e2e
+
+# Docker-based testing (isolated environment)
+make test-docker                # Run all tests in Docker
+make test-docker-api            # Run API tests in Docker
+make test-docker-ui             # Run UI tests in Docker
+make check-docker               # Run all checks (lint + test)
 ```
 
 See [TESTING.md](TESTING.md) for detailed documentation.

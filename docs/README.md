@@ -1,6 +1,6 @@
 # Intaste Documentation Index
 
-**Last Updated:** 2025-10-12
+**Last Updated:** 2025-10-17
 **Version:** 1.0
 
 Welcome to the Intaste documentation! This index provides a comprehensive guide to all technical documentation for the Intaste AI-assisted search platform.
@@ -178,7 +178,7 @@ Intaste is licensed under the Apache License 2.0. See the LICENSE file in the re
 - ✅ Security and development guidelines
 
 ### Planned (Future Versions)
-- ⏳ Streaming response implementation details
+- ✅ Streaming response implementation (see [Streaming Responses](02_architecture/streaming-responses.md))
 - ⏳ Multi-provider extension guide
 - ⏳ Kubernetes deployment guide
 - ⏳ Advanced monitoring and observability
@@ -190,4 +190,4 @@ Intaste is licensed under the Apache License 2.0. See the LICENSE file in the re
 
 ---
 
-*Generated: 2025-10-12 | Intaste Documentation Team*
+*Generated: 2025-10-17 | Intaste Documentation Team*

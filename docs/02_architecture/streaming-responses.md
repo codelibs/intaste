@@ -11,12 +11,12 @@ This document explains the Server-Sent Events (SSE) streaming implementation in 
 
 ## 1. Overview
 
-Intaste supports two query modes:
+Intaste uses **Server-Sent Events (SSE)** for all queries, providing real-time incremental display of LLM-generated answers. The unified endpoint streams responses by default, showing progress as the answer is generated.
 
-1. **Standard Mode**: Wait for complete answer before display
-2. **Streaming Mode**: Display answer text incrementally as it's generated
-
-Streaming mode provides better user experience by showing progress in real-time, especially for longer answers.
+Streaming provides better user experience by:
+- Displaying answer text incrementally as it's generated
+- Showing search results immediately after they're available
+- Providing real-time feedback on processing stages
 
 ---
 
@@ -27,7 +27,7 @@ Streaming mode provides better user experience by showing progress in real-time,
 ```
 Client Request
     ↓
-POST /api/v1/assist/query/stream
+POST /api/v1/assist/query
     ↓
 StreamingResponse (SSE)
     ↓
@@ -45,7 +45,7 @@ Event Flow:
 ```
 User Query
     ↓
-streamingEnabled ? sendStream() : send()
+sendStream() (streaming by default)
     ↓
 queryAssistStream()
     ↓
@@ -65,8 +65,10 @@ Incremental UI rendering
 ### 3.1 Endpoint
 
 ```
-POST /api/v1/assist/query/stream
+POST /api/v1/assist/query
 ```
+
+**Note**: This is the unified streaming endpoint. All queries use Server-Sent Events (SSE) by default.
 
 ### 3.2 Request
 
@@ -256,13 +258,7 @@ NEXT_PUBLIC_API_BASE=http://localhost:8000/api/v1
 
 ### 5.2 UI Preferences
 
-Streaming preference is stored in localStorage:
-```typescript
-// Key: intaste-ui-storage
-{
-  "streamingEnabled": true  // Default: true
-}
-```
+All queries use streaming by default. The unified endpoint provides real-time updates via SSE for optimal user experience.
 
 ---
 
@@ -344,12 +340,12 @@ Streaming preference is stored in localStorage:
 
 ## 9. Best Practices
 
-1. **Always provide fallback**: Support both streaming and standard modes
-2. **Handle errors gracefully**: Send error events, don't just disconnect
-3. **Show progress indicators**: Display "Streaming..." during active streaming
-4. **Support cancellation**: Allow users to stop long-running streams
-5. **Test edge cases**: Empty responses, network errors, malformed data
-6. **Monitor performance**: Track streaming latency and chunk rates
+1. **Handle errors gracefully**: Send error events, don't just disconnect
+2. **Show progress indicators**: Display loading states during streaming
+3. **Support cancellation**: Allow users to stop long-running streams (planned)
+4. **Test edge cases**: Empty responses, network errors, malformed data
+5. **Monitor performance**: Track streaming latency and chunk rates
+6. **Unicode handling**: Ensure proper UTF-8 encoding throughout the pipeline
 
 ---
 
