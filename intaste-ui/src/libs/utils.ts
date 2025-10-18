@@ -26,9 +26,12 @@ export function cn(...inputs: ClassValue[]) {
 
 /**
  * Format latency timing with color indication.
+ * Thresholds are based on real-world performance:
+ * - GPU environment: ~9s (good)
+ * - CPU environment: ~64s (slow)
  */
 export function getLatencyLevel(ms: number): 'good' | 'ok' | 'slow' {
-  if (ms <= 500) return 'good';
-  if (ms <= 1500) return 'ok';
-  return 'slow';
+  if (ms <= 15000) return 'good'; // ≤ 15s - GPU environment
+  if (ms <= 60000) return 'ok'; // ≤ 60s - CPU environment acceptable
+  return 'slow'; // > 60s - timeout approaching, issue detected
 }
