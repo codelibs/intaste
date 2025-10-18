@@ -40,10 +40,14 @@ describe('ProcessingStatus', () => {
     });
 
     it('displays filters when present in intent data', () => {
-      renderWithProviders(<ProcessingStatus phase="intent" intentData={mockIntentData} />);
+      const { container } = renderWithProviders(
+        <ProcessingStatus phase="intent" intentData={mockIntentData} />
+      );
 
       expect(screen.getByText(/filters/i)).toBeInTheDocument();
-      expect(screen.getByText(/site.*example\.com/)).toBeInTheDocument();
+      // Check JSON filter content without regex to avoid CodeQL regex anchor warning
+      expect(container.textContent).toContain('"site"');
+      expect(container.textContent).toContain('"example.com"');
     });
 
     it('displays followup questions when available', () => {
