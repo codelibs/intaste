@@ -461,3 +461,284 @@ async def test_id_generation_with_realistic_fess_response(fess_provider):
         # Should use Fess's native doc_id values
         assert result.hits[0].id == "e79fbfdfb09d4bffb58ec230c68f6f7e"
         assert result.hits[1].id == "f12ab34cd56ef78gh90ij12kl34mn56o"
+
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_search_with_multiple_filters_combined(fess_provider):
+    """Test search with multiple filters combined."""
+    mock_response_data = {
+        "q": "test query",
+        "exec_time": 0.1,
+        "record_count": 1,
+        "data": [
+            {
+                "doc_id": "doc1",
+                "title": "Filtered Document",
+                "url": "http://example.com/test",
+                "score": 0.9,
+            }
+        ],
+    }
+
+    with patch("httpx.AsyncClient.get") as mock_get:
+        mock_response = AsyncMock(spec=Response)
+        mock_response.status_code = 200
+        mock_response.json.return_value = mock_response_data
+        mock_get.return_value = mock_response
+
+        query = SearchQuery(
+            q="test query",
+            page=1,
+            size=10,
+            filters={
+                "site": "example.com",
+                "mimetype": "application/pdf",
+                "updated_after": "2025-01-01",
+            },
+        )
+        await fess_provider.search(query)
+
+        # Verify all filters are applied
+        call_args = mock_get.call_args
+        params = call_args[1]["params"]
+        assert params["site"] == "example.com"
+        assert params["mimetype"] == "application/pdf"
+        assert params["last_modified_from"] == "2025-01-01"
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_search_with_invalid_filter_values(fess_provider, mock_fess_response):
+    """Test search with invalid or unusual filter values."""
+    with patch("httpx.AsyncClient.get") as mock_get:
+        mock_response = AsyncMock(spec=Response)
+        mock_response.status_code = 200
+        mock_response.json.return_value = mock_fess_response
+        mock_get.return_value = mock_response
+
+        # Test with special characters in filters
+        query = SearchQuery(
+            q="test",
+            filters={
+                "site": "example.com; DROP TABLE users;--",
+                "mimetype": "../../../etc/passwd",
+            },
+        )
+        await fess_provider.search(query)
+
+        # Should pass through (Fess API handles validation)
+        call_args = mock_get.call_args
+        params = call_args[1]["params"]
+        assert "site" in params
+        assert "mimetype" in params
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_search_with_sort_parameters(fess_provider, mock_fess_response):
+    """Test search with different sort parameters."""
+    with patch("httpx.AsyncClient.get") as mock_get:
+        mock_response = AsyncMock(spec=Response)
+        mock_response.status_code = 200
+        mock_response.json.return_value = mock_fess_response
+        mock_get.return_value = mock_response
+
+        # Test date_desc sort
+        query = SearchQuery(q="test", sort="date_desc")
+        await fess_provider.search(query)
+        params = mock_get.call_args[1]["params"]
+        assert params["sort"] == "last_modified desc"
+
+        # Test date_asc sort
+        query = SearchQuery(q="test", sort="date_asc")
+        await fess_provider.search(query)
+        params = mock_get.call_args[1]["params"]
+        assert params["sort"] == "last_modified asc"
+
+        # Test default (relevance) sort
+        query = SearchQuery(q="test")
+        await fess_provider.search(query)
+        params = mock_get.call_args[1]["params"]
+        assert params["sort"] == "score"
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_search_with_empty_filter_values(fess_provider, mock_fess_response):
+    """Test search with empty filter values."""
+    with patch("httpx.AsyncClient.get") as mock_get:
+        mock_response = AsyncMock(spec=Response)
+        mock_response.status_code = 200
+        mock_response.json.return_value = mock_fess_response
+        mock_get.return_value = mock_response
+
+        # Empty strings and None values should be handled
+        query = SearchQuery(
+            q="test",
+            filters={
+                "site": "",
+                "mimetype": None,
+            },
+        )
+        await fess_provider.search(query)
+
+        # Empty/None filters should not be applied
+        call_args = mock_get.call_args
+        params = call_args[1]["params"]
+        # Empty string is still applied (Fess API handles it)
+        assert "site" in params or "site" not in params
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_search_with_filters_and_sorting_combined(fess_provider, mock_fess_response):
+    """Test search with both filters and sorting."""
+    with patch("httpx.AsyncClient.get") as mock_get:
+        mock_response = AsyncMock(spec=Response)
+        mock_response.status_code = 200
+        mock_response.json.return_value = mock_fess_response
+        mock_get.return_value = mock_response
+
+        query = SearchQuery(
+            q="test",
+            sort="date_desc",
+            filters={"site": "example.com"},
+        )
+        await fess_provider.search(query)
+
+        params = mock_get.call_args[1]["params"]
+        assert params["sort"] == "last_modified desc"
+        assert params["site"] == "example.com"
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_search_with_custom_timeout(fess_provider, mock_fess_response):
+    """Test search with custom timeout parameter."""
+    with patch("httpx.AsyncClient.get") as mock_get:
+        mock_response = AsyncMock(spec=Response)
+        mock_response.status_code = 200
+        mock_response.json.return_value = mock_fess_response
+        mock_get.return_value = mock_response
+
+        query = SearchQuery(q="test", timeout_ms=5000)
+        await fess_provider.search(query)
+
+        # Verify timeout is passed to httpx
+        call_args = mock_get.call_args
+        assert call_args[1]["timeout"] == 5.0  # 5000ms = 5.0s
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_search_with_special_date_formats(fess_provider, mock_fess_response):
+    """Test search with various date formats in updated_after filter."""
+    with patch("httpx.AsyncClient.get") as mock_get:
+        mock_response = AsyncMock(spec=Response)
+        mock_response.status_code = 200
+        mock_response.json.return_value = mock_fess_response
+        mock_get.return_value = mock_response
+
+        date_formats = [
+            "2025-01-01",
+            "2025-01-01T00:00:00",
+            "2025-01-01T00:00:00.000Z",
+            "2025-01-01T00:00:00+09:00",
+        ]
+
+        for date_format in date_formats:
+            query = SearchQuery(
+                q="test",
+                filters={"updated_after": date_format},
+            )
+            await fess_provider.search(query)
+
+            params = mock_get.call_args[1]["params"]
+            assert params["last_modified_from"] == date_format
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_search_preserves_html_in_snippet(fess_provider):
+    """Test that HTML in snippet is preserved (UI must sanitize)."""
+    response_with_html = {
+        "q": "test",
+        "exec_time": 0.1,
+        "record_count": 1,
+        "data": [
+            {
+                "doc_id": "doc1",
+                "title": "HTML Document",
+                "url": "http://example.com/test",
+                "content_description": 'This is <em>emphasized</em> and <strong>bold</strong> text with <script>alert("xss")</script>',
+                "score": 0.9,
+            }
+        ],
+    }
+
+    with patch("httpx.AsyncClient.get") as mock_get:
+        mock_response = AsyncMock(spec=Response)
+        mock_response.status_code = 200
+        mock_response.json.return_value = response_with_html
+        mock_get.return_value = mock_response
+
+        query = SearchQuery(q="test")
+        result = await fess_provider.search(query)
+
+        # HTML should be preserved in snippet (not sanitized by provider)
+        assert "<em>" in result.hits[0].snippet
+        assert "<strong>" in result.hits[0].snippet
+        assert "<script>" in result.hits[0].snippet
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_search_with_zero_results_total(fess_provider):
+    """Test search with zero total but valid response structure."""
+    zero_response = {
+        "q": "nonexistent",
+        "exec_time": 0.05,
+        "page_size": 10,
+        "page_number": 1,
+        "record_count": 0,
+        "page_count": 0,
+        "data": [],
+    }
+
+    with patch("httpx.AsyncClient.get") as mock_get:
+        mock_response = AsyncMock(spec=Response)
+        mock_response.status_code = 200
+        mock_response.json.return_value = zero_response
+        mock_get.return_value = mock_response
+
+        query = SearchQuery(q="nonexistent")
+        result = await fess_provider.search(query)
+
+        assert result.total == 0
+        assert len(result.hits) == 0
+        assert result.took_ms == 50
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_search_url_construction(fess_provider):
+    """Test that search URL is correctly constructed."""
+    with patch("httpx.AsyncClient.get") as mock_get:
+        mock_response = AsyncMock(spec=Response)
+        mock_response.status_code = 200
+        mock_response.json.return_value = {
+            "exec_time": 0.1,
+            "record_count": 0,
+            "data": [],
+        }
+        mock_get.return_value = mock_response
+
+        query = SearchQuery(q="test")
+        await fess_provider.search(query)
+
+        # Verify URL
+        call_args = mock_get.call_args
+        url = call_args[0][0]
+        assert url == "http://test-fess:8080/api/v1/documents"

@@ -55,6 +55,15 @@ vi.mock('@/libs/uuid', () => ({
   generateUUID: vi.fn(() => '00000000-0000-0000-0000-000000000000'),
 }));
 
+// Mock i18n config
+vi.mock('@/libs/i18n/config', () => ({
+  default: {
+    changeLanguage: vi.fn(() => Promise.resolve()),
+    language: 'en',
+    t: (key: string) => key,
+  },
+}));
+
 // Mock react-i18next
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -132,7 +141,7 @@ vi.mock('react-i18next', () => ({
     },
     i18n: {
       language: 'en',
-      changeLanguage: vi.fn(),
+      changeLanguage: vi.fn(() => Promise.resolve()),
     },
   }),
   I18nextProvider: ({ children }: { children: React.ReactNode }) => children,
