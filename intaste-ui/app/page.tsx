@@ -38,6 +38,9 @@ export default function HomePage() {
     timings,
     fallbackNotice,
     queryHistory,
+    processingPhase,
+    intentData,
+    citationsData,
     send,
     selectCitation,
     addQueryToHistory,
@@ -134,6 +137,10 @@ export default function HomePage() {
             {answer && (
               <AnswerBubble
                 answer={answer}
+                streaming={streaming}
+                processingPhase={processingPhase}
+                intentData={intentData}
+                citationsData={citationsData}
                 fallbackNotice={fallbackNotice}
                 onCitationClick={handleCitationClick}
               />

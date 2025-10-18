@@ -74,6 +74,7 @@ class FessSearchAgent(BaseSearchAgent):
         Execute search with streaming progress updates.
 
         Yields:
+            SearchEvent(type="status"): Processing phase updates
             SearchEvent(type="intent"): Intent extraction completed
             SearchEvent(type="citations"): Search results available
         """
@@ -81,6 +82,14 @@ class FessSearchAgent(BaseSearchAgent):
         session_id = options.get("session_id", "unknown")
 
         logger.debug(f"[{session_id}] FessSearchAgent.search_stream started: query={query!r}")
+
+        # Yield status: intent extraction starting
+        from .base import StatusEventData
+
+        yield SearchEvent(
+            type="status",
+            data=StatusEventData(phase="intent"),
+        )
 
         # Step 1: Intent extraction
         logger.info(f"[{session_id}] Starting intent extraction")
@@ -131,6 +140,12 @@ class FessSearchAgent(BaseSearchAgent):
                 ambiguity=intent.ambiguity,
                 timing_ms=intent_ms,
             ),
+        )
+
+        # Yield status: search execution starting
+        yield SearchEvent(
+            type="status",
+            data=StatusEventData(phase="search"),
         )
 
         # Step 2: Search execution
