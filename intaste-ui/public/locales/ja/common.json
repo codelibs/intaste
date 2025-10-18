@@ -1,0 +1,80 @@
+{
+  "header": {
+    "title": "Intaste",
+    "streaming": "ストリーミング中...",
+    "setApiToken": "APIトークンを設定",
+    "apiTokenPrompt": "APIトークンを入力してください："
+  },
+  "input": {
+    "placeholder": "ここに質問を入力してください...",
+    "helper": "Enterで送信 • Shift+Enterで改行",
+    "characterCount": "{{count}} / 4096"
+  },
+  "answer": {
+    "viewCitation": "引用 {{id}} を表示",
+    "relatedQuestions": "関連する質問：",
+    "fallbackNotice": "⚠️"
+  },
+  "processing": {
+    "searchKeywords": "検索キーワード",
+    "filters": "検索条件",
+    "relatedQuestions": "関連する質問",
+    "searching": "関連情報を検索中...",
+    "resultsFound": "{{count}}件の関連情報が見つかりました",
+    "topResults": "検索結果",
+    "generatingAnswer": "回答を生成中...",
+    "analyzingQuery": "質問を分析中..."
+  },
+  "evidence": {
+    "selected": "選択中",
+    "all": "すべて ({{count}}件)",
+    "noSelection": "引用が選択されていません"
+  },
+  "history": {
+    "title": "検索履歴",
+    "clear": "クリア"
+  },
+  "empty": {
+    "welcome": {
+      "title": "Intaste へようこそ",
+      "message": "上記に質問を入力してAI支援検索を開始してください。",
+      "suggestions": [
+        "自然な言葉で質問できます",
+        "結果には引用とソースが含まれます",
+        "引用番号をクリックして詳細を表示できます"
+      ]
+    },
+    "noResults": {
+      "title": "ソースが見つかりません",
+      "message": "別のキーワードを試すか、検索条件を確認してください。",
+      "suggestions": [
+        "より広範な検索キーワードを使用する",
+        "スペルを確認する",
+        "関連するキーワードを試す"
+      ]
+    }
+  },
+  "error": {
+    "title": "エラーが発生しました",
+    "retry": "再試行",
+    "dismiss": "✕"
+  },
+  "loading": {
+    "searching": "検索中..."
+  },
+  "latency": {
+    "fast": "高速",
+    "normal": "通常",
+    "slow": "低速",
+    "details": "(LLM: {{llm}}ms、検索: {{search}}ms)"
+  },
+  "footer": {
+    "version": "Intaste v{{version}}",
+    "license": "Apache License 2.0",
+    "github": "GitHub"
+  },
+  "language": {
+    "select": "言語",
+    "current": "現在: {{lang}}"
+  }
+}

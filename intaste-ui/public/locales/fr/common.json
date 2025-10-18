@@ -1,0 +1,80 @@
+{
+  "header": {
+    "title": "Intaste",
+    "streaming": "Diffusion en cours...",
+    "setApiToken": "Définir le jeton API",
+    "apiTokenPrompt": "Entrez votre jeton API :"
+  },
+  "input": {
+    "placeholder": "Entrez votre question ici...",
+    "helper": "Entrée pour envoyer • Maj+Entrée pour nouvelle ligne",
+    "characterCount": "{{count}} / 4096"
+  },
+  "answer": {
+    "viewCitation": "Voir la citation {{id}}",
+    "relatedQuestions": "Questions connexes :",
+    "fallbackNotice": "⚠️"
+  },
+  "processing": {
+    "searchKeywords": "Mots-clés de recherche",
+    "filters": "Filtres",
+    "relatedQuestions": "Questions connexes",
+    "searching": "Recherche en cours...",
+    "resultsFound": "{{count}} résultats trouvés",
+    "topResults": "Meilleurs résultats",
+    "generatingAnswer": "Génération de la réponse...",
+    "analyzingQuery": "Analyse de la requête..."
+  },
+  "evidence": {
+    "selected": "Sélectionné",
+    "all": "Tous ({{count}})",
+    "noSelection": "Aucune citation sélectionnée"
+  },
+  "history": {
+    "title": "Historique de recherche",
+    "clear": "Effacer"
+  },
+  "empty": {
+    "welcome": {
+      "title": "Bienvenue sur Intaste",
+      "message": "Entrez votre question ci-dessus pour commencer la recherche assistée par IA.",
+      "suggestions": [
+        "Posez des questions en langage naturel",
+        "Les résultats incluront des citations et des sources",
+        "Cliquez sur les numéros de citation pour voir les détails"
+      ]
+    },
+    "noResults": {
+      "title": "Aucune source trouvée",
+      "message": "Essayez différents mots-clés ou vérifiez vos critères de recherche.",
+      "suggestions": [
+        "Utilisez des termes de recherche plus larges",
+        "Vérifiez l'orthographe",
+        "Essayez des mots-clés connexes"
+      ]
+    }
+  },
+  "error": {
+    "title": "Une erreur s'est produite",
+    "retry": "Réessayer",
+    "dismiss": "✕"
+  },
+  "loading": {
+    "searching": "Recherche en cours..."
+  },
+  "latency": {
+    "fast": "Rapide",
+    "normal": "Normal",
+    "slow": "Lent",
+    "details": "(LLM : {{llm}}ms, Recherche : {{search}}ms)"
+  },
+  "footer": {
+    "version": "Intaste v{{version}}",
+    "license": "Apache License 2.0",
+    "github": "GitHub"
+  },
+  "language": {
+    "select": "Langue",
+    "current": "Actuel : {{lang}}"
+  }
+}

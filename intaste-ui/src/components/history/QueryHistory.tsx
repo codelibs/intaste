@@ -13,6 +13,7 @@
 'use client';
 
 import { cn } from '@/libs/utils';
+import { useTranslation } from '@/libs/i18n/client';
 
 interface QueryHistoryProps {
   history: string[];
@@ -22,6 +23,8 @@ interface QueryHistoryProps {
 }
 
 export function QueryHistory({ history, onQueryClick, onClear, className }: QueryHistoryProps) {
+  const { t } = useTranslation();
+
   if (history.length === 0) {
     return null;
   }
@@ -29,14 +32,14 @@ export function QueryHistory({ history, onQueryClick, onClear, className }: Quer
   return (
     <div className={cn('w-full', className)}>
       <div className="flex items-center justify-between mb-2">
-        <h3 className="text-sm font-medium text-muted-foreground">Search History</h3>
+        <h3 className="text-sm font-medium text-muted-foreground">{t('history.title')}</h3>
         {onClear && (
           <button
             onClick={onClear}
             className="text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded hover:bg-muted"
             aria-label="Clear history"
           >
-            Clear
+            {t('history.clear')}
           </button>
         )}
       </div>

@@ -1,0 +1,72 @@
+{
+  "header": {
+    "title": "Intaste",
+    "streaming": "流式传输中...",
+    "setApiToken": "设置API令牌",
+    "apiTokenPrompt": "请输入您的API令牌："
+  },
+  "input": {
+    "placeholder": "在此输入您的问题...",
+    "helper": "按Enter发送 • Shift+Enter换行",
+    "characterCount": "{{count}} / 4096"
+  },
+  "answer": {
+    "viewCitation": "查看引用 {{id}}",
+    "relatedQuestions": "相关问题：",
+    "fallbackNotice": "⚠️"
+  },
+  "processing": {
+    "searchKeywords": "搜索关键词",
+    "filters": "筛选条件",
+    "relatedQuestions": "相关问题",
+    "searching": "搜索中...",
+    "resultsFound": "找到{{count}}条结果",
+    "topResults": "搜索结果",
+    "generatingAnswer": "生成答案中...",
+    "analyzingQuery": "分析查询中..."
+  },
+  "evidence": {
+    "selected": "已选择",
+    "all": "全部 ({{count}}条)",
+    "noSelection": "未选择引用"
+  },
+  "history": {
+    "title": "搜索历史",
+    "clear": "清除"
+  },
+  "empty": {
+    "welcome": {
+      "title": "欢迎使用 Intaste",
+      "message": "在上方输入您的问题以开始AI辅助搜索。",
+      "suggestions": ["用自然语言提问", "结果将包含引用和来源", "点击引用编号查看详情"]
+    },
+    "noResults": {
+      "title": "未找到来源",
+      "message": "请尝试不同的关键词或检查您的搜索条件。",
+      "suggestions": ["使用更广泛的搜索词", "检查拼写", "尝试相关关键词"]
+    }
+  },
+  "error": {
+    "title": "发生错误",
+    "retry": "重试",
+    "dismiss": "✕"
+  },
+  "loading": {
+    "searching": "搜索中..."
+  },
+  "latency": {
+    "fast": "快速",
+    "normal": "正常",
+    "slow": "慢速",
+    "details": "(LLM: {{llm}}ms，搜索: {{search}}ms)"
+  },
+  "footer": {
+    "version": "Intaste v{{version}}",
+    "license": "Apache License 2.0",
+    "github": "GitHub"
+  },
+  "language": {
+    "select": "语言",
+    "current": "当前: {{lang}}"
+  }
+}
