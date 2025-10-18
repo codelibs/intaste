@@ -58,13 +58,22 @@ const nextConfig = {
   },
 
   // Rewrites for API proxy (optional, can route /api to backend)
+  // Note: /api/v1/assist/query is handled by Next.js API Route for streaming support
   async rewrites() {
     const apiBase = process.env.API_PROXY_URL;
     if (apiBase) {
       return [
         {
-          source: '/api/v1/:path*',
-          destination: `${apiBase}/api/v1/:path*`,
+          source: '/api/v1/models/:path*',
+          destination: `${apiBase}/api/v1/models/:path*`,
+        },
+        {
+          source: '/api/v1/health/:path*',
+          destination: `${apiBase}/api/v1/health/:path*`,
+        },
+        {
+          source: '/api/v1/assist/feedback',
+          destination: `${apiBase}/api/v1/assist/feedback`,
         },
       ];
     }

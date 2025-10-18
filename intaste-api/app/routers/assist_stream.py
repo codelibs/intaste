@@ -99,7 +99,24 @@ async def stream_assist_response(
             query=request.query,
             options=request_options,
         ):
-            if event.type == "intent":
+            if event.type == "status":
+                status_data = event.status_data
+                if status_data:  # Type guard for mypy
+                    event_count += 1
+
+                    status_event = await format_sse(
+                        "status",
+                        {
+                            "phase": status_data.phase,
+                        },
+                    )
+                    logger.debug(
+                        f"[{session_id}] Streaming event #{event_count}: type=status, "
+                        f"phase={status_data.phase}"
+                    )
+                    yield status_event
+
+            elif event.type == "intent":
                 intent_data = event.intent_data
                 if intent_data:  # Type guard for mypy
                     event_count += 1
@@ -109,6 +126,7 @@ async def stream_assist_response(
                         {
                             "normalized_query": intent_data.normalized_query,
                             "filters": intent_data.filters,
+                            "followups": intent_data.followups,
                             "timing_ms": intent_data.timing_ms,
                         },
                     )
@@ -160,6 +178,12 @@ async def stream_assist_response(
             f"intent={intent_data.timing_ms}ms, search={citations_data.timing_ms}ms"
         )
 
+        # Yield status: answer composition starting
+        event_count += 1
+        compose_status_event = await format_sse("status", {"phase": "compose"})
+        logger.debug(f"[{session_id}] Streaming event #{event_count}: type=status, phase=compose")
+        yield compose_status_event
+
         # Step 3: Compose answer with streaming
         logger.debug(f"[{session_id}] Starting answer composition streaming")
         compose_start = time.time()
@@ -207,25 +231,6 @@ async def stream_assist_response(
         )
         logger.debug(f"[{session_id}] Full text preview: {full_text[:200]}")
 
-        # Validate and clean full_text to handle malformed LLM output
-        # LLM might return JSON-encoded text instead of plain text
-        cleaned_text = full_text
-        if full_text.startswith("{"):
-            try:
-                # Try to parse as JSON
-                parsed = json.loads(full_text)
-                if isinstance(parsed, dict) and "text" in parsed:
-                    logger.warning(
-                        f"[{session_id}] Detected malformed streaming output with JSON structure"
-                    )
-                    logger.debug(f"[{session_id}] Malformed full_text: {full_text[:200]}")
-                    # Extract the actual text from the JSON
-                    cleaned_text = parsed.get("text", full_text)
-                    logger.debug(f"[{session_id}] Extracted cleaned text: {cleaned_text[:200]}")
-            except (json.JSONDecodeError, ValueError):
-                # Not JSON, use as-is
-                pass
-
         # Calculate total LLM time (intent extraction + answer composition)
         llm_ms = intent_data.timing_ms + compose_ms
 
@@ -241,7 +246,7 @@ async def stream_assist_response(
             "complete",
             {
                 "answer": {
-                    "text": cleaned_text,
+                    "text": full_text,
                     "suggested_questions": intent_data.followups,
                 },
                 "citations": citations,

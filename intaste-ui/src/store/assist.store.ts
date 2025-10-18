@@ -29,6 +29,16 @@ interface AssistState {
   timings: Timings | null;
   fallbackNotice: string | null;
   queryHistory: string[];
+  processingPhase: 'intent' | 'search' | 'compose' | null;
+  intentData: {
+    normalized_query: string;
+    filters?: Record<string, any>;
+    followups: string[];
+  } | null;
+  citationsData: {
+    total: number;
+    topResults: string[];
+  } | null;
 
   send: (query: string, options?: Record<string, any>) => Promise<void>;
   selectCitation: (id: number | null) => void;
@@ -47,6 +57,9 @@ export const useAssistStore = create<AssistState>((set, get) => ({
   timings: null,
   fallbackNotice: null,
   queryHistory: [],
+  processingPhase: null,
+  intentData: null,
+  citationsData: null,
 
   send: async (query: string, options?: Record<string, any>) => {
     set({
@@ -55,6 +68,9 @@ export const useAssistStore = create<AssistState>((set, get) => ({
       error: null,
       fallbackNotice: null,
       answer: { text: '', suggested_questions: [] },
+      processingPhase: null,
+      intentData: null,
+      citationsData: null,
     });
 
     try {
@@ -71,16 +87,40 @@ export const useAssistStore = create<AssistState>((set, get) => ({
           onStart: (data) => {
             console.log('Stream started:', data);
           },
+          onStatus: (data) => {
+            set({ processingPhase: data.phase });
+          },
           onIntent: (data) => {
             console.log('Intent extracted:', data);
+            set({
+              intentData: {
+                normalized_query: data.normalized_query,
+                filters: data.filters,
+                followups: data.followups || [],
+              },
+            });
           },
           onCitations: (data) => {
+            const topResults = data.citations.slice(0, 3).map((c: any) => c.title);
+
             set({
               citations: data.citations,
               selectedCitationId: data.citations[0]?.id ?? null,
+              citationsData: {
+                total: data.citations.length,
+                topResults,
+              },
             });
           },
           onChunk: (data) => {
+            // Clear processing info on first chunk
+            if (accumulatedText === '') {
+              set({
+                processingPhase: null,
+                intentData: null,
+                citationsData: null,
+              });
+            }
             accumulatedText += data.text;
             set({
               answer: {

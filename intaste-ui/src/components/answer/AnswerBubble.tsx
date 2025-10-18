@@ -14,9 +14,21 @@
 
 import type { Answer } from '@/types/api';
 import { cn } from '@/libs/utils';
+import { ProcessingStatus } from '@/components/common/ProcessingStatus';
 
 interface AnswerBubbleProps {
   answer: Answer;
+  streaming?: boolean;
+  processingPhase?: 'intent' | 'search' | 'compose' | null;
+  intentData?: {
+    normalized_query: string;
+    filters?: Record<string, any>;
+    followups: string[];
+  } | null;
+  citationsData?: {
+    total: number;
+    topResults: string[];
+  } | null;
   fallbackNotice?: string | null;
   onCitationClick?: (id: number) => void;
   className?: string;
@@ -24,10 +36,17 @@ interface AnswerBubbleProps {
 
 export function AnswerBubble({
   answer,
+  streaming = false,
+  processingPhase,
+  intentData,
+  citationsData,
   fallbackNotice,
   onCitationClick,
   className,
 }: AnswerBubbleProps) {
+  // Detect browser language
+  const lang =
+    typeof navigator !== 'undefined' && navigator.language.startsWith('ja') ? 'ja' : 'en';
   // Parse citation markers [1], [2], etc. and make them clickable
   const renderTextWithCitations = (text: string) => {
     const parts = text.split(/(\[\d+\])/g);
@@ -60,7 +79,28 @@ export function AnswerBubble({
       )}
 
       <div className="prose prose-sm dark:prose-invert max-w-none">
-        <p className="text-foreground leading-relaxed">{renderTextWithCitations(answer.text)}</p>
+        {processingPhase ? (
+          // Display detailed processing status
+          <ProcessingStatus
+            phase={processingPhase}
+            intentData={intentData ?? undefined}
+            citationsData={citationsData ?? undefined}
+            lang={lang}
+          />
+        ) : (
+          // Display answer text
+          <p className="text-foreground leading-relaxed">
+            {renderTextWithCitations(answer.text)}
+            {streaming && (
+              <span
+                className="inline-block w-2 h-4 ml-1 bg-primary animate-pulse"
+                aria-label="Streaming"
+              >
+                |
+              </span>
+            )}
+          </p>
+        )}
       </div>
 
       {answer.suggested_questions && answer.suggested_questions.length > 0 && (

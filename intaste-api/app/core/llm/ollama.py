@@ -475,13 +475,11 @@ class OllamaClient:
 
         # Prepare citations text
         citations_text = self._format_citations(citations_data)
-        followups_json = json.dumps(followups or [], ensure_ascii=False)
 
         user_prompt = COMPOSE_USER_TEMPLATE.format(
             query=query,
             normalized_query=normalized_query,
             ambiguity="medium",
-            followups_json=followups_json,
             citations_text=citations_text,
         )
 

@@ -86,14 +86,18 @@ async def test_search_stream_success(search_agent, mock_llm_client, mock_search_
     async for event in search_agent.search_stream("user query", {"session_id": "test"}):
         events.append(event)
 
-    # Verify events
-    assert len(events) == 2
-    assert events[0].type == "intent"
-    assert events[0].intent_data.normalized_query == "test query"
-    assert events[0].intent_data.filters == {"site": "example.com"}
-    assert events[1].type == "citations"
-    assert len(events[1].citations_data.hits) == 1
-    assert events[1].citations_data.total == 10
+    # Verify events (now includes status events)
+    assert len(events) == 4
+    assert events[0].type == "status"
+    assert events[0].status_data.phase == "intent"
+    assert events[1].type == "intent"
+    assert events[1].intent_data.normalized_query == "test query"
+    assert events[1].intent_data.filters == {"site": "example.com"}
+    assert events[2].type == "status"
+    assert events[2].status_data.phase == "search"
+    assert events[3].type == "citations"
+    assert len(events[3].citations_data.hits) == 1
+    assert events[3].citations_data.total == 10
 
 
 @pytest.mark.asyncio
@@ -124,12 +128,16 @@ async def test_search_stream_intent_fallback(search_agent, mock_llm_client, mock
     async for event in search_agent.search_stream("user query", {"session_id": "test"}):
         events.append(event)
 
-    # Verify fallback behavior
-    assert len(events) == 2
-    assert events[0].type == "intent"
-    assert events[0].intent_data.normalized_query == "user query"  # Original query used
-    assert events[0].intent_data.ambiguity == "medium"
-    assert events[1].type == "citations"
+    # Verify fallback behavior (now includes status events)
+    assert len(events) == 4
+    assert events[0].type == "status"
+    assert events[0].status_data.phase == "intent"
+    assert events[1].type == "intent"
+    assert events[1].intent_data.normalized_query == "user query"  # Original query used
+    assert events[1].intent_data.ambiguity == "medium"
+    assert events[2].type == "status"
+    assert events[2].status_data.phase == "search"
+    assert events[3].type == "citations"
 
 
 @pytest.mark.asyncio

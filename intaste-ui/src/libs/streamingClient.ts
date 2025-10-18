@@ -26,6 +26,7 @@ export interface StreamEvent {
 
 export interface StreamCallbacks {
   onStart?: (data: any) => void;
+  onStatus?: (data: { phase: 'intent' | 'search' | 'compose' }) => void;
   onIntent?: (data: any) => void;
   onCitations?: (data: any) => void;
   onChunk?: (data: { text: string }) => void;
@@ -118,6 +119,9 @@ export async function queryAssistStream(
           switch (event) {
             case 'start':
               callbacks?.onStart?.(data);
+              break;
+            case 'status':
+              callbacks?.onStatus?.(data);
               break;
             case 'intent':
               callbacks?.onIntent?.(data);

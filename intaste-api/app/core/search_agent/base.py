@@ -53,17 +53,28 @@ class CitationsEventData(BaseModel):
     timing_ms: int = Field(..., ge=0)
 
 
+class StatusEventData(BaseModel):
+    """
+    Event data emitted during processing to indicate current phase.
+    Used to provide user feedback while waiting for results.
+    """
+
+    phase: Literal["intent", "search", "compose"]
+
+
 class SearchEvent(BaseModel):
     """
     Streaming event from search agent during query processing.
 
     Events are emitted in order:
-    1. intent: Intent extraction completed
-    2. citations: Search results available
+    1. status(intent): Intent extraction starting
+    2. intent: Intent extraction completed
+    3. status(search): Search execution starting
+    4. citations: Search results available
     """
 
-    type: Literal["intent", "citations"]
-    data: IntentEventData | CitationsEventData
+    type: Literal["intent", "citations", "status"]
+    data: IntentEventData | CitationsEventData | StatusEventData
 
     @property
     def intent_data(self) -> IntentEventData | None:
@@ -74,6 +85,11 @@ class SearchEvent(BaseModel):
     def citations_data(self) -> CitationsEventData | None:
         """Get citations data if this is a citations event."""
         return self.data if isinstance(self.data, CitationsEventData) else None
+
+    @property
+    def status_data(self) -> StatusEventData | None:
+        """Get status data if this is a status event."""
+        return self.data if isinstance(self.data, StatusEventData) else None
 
 
 class SearchAgentTimings(BaseModel):
