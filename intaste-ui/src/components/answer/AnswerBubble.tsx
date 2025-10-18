@@ -15,6 +15,7 @@
 import type { Answer } from '@/types/api';
 import { cn } from '@/libs/utils';
 import { ProcessingStatus } from '@/components/common/ProcessingStatus';
+import { useTranslation } from '@/libs/i18n/client';
 
 interface AnswerBubbleProps {
   answer: Answer;
@@ -44,9 +45,8 @@ export function AnswerBubble({
   onCitationClick,
   className,
 }: AnswerBubbleProps) {
-  // Detect browser language
-  const lang =
-    typeof navigator !== 'undefined' && navigator.language.startsWith('ja') ? 'ja' : 'en';
+  const { t } = useTranslation();
+
   // Parse citation markers [1], [2], etc. and make them clickable
   const renderTextWithCitations = (text: string) => {
     const parts = text.split(/(\[\d+\])/g);
@@ -59,7 +59,7 @@ export function AnswerBubble({
             key={idx}
             onClick={() => onCitationClick?.(citationId)}
             className="text-primary hover:underline focus:outline-none focus:ring-1 focus:ring-ring rounded"
-            aria-label={`View citation ${citationId}`}
+            aria-label={t('answer.viewCitation', { id: citationId })}
           >
             {part}
           </button>
@@ -73,7 +73,7 @@ export function AnswerBubble({
     <div className={cn('rounded-lg border bg-card p-4 shadow-sm', className)}>
       {fallbackNotice && (
         <div className="mb-3 flex items-start gap-2 rounded-md bg-yellow-50 dark:bg-yellow-900/20 p-2 text-xs text-yellow-800 dark:text-yellow-200">
-          <span className="text-base">⚠️</span>
+          <span className="text-base">{t('answer.fallbackNotice')}</span>
           <span>{fallbackNotice}</span>
         </div>
       )}
@@ -85,7 +85,6 @@ export function AnswerBubble({
             phase={processingPhase}
             intentData={intentData ?? undefined}
             citationsData={citationsData ?? undefined}
-            lang={lang}
           />
         ) : (
           // Display answer text
@@ -105,7 +104,9 @@ export function AnswerBubble({
 
       {answer.suggested_questions && answer.suggested_questions.length > 0 && (
         <div className="mt-4 pt-4 border-t">
-          <p className="text-xs font-medium text-muted-foreground mb-2">Related questions:</p>
+          <p className="text-xs font-medium text-muted-foreground mb-2">
+            {t('answer.relatedQuestions')}
+          </p>
           <div className="flex flex-wrap gap-2">
             {answer.suggested_questions.map((question, idx) => (
               <span key={idx} className="text-xs text-muted-foreground">

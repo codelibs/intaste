@@ -1,0 +1,80 @@
+{
+  "header": {
+    "title": "Intaste",
+    "streaming": "Transmitiendo...",
+    "setApiToken": "Establecer token API",
+    "apiTokenPrompt": "Ingrese su token API:"
+  },
+  "input": {
+    "placeholder": "Ingrese su pregunta aquí...",
+    "helper": "Enter para enviar • Shift+Enter para nueva línea",
+    "characterCount": "{{count}} / 4096"
+  },
+  "answer": {
+    "viewCitation": "Ver cita {{id}}",
+    "relatedQuestions": "Preguntas relacionadas:",
+    "fallbackNotice": "⚠️"
+  },
+  "processing": {
+    "searchKeywords": "Palabras clave de búsqueda",
+    "filters": "Filtros",
+    "relatedQuestions": "Preguntas relacionadas",
+    "searching": "Buscando...",
+    "resultsFound": "{{count}} resultados encontrados",
+    "topResults": "Mejores resultados",
+    "generatingAnswer": "Generando respuesta...",
+    "analyzingQuery": "Analizando consulta..."
+  },
+  "evidence": {
+    "selected": "Seleccionado",
+    "all": "Todos ({{count}})",
+    "noSelection": "Ninguna cita seleccionada"
+  },
+  "history": {
+    "title": "Historial de búsqueda",
+    "clear": "Limpiar"
+  },
+  "empty": {
+    "welcome": {
+      "title": "Bienvenido a Intaste",
+      "message": "Ingrese su pregunta arriba para comenzar con la búsqueda asistida por IA.",
+      "suggestions": [
+        "Haga preguntas en lenguaje natural",
+        "Los resultados incluirán citas y fuentes",
+        "Haga clic en los números de cita para ver detalles"
+      ]
+    },
+    "noResults": {
+      "title": "No se encontraron fuentes",
+      "message": "Pruebe diferentes palabras clave o revise sus criterios de búsqueda.",
+      "suggestions": [
+        "Use términos de búsqueda más amplios",
+        "Verifique la ortografía",
+        "Pruebe palabras clave relacionadas"
+      ]
+    }
+  },
+  "error": {
+    "title": "Ocurrió un error",
+    "retry": "Reintentar",
+    "dismiss": "✕"
+  },
+  "loading": {
+    "searching": "Buscando..."
+  },
+  "latency": {
+    "fast": "Rápido",
+    "normal": "Normal",
+    "slow": "Lento",
+    "details": "(LLM: {{llm}}ms, Búsqueda: {{search}}ms)"
+  },
+  "footer": {
+    "version": "Intaste v{{version}}",
+    "license": "Apache License 2.0",
+    "github": "GitHub"
+  },
+  "language": {
+    "select": "Idioma",
+    "current": "Actual: {{lang}}"
+  }
+}

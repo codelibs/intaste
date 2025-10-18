@@ -14,6 +14,7 @@
 
 import { useRef, KeyboardEvent } from 'react';
 import { cn } from '@/libs/utils';
+import { useTranslation } from '@/libs/i18n/client';
 
 interface QueryInputProps {
   value: string;
@@ -29,9 +30,10 @@ export function QueryInput({
   onChange,
   onSubmit,
   disabled = false,
-  placeholder = 'Enter your question here...',
+  placeholder,
   className,
 }: QueryInputProps) {
+  const { t } = useTranslation();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
@@ -59,7 +61,7 @@ export function QueryInput({
         onChange={(e) => onChange(e.target.value)}
         onKeyDown={handleKeyDown}
         disabled={disabled}
-        placeholder={placeholder}
+        placeholder={placeholder || t('input.placeholder')}
         rows={3}
         maxLength={4096}
         className={cn(
@@ -73,8 +75,8 @@ export function QueryInput({
         aria-label="Search query input"
       />
       <div className="mt-2 flex items-center justify-between text-xs text-muted-foreground">
-        <span>Enter to send • Shift+Enter for new line</span>
-        <span>{value.length} / 4096</span>
+        <span>{t('input.helper')}</span>
+        <span>{t('input.characterCount', { count: value.length })}</span>
       </div>
     </div>
   );

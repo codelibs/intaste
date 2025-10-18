@@ -16,6 +16,7 @@ import { useState } from 'react';
 import type { Citation } from '@/types/api';
 import { EvidenceItem } from './EvidenceItem';
 import { cn } from '@/libs/utils';
+import { useTranslation } from '@/libs/i18n/client';
 
 interface EvidencePanelProps {
   citations: Citation[];
@@ -25,6 +26,7 @@ interface EvidencePanelProps {
 }
 
 export function EvidencePanel({ citations, selectedId, onSelect, className }: EvidencePanelProps) {
+  const { t } = useTranslation();
   const [tab, setTab] = useState<'selected' | 'all'>('selected');
 
   const selectedCitation = citations.find((c) => c.id === selectedId);
@@ -45,7 +47,7 @@ export function EvidencePanel({ citations, selectedId, onSelect, className }: Ev
                 : 'border-transparent text-muted-foreground hover:text-foreground'
             )}
           >
-            Selected
+            {t('evidence.selected')}
           </button>
           <button
             role="tab"
@@ -58,7 +60,7 @@ export function EvidencePanel({ citations, selectedId, onSelect, className }: Ev
                 : 'border-transparent text-muted-foreground hover:text-foreground'
             )}
           >
-            All ({citations.length})
+            {t('evidence.all', { count: citations.length })}
           </button>
         </div>
       </div>
@@ -70,7 +72,7 @@ export function EvidencePanel({ citations, selectedId, onSelect, className }: Ev
             <EvidenceItem citation={selectedCitation} active={true} onSelect={() => {}} showFull />
           ) : (
             <div className="text-center text-sm text-muted-foreground py-8">
-              No citation selected
+              {t('evidence.noSelection')}
             </div>
           )
         ) : (

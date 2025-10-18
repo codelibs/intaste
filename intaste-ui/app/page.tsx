@@ -15,6 +15,7 @@
 import { useState } from 'react';
 import { useAssistStore } from '@/store/assist.store';
 import { useUIStore } from '@/store/ui.store';
+import { useTranslation } from '@/libs/i18n/client';
 import { QueryInput } from '@/components/input/QueryInput';
 import { QueryHistory } from '@/components/history/QueryHistory';
 import { AnswerBubble } from '@/components/answer/AnswerBubble';
@@ -22,8 +23,10 @@ import { EvidencePanel } from '@/components/sidebar/EvidencePanel';
 import { LatencyIndicator } from '@/components/common/LatencyIndicator';
 import { ErrorBanner } from '@/components/common/ErrorBanner';
 import { EmptyState } from '@/components/common/EmptyState';
+import { LanguageSwitcher } from '@/components/common/LanguageSwitcher';
 
 export default function HomePage() {
+  const { t } = useTranslation();
   const [query, setQuery] = useState('');
   const apiToken = useUIStore((state) => state.apiToken);
   const setApiToken = useUIStore((state) => state.setApiToken);
@@ -52,7 +55,10 @@ export default function HomePage() {
 
     // Check for API token
     if (!apiToken) {
-      alert('Please set your API token first. Check the settings.');
+      const token = prompt(t('header.apiTokenPrompt'));
+      if (token) {
+        setApiToken(token);
+      }
       return;
     }
 
@@ -78,22 +84,27 @@ export default function HomePage() {
       {/* Header */}
       <header className="border-b bg-card">
         <div className="container mx-auto px-4 py-3 flex items-center justify-between">
-          <h1 className="text-xl font-bold text-foreground">Intaste</h1>
+          <h1 className="text-xl font-bold text-foreground">{t('header.title')}</h1>
           <div className="flex items-center gap-4">
             {/* Streaming indicator */}
-            {streaming && <span className="text-sm text-muted-foreground">⚡ Streaming...</span>}
+            {streaming && (
+              <span className="text-sm text-muted-foreground">⚡ {t('header.streaming')}</span>
+            )}
+
+            {/* Language Switcher */}
+            <LanguageSwitcher />
 
             {!apiToken && (
               <button
                 onClick={() => {
-                  const token = prompt('Enter your API token:');
+                  const token = prompt(t('header.apiTokenPrompt'));
                   if (token) {
                     setApiToken(token);
                   }
                 }}
                 className="text-sm px-3 py-1 rounded bg-primary text-primary-foreground hover:bg-primary/90"
               >
-                Set API Token
+                {t('header.setApiToken')}
               </button>
             )}
             {timings && <LatencyIndicator timings={timings} />}
@@ -121,7 +132,6 @@ export default function HomePage() {
               onChange={setQuery}
               onSubmit={handleSubmit}
               disabled={loading}
-              placeholder="Enter your question here..."
             />
 
             {/* Error Display */}
@@ -148,33 +158,19 @@ export default function HomePage() {
 
             {/* Empty State */}
             {!loading && !error && !answer && citations.length === 0 && (
-              <EmptyState
-                title="Welcome to Intaste"
-                message="Enter your question above to get started with AI-assisted search."
-                suggestions={[
-                  'Ask questions in natural language',
-                  'Results will include citations and sources',
-                  'Click citation numbers to view details',
-                ]}
-              />
+              <EmptyState type="welcome" />
             )}
 
             {/* Loading State */}
             {loading && (
               <div className="text-center py-12">
                 <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent"></div>
-                <p className="mt-4 text-sm text-muted-foreground">Searching...</p>
+                <p className="mt-4 text-sm text-muted-foreground">{t('loading.searching')}</p>
               </div>
             )}
 
             {/* No Results */}
-            {!loading && answer && citations.length === 0 && (
-              <EmptyState
-                title="No sources found"
-                message="Try different keywords or check your search criteria."
-                suggestions={['Use broader search terms', 'Check spelling', 'Try related keywords']}
-              />
-            )}
+            {!loading && answer && citations.length === 0 && <EmptyState type="noResults" />}
           </div>
         </main>
 
@@ -194,14 +190,14 @@ export default function HomePage() {
       <footer className="border-t bg-card py-2 px-4">
         <div className="container mx-auto text-center text-xs text-muted-foreground">
           <p>
-            Intaste v0.1.0 • Apache License 2.0 •{' '}
+            {t('footer.version', { version: '0.1.0' })} • {t('footer.license')} •{' '}
             <a
               href="https://github.com/codelibs/intaste"
               target="_blank"
               rel="noopener noreferrer"
               className="text-primary hover:underline"
             >
-              GitHub
+              {t('footer.github')}
             </a>
           </p>
         </div>

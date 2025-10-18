@@ -1,0 +1,76 @@
+{
+  "header": {
+    "title": "Intaste",
+    "streaming": "Streaming...",
+    "setApiToken": "Set API Token",
+    "apiTokenPrompt": "Enter your API token:"
+  },
+  "input": {
+    "placeholder": "Enter your question here...",
+    "helper": "Enter to send • Shift+Enter for new line",
+    "characterCount": "{{count}} / 4096"
+  },
+  "answer": {
+    "viewCitation": "View citation {{id}}",
+    "relatedQuestions": "Related questions:",
+    "fallbackNotice": "⚠️"
+  },
+  "processing": {
+    "searchKeywords": "Search Keywords",
+    "filters": "Filters",
+    "relatedQuestions": "Related Questions",
+    "searching": "Searching...",
+    "resultsFound": "{{count}} results found",
+    "topResults": "Top Results",
+    "generatingAnswer": "Generating answer...",
+    "analyzingQuery": "Analyzing query..."
+  },
+  "evidence": {
+    "selected": "Selected",
+    "all": "All ({{count}})",
+    "noSelection": "No citation selected"
+  },
+  "history": {
+    "title": "Search History",
+    "clear": "Clear"
+  },
+  "empty": {
+    "welcome": {
+      "title": "Welcome to Intaste",
+      "message": "Enter your question above to get started with AI-assisted search.",
+      "suggestions": [
+        "Ask questions in natural language",
+        "Results will include citations and sources",
+        "Click citation numbers to view details"
+      ]
+    },
+    "noResults": {
+      "title": "No sources found",
+      "message": "Try different keywords or check your search criteria.",
+      "suggestions": ["Use broader search terms", "Check spelling", "Try related keywords"]
+    }
+  },
+  "error": {
+    "title": "Error occurred",
+    "retry": "Retry",
+    "dismiss": "✕"
+  },
+  "loading": {
+    "searching": "Searching..."
+  },
+  "latency": {
+    "fast": "Fast",
+    "normal": "Normal",
+    "slow": "Slow",
+    "details": "(LLM: {{llm}}ms, Search: {{search}}ms)"
+  },
+  "footer": {
+    "version": "Intaste v{{version}}",
+    "license": "Apache License 2.0",
+    "github": "GitHub"
+  },
+  "language": {
+    "select": "Language",
+    "current": "Current: {{lang}}"
+  }
+}

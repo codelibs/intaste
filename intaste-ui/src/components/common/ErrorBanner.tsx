@@ -13,6 +13,7 @@
 'use client';
 
 import { cn } from '@/libs/utils';
+import { useTranslation } from '@/libs/i18n/client';
 
 interface ErrorBannerProps {
   message: string;
@@ -22,6 +23,8 @@ interface ErrorBannerProps {
 }
 
 export function ErrorBanner({ message, onRetry, onDismiss, className }: ErrorBannerProps) {
+  const { t } = useTranslation();
+
   return (
     <div
       className={cn('rounded-lg border border-destructive/50 bg-destructive/10 p-4', className)}
@@ -30,7 +33,7 @@ export function ErrorBanner({ message, onRetry, onDismiss, className }: ErrorBan
       <div className="flex items-start gap-3">
         <span className="text-xl">❌</span>
         <div className="flex-1">
-          <p className="text-sm font-medium text-destructive mb-1">Error occurred</p>
+          <p className="text-sm font-medium text-destructive mb-1">{t('error.title')}</p>
           <p className="text-sm text-destructive/90">{message}</p>
         </div>
         <div className="flex gap-2">
@@ -39,7 +42,7 @@ export function ErrorBanner({ message, onRetry, onDismiss, className }: ErrorBan
               onClick={onRetry}
               className="text-xs font-medium text-destructive hover:underline"
             >
-              Retry
+              {t('error.retry')}
             </button>
           )}
           {onDismiss && (
@@ -48,7 +51,7 @@ export function ErrorBanner({ message, onRetry, onDismiss, className }: ErrorBan
               className="text-xs font-medium text-muted-foreground hover:text-foreground"
               aria-label="Dismiss error"
             >
-              ✕
+              {t('error.dismiss')}
             </button>
           )}
         </div>

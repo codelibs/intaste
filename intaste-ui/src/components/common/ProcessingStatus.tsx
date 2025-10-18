@@ -12,6 +12,8 @@
 
 'use client';
 
+import { useTranslation } from '@/libs/i18n/client';
+
 interface ProcessingStatusProps {
   phase: 'intent' | 'search' | 'compose';
   intentData?: {
@@ -23,15 +25,11 @@ interface ProcessingStatusProps {
     total: number;
     topResults: string[];
   };
-  lang?: 'ja' | 'en';
 }
 
-export function ProcessingStatus({
-  phase,
-  intentData,
-  citationsData,
-  lang = 'ja',
-}: ProcessingStatusProps) {
+export function ProcessingStatus({ phase, intentData, citationsData }: ProcessingStatusProps) {
+  const { t } = useTranslation();
+
   return (
     <div className="space-y-3 text-sm">
       {/* Intent data */}
@@ -39,9 +37,7 @@ export function ProcessingStatus({
         <div className="space-y-2">
           <div className="flex items-center gap-2 text-primary">
             <span>🔍</span>
-            <span className="font-medium">
-              {lang === 'ja' ? '検索キーワード' : 'Search Keywords'}:
-            </span>
+            <span className="font-medium">{t('processing.searchKeywords')}:</span>
           </div>
           <div className="pl-6 text-foreground font-mono bg-muted/50 rounded p-2">
             &quot;{intentData.normalized_query}&quot;
@@ -49,14 +45,14 @@ export function ProcessingStatus({
 
           {intentData.filters && Object.keys(intentData.filters).length > 0 && (
             <div className="pl-6 text-xs text-muted-foreground">
-              📌 {lang === 'ja' ? '検索条件' : 'Filters'}: {JSON.stringify(intentData.filters)}
+              📌 {t('processing.filters')}: {JSON.stringify(intentData.filters)}
             </div>
           )}
 
           {intentData.followups.length > 0 && (
             <div className="space-y-1">
               <div className="pl-6 text-muted-foreground">
-                💡 {lang === 'ja' ? '関連する質問' : 'Related Questions'}:
+                💡 {t('processing.relatedQuestions')}:
               </div>
               <ul className="pl-8 space-y-0.5 text-muted-foreground text-xs">
                 {intentData.followups.map((q, i) => (
@@ -72,7 +68,7 @@ export function ProcessingStatus({
       {phase === 'search' && (
         <div className="flex items-center gap-2 text-primary animate-pulse">
           <span className="inline-block animate-spin h-4 w-4 border-2 border-primary border-t-transparent rounded-full"></span>
-          <span>🔎 {lang === 'ja' ? '関連情報を検索中...' : 'Searching...'}</span>
+          <span>🔎 {t('processing.searching')}</span>
         </div>
       )}
 
@@ -82,16 +78,13 @@ export function ProcessingStatus({
           <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
             <span>✅</span>
             <span className="font-medium">
-              {citationsData.total}
-              {lang === 'ja' ? '件の関連情報が見つかりました' : ' results found'}
+              {t('processing.resultsFound', { count: citationsData.total })}
             </span>
           </div>
 
           {citationsData.topResults.length > 0 && (
             <div className="space-y-1">
-              <div className="pl-6 text-muted-foreground">
-                📄 {lang === 'ja' ? '検索結果' : 'Top Results'}:
-              </div>
+              <div className="pl-6 text-muted-foreground">📄 {t('processing.topResults')}:</div>
               <ol className="pl-8 space-y-1 text-sm">
                 {citationsData.topResults.map((title, i) => (
                   <li key={i} className="text-foreground">
@@ -108,7 +101,7 @@ export function ProcessingStatus({
       {phase === 'compose' && (
         <div className="flex items-center gap-2 text-primary animate-pulse">
           <span className="inline-block animate-spin h-4 w-4 border-2 border-primary border-t-transparent rounded-full"></span>
-          <span>💬 {lang === 'ja' ? '回答を生成中...' : 'Generating answer...'}</span>
+          <span>💬 {t('processing.generatingAnswer')}</span>
         </div>
       )}
 
@@ -116,7 +109,7 @@ export function ProcessingStatus({
       {!intentData && phase === 'intent' && (
         <div className="flex items-center gap-2 text-primary animate-pulse">
           <span className="inline-block animate-spin h-4 w-4 border-2 border-primary border-t-transparent rounded-full"></span>
-          <span>🔍 {lang === 'ja' ? '質問を分析中...' : 'Analyzing query...'}</span>
+          <span>🔍 {t('processing.analyzingQuery')}</span>
         </div>
       )}
     </div>

@@ -15,6 +15,7 @@
 import type { Timings } from '@/types/api';
 import { getLatencyLevel } from '@/libs/utils';
 import { cn } from '@/libs/utils';
+import { useTranslation } from '@/libs/i18n/client';
 
 interface LatencyIndicatorProps {
   timings: Timings;
@@ -22,22 +23,23 @@ interface LatencyIndicatorProps {
 }
 
 export function LatencyIndicator({ timings, className }: LatencyIndicatorProps) {
+  const { t } = useTranslation();
   const level = getLatencyLevel(timings.total_ms);
 
   const levelConfig = {
     good: {
       icon: '⚡',
-      text: 'Fast',
+      text: t('latency.fast'),
       color: 'text-green-600 dark:text-green-400',
     },
     ok: {
       icon: '⏱️',
-      text: 'Normal',
+      text: t('latency.normal'),
       color: 'text-yellow-600 dark:text-yellow-400',
     },
     slow: {
       icon: '🐌',
-      text: 'Slow',
+      text: t('latency.slow'),
       color: 'text-red-600 dark:text-red-400',
     },
   };
@@ -51,7 +53,7 @@ export function LatencyIndicator({ timings, className }: LatencyIndicatorProps) 
       </span>
       <span className="text-muted-foreground">{timings.total_ms}ms</span>
       <span className="text-muted-foreground text-[10px]">
-        (LLM: {timings.llm_ms}ms, Search: {timings.search_ms}ms)
+        {t('latency.details', { llm: timings.llm_ms, search: timings.search_ms })}
       </span>
     </div>
   );
