@@ -63,15 +63,15 @@ async def test_search_stream_success(search_agent, mock_llm_client, mock_search_
         ambiguity="low",
     )
 
-    # Mock search results
+    # Mock search results with title matching query for good relevance
     mock_search_provider.search.return_value = SearchResult(
         total=10,
         hits=[
             SearchHit(
                 id="1",
-                title="Test Document",
+                title="Test Query Document",
                 url="https://example.com/doc1",
-                snippet="Test snippet",
+                snippet="Test query snippet",
                 score=0.95,
                 meta={"site": "example.com"},
             )
@@ -98,6 +98,9 @@ async def test_search_stream_success(search_agent, mock_llm_client, mock_search_
     assert events[3].type == "citations"
     assert len(events[3].citations_data.hits) == 1
     assert events[3].citations_data.total == 10
+    # Verify relevance score was added
+    assert events[3].citations_data.hits[0].meta is not None
+    assert "relevance_score" in events[3].citations_data.hits[0].meta
 
 
 @pytest.mark.asyncio
@@ -106,15 +109,15 @@ async def test_search_stream_intent_fallback(search_agent, mock_llm_client, mock
     # Mock intent extraction failure
     mock_llm_client.intent.side_effect = TimeoutError("LLM timeout")
 
-    # Mock search results
+    # Mock search results with title matching the fallback query (user query)
     mock_search_provider.search.return_value = SearchResult(
         total=5,
         hits=[
             SearchHit(
                 id="1",
-                title="Fallback Document",
+                title="User Query Documentation",
                 url="https://example.com/doc1",
-                snippet="Fallback snippet",
+                snippet="User query fallback snippet",
                 score=0.8,
             )
         ],
@@ -171,22 +174,22 @@ async def test_search_non_streaming(search_agent, mock_llm_client, mock_search_p
         ambiguity="low",
     )
 
-    # Mock search results
+    # Mock search results with titles matching query for good relevance
     mock_search_provider.search.return_value = SearchResult(
         total=3,
         hits=[
             SearchHit(
                 id="1",
-                title="Doc 1",
+                title="Optimized Query Guide",
                 url="https://example.com/1",
-                snippet="Snippet 1",
+                snippet="Optimized query snippet 1",
                 score=0.9,
             ),
             SearchHit(
                 id="2",
-                title="Doc 2",
+                title="Query Optimization Tutorial",
                 url="https://example.com/2",
-                snippet="Snippet 2",
+                snippet="Optimized query snippet 2",
                 score=0.8,
             ),
         ],
@@ -244,3 +247,138 @@ async def test_close(search_agent, mock_search_provider, mock_llm_client):
 
     mock_search_provider.close.assert_called_once()
     mock_llm_client.close.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_search_stream_with_retry_on_low_relevance(
+    search_agent, mock_llm_client, mock_search_provider
+):
+    """Test search_stream retries when all results have low relevance scores."""
+    # First intent extraction returns initial query
+    # Second intent extraction (after retry) returns refined query
+    mock_llm_client.intent.side_effect = [
+        IntentOutput(
+            normalized_query="completely unrelated",
+            filters=None,
+            followups=[],
+            ambiguity="low",
+        ),
+        IntentOutput(
+            normalized_query="test query refined",
+            filters=None,
+            followups=[],
+            ambiguity="low",
+        ),
+    ]
+
+    # First search returns low-relevance results (titles don't match query)
+    # Second search returns high-relevance results
+    mock_search_provider.search.side_effect = [
+        SearchResult(
+            total=2,
+            hits=[
+                SearchHit(
+                    id="1",
+                    title="Java Enterprise Development",
+                    url="https://example.com/1",
+                    snippet="About Java",
+                    score=0.9,
+                ),
+                SearchHit(
+                    id="2",
+                    title="Ruby on Rails Guide",
+                    url="https://example.com/2",
+                    snippet="About Ruby",
+                    score=0.8,
+                ),
+            ],
+            took_ms=50,
+            page=1,
+            size=5,
+        ),
+        SearchResult(
+            total=1,
+            hits=[
+                SearchHit(
+                    id="3",
+                    title="Test Query Documentation",
+                    url="https://example.com/3",
+                    snippet="About test query",
+                    score=0.95,
+                ),
+            ],
+            took_ms=45,
+            page=1,
+            size=5,
+        ),
+    ]
+
+    # Execute search_stream
+    events = []
+    async for event in search_agent.search_stream("test query", {"session_id": "test"}):
+        events.append(event)
+
+    # Verify retry happened
+    assert mock_llm_client.intent.call_count == 2
+    assert mock_search_provider.search.call_count == 2
+
+    # Should have events from both attempts
+    # 2 attempts × (status:intent + intent + status:search) + final citations = 7 events
+    assert len(events) == 7
+    assert events[-1].type == "citations"
+    # Final results should be from second search
+    assert len(events[-1].citations_data.hits) == 1
+    assert events[-1].citations_data.hits[0].id == "3"
+
+
+@pytest.mark.asyncio
+async def test_search_stream_no_retry_on_good_relevance(
+    search_agent, mock_llm_client, mock_search_provider
+):
+    """Test search_stream does not retry when results have good relevance scores."""
+    # Mock intent extraction
+    mock_llm_client.intent.return_value = IntentOutput(
+        normalized_query="python tutorial",
+        filters=None,
+        followups=[],
+        ambiguity="low",
+    )
+
+    # Mock search results with matching titles (good relevance)
+    mock_search_provider.search.return_value = SearchResult(
+        total=2,
+        hits=[
+            SearchHit(
+                id="1",
+                title="Python Tutorial for Beginners",
+                url="https://example.com/1",
+                snippet="Learn Python",
+                score=0.9,
+            ),
+            SearchHit(
+                id="2",
+                title="Advanced Python Programming Tutorial",
+                url="https://example.com/2",
+                snippet="Python advanced",
+                score=0.8,
+            ),
+        ],
+        took_ms=50,
+        page=1,
+        size=5,
+    )
+
+    # Execute search_stream
+    events = []
+    async for event in search_agent.search_stream("python tutorial", {"session_id": "test"}):
+        events.append(event)
+
+    # Verify NO retry happened
+    assert mock_llm_client.intent.call_count == 1
+    assert mock_search_provider.search.call_count == 1
+
+    # Should have standard events: status + intent + status + citations = 4
+    assert len(events) == 4
+    assert events[-1].type == "citations"
+    # Results should be sorted by relevance
+    assert len(events[-1].citations_data.hits) == 2
