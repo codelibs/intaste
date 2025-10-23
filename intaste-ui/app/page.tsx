@@ -44,6 +44,7 @@ export default function HomePage() {
     processingPhase,
     intentData,
     citationsData,
+    relevanceData,
     send,
     selectCitation,
     addQueryToHistory,
@@ -151,6 +152,7 @@ export default function HomePage() {
                 processingPhase={processingPhase}
                 intentData={intentData}
                 citationsData={citationsData}
+                relevanceData={relevanceData}
                 fallbackNotice={fallbackNotice}
                 onCitationClick={handleCitationClick}
               />

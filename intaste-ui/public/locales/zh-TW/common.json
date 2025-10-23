@@ -22,6 +22,9 @@
     "searching": "搜尋中...",
     "resultsFound": "找到{{count}}筆結果",
     "topResults": "搜尋結果",
+    "evaluatingRelevance": "評估相關性中...",
+    "relevanceEvaluated": "已評估{{count}}筆結果",
+    "maxRelevanceScore": "最佳匹配",
     "generatingAnswer": "產生答案中...",
     "analyzingQuery": "分析查詢中..."
   },
@@ -29,6 +32,12 @@
     "selected": "已選擇",
     "all": "全部 ({{count}}筆)",
     "noSelection": "未選擇引用"
+  },
+  "citation": {
+    "site": "網站",
+    "type": "類型",
+    "searchScore": "搜尋分數",
+    "relevanceScore": "相關性"
   },
   "history": {
     "title": "搜尋歷史",

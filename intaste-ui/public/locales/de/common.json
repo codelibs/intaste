@@ -22,6 +22,9 @@
     "searching": "Suche läuft...",
     "resultsFound": "{{count}} Ergebnisse gefunden",
     "topResults": "Top-Ergebnisse",
+    "evaluatingRelevance": "Relevanz wird bewertet...",
+    "relevanceEvaluated": "{{count}} Ergebnisse bewertet",
+    "maxRelevanceScore": "Beste Übereinstimmung",
     "generatingAnswer": "Antwort wird generiert...",
     "analyzingQuery": "Abfrage wird analysiert..."
   },
@@ -29,6 +32,12 @@
     "selected": "Ausgewählt",
     "all": "Alle ({{count}})",
     "noSelection": "Kein Zitat ausgewählt"
+  },
+  "citation": {
+    "site": "Seite",
+    "type": "Typ",
+    "searchScore": "Such-Score",
+    "relevanceScore": "Relevanz"
   },
   "history": {
     "title": "Suchverlauf",

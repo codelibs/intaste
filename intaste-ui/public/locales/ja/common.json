@@ -22,6 +22,9 @@
     "searching": "関連情報を検索中...",
     "resultsFound": "{{count}}件の関連情報が見つかりました",
     "topResults": "検索結果",
+    "evaluatingRelevance": "検索結果の関連性を評価中...",
+    "relevanceEvaluated": "{{count}}件の結果を評価しました",
+    "maxRelevanceScore": "最高関連度",
     "generatingAnswer": "回答を生成中...",
     "analyzingQuery": "質問を分析中..."
   },
@@ -29,6 +32,12 @@
     "selected": "選択中",
     "all": "すべて ({{count}}件)",
     "noSelection": "引用が選択されていません"
+  },
+  "citation": {
+    "site": "サイト",
+    "type": "種類",
+    "searchScore": "検索スコア",
+    "relevanceScore": "関連度"
   },
   "history": {
     "title": "検索履歴",

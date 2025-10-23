@@ -20,7 +20,7 @@ import { useTranslation } from '@/libs/i18n/client';
 interface AnswerBubbleProps {
   answer: Answer;
   streaming?: boolean;
-  processingPhase?: 'intent' | 'search' | 'compose' | null;
+  processingPhase?: 'intent' | 'search' | 'relevance' | 'compose' | null;
   intentData?: {
     normalized_query: string;
     filters?: Record<string, any>;
@@ -29,6 +29,10 @@ interface AnswerBubbleProps {
   citationsData?: {
     total: number;
     topResults: string[];
+  } | null;
+  relevanceData?: {
+    evaluated_count: number;
+    max_score: number;
   } | null;
   fallbackNotice?: string | null;
   onCitationClick?: (id: number) => void;
@@ -41,6 +45,7 @@ export function AnswerBubble({
   processingPhase,
   intentData,
   citationsData,
+  relevanceData,
   fallbackNotice,
   onCitationClick,
   className,
@@ -85,6 +90,7 @@ export function AnswerBubble({
             phase={processingPhase}
             intentData={intentData ?? undefined}
             citationsData={citationsData ?? undefined}
+            relevanceData={relevanceData ?? undefined}
           />
         ) : (
           // Display answer text

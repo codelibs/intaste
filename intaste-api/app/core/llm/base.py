@@ -40,6 +40,16 @@ class ComposeOutput(BaseModel):
     suggested_questions: list[str] = Field(default_factory=list, max_length=3)
 
 
+class RelevanceOutput(BaseModel):
+    """
+    Output from relevance evaluation.
+    Evaluates how well a search result matches the user's intent.
+    """
+
+    score: float = Field(..., ge=0.0, le=1.0, description="Relevance score from 0.0 to 1.0")
+    reason: str = Field(..., min_length=1, max_length=500, description="Explanation for the score")
+
+
 class LLMClient(Protocol):
     """
     Protocol for LLM clients (e.g., Ollama, OpenAI).
@@ -78,6 +88,31 @@ class LLMClient(Protocol):
         timeout_ms: int | None = None,
     ) -> AsyncGenerator[str]:
         """Compose answer with streaming response. Yields text chunks."""
+        ...
+
+    async def relevance(
+        self,
+        query: str,
+        normalized_query: str,
+        search_result: dict[str, Any],
+        system_prompt: str,
+        user_template: str,
+        timeout_ms: int | None = None,
+    ) -> RelevanceOutput:
+        """
+        Evaluate relevance of a single search result to the user's query intent.
+
+        Args:
+            query: Original user query
+            normalized_query: Normalized search query
+            search_result: Search result to evaluate (title, snippet, url)
+            system_prompt: System prompt for relevance evaluation
+            user_template: User prompt template for relevance evaluation
+            timeout_ms: Optional timeout in milliseconds
+
+        Returns:
+            RelevanceOutput with score (0.0-1.0) and reason
+        """
         ...
 
     async def warmup(self, timeout_ms: int = 30000) -> bool:

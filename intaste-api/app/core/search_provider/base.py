@@ -29,6 +29,9 @@ class SearchHit(BaseModel):
     url: str
     snippet: str | None = None
     score: float | None = None
+    relevance_score: float | None = Field(
+        default=None, ge=0.0, le=1.0, description="LLM-evaluated relevance score (0.0-1.0)"
+    )
     meta: dict[str, Any] | None = None
 
 

@@ -15,6 +15,7 @@
 import type { Citation } from '@/types/api';
 import { sanitizeHtml } from '@/libs/sanitizer';
 import { cn } from '@/libs/utils';
+import { useTranslation } from '@/libs/i18n/client';
 
 interface EvidenceItemProps {
   citation: Citation;
@@ -24,6 +25,8 @@ interface EvidenceItemProps {
 }
 
 export function EvidenceItem({ citation, active, onSelect, showFull = false }: EvidenceItemProps) {
+  const { t } = useTranslation();
+
   return (
     <div
       onClick={onSelect}
@@ -81,20 +84,28 @@ export function EvidenceItem({ citation, active, onSelect, showFull = false }: E
         <div className="mt-3 pt-3 border-t space-y-1 text-xs">
           {citation.meta.site && (
             <div>
-              <span className="font-medium">Site:</span>{' '}
+              <span className="font-medium">{t('citation.site')}:</span>{' '}
               <span className="text-muted-foreground">{citation.meta.site}</span>
             </div>
           )}
           {citation.meta.content_type && (
             <div>
-              <span className="font-medium">Type:</span>{' '}
+              <span className="font-medium">{t('citation.type')}:</span>{' '}
               <span className="text-muted-foreground">{citation.meta.content_type}</span>
             </div>
           )}
           {citation.score !== undefined && (
             <div>
-              <span className="font-medium">Score:</span>{' '}
+              <span className="font-medium">{t('citation.searchScore')}:</span>{' '}
               <span className="text-muted-foreground">{citation.score.toFixed(2)}</span>
+            </div>
+          )}
+          {citation.relevance_score !== undefined && (
+            <div>
+              <span className="font-medium">{t('citation.relevanceScore')}:</span>{' '}
+              <span className="text-muted-foreground">
+                {(citation.relevance_score * 100).toFixed(0)}%
+              </span>
             </div>
           )}
         </div>

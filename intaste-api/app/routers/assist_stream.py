@@ -147,6 +147,7 @@ async def stream_assist_response(
                             "snippet": hit.snippet,
                             "url": hit.url,
                             "score": hit.score,
+                            "relevance_score": hit.relevance_score,
                             "meta": hit.meta,
                         }
                         for idx, hit in enumerate(citations_data.hits)
@@ -166,6 +167,44 @@ async def stream_assist_response(
                         f"size={len(citations_event)} bytes, hits={len(citations)}"
                     )
                     yield citations_event
+
+            elif event.type == "relevance":
+                relevance_data = event.relevance_data
+                if relevance_data:  # Type guard for mypy
+                    event_count += 1
+
+                    relevance_event = await format_sse(
+                        "relevance",
+                        {
+                            "evaluated_count": relevance_data.evaluated_count,
+                            "max_score": relevance_data.max_score,
+                            "timing_ms": relevance_data.timing_ms,
+                        },
+                    )
+                    logger.debug(
+                        f"[{session_id}] Streaming event #{event_count}: type=relevance, "
+                        f"max_score={relevance_data.max_score:.2f}"
+                    )
+                    yield relevance_event
+
+            elif event.type == "retry":
+                retry_data = event.retry_data
+                if retry_data:  # Type guard for mypy
+                    event_count += 1
+
+                    retry_event = await format_sse(
+                        "retry",
+                        {
+                            "attempt": retry_data.attempt,
+                            "reason": retry_data.reason,
+                            "previous_max_score": retry_data.previous_max_score,
+                        },
+                    )
+                    logger.debug(
+                        f"[{session_id}] Streaming event #{event_count}: type=retry, "
+                        f"attempt={retry_data.attempt}"
+                    )
+                    yield retry_event
 
         # Validate we received all necessary events
         if not intent_data:

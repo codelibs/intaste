@@ -49,6 +49,9 @@ export interface Citation {
   /** Relevance score (0.0 - 1.0), higher is more relevant */
   score?: number;
 
+  /** LLM-evaluated relevance score (0.0 - 1.0), based on semantic match to query intent */
+  relevance_score?: number;
+
   /** Additional metadata about the document (e.g., content_type, site) */
   meta?: Record<string, any>;
 }
@@ -121,4 +124,37 @@ export interface ErrorResponse {
   message: string;
   details?: Record<string, any>;
   request_id?: string;
+}
+
+/**
+ * Event data for streaming responses
+ */
+
+export interface StatusEventData {
+  phase: 'intent' | 'search' | 'relevance' | 'compose';
+}
+
+export interface IntentEventData {
+  normalized_query: string;
+  filters?: Record<string, any>;
+  followups: string[];
+  ambiguity: string;
+}
+
+export interface CitationsEventData {
+  citations: Citation[];
+  total: number;
+  took_ms: number;
+}
+
+export interface RelevanceEventData {
+  evaluated_count: number;
+  max_score: number;
+  timing_ms: number;
+}
+
+export interface RetryEventData {
+  attempt: number;
+  reason: string;
+  previous_max_score: number;
 }

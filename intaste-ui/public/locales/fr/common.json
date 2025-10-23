@@ -22,6 +22,9 @@
     "searching": "Recherche en cours...",
     "resultsFound": "{{count}} résultats trouvés",
     "topResults": "Meilleurs résultats",
+    "evaluatingRelevance": "Évaluation de la pertinence...",
+    "relevanceEvaluated": "{{count}} résultats évalués",
+    "maxRelevanceScore": "Meilleure correspondance",
     "generatingAnswer": "Génération de la réponse...",
     "analyzingQuery": "Analyse de la requête..."
   },
@@ -29,6 +32,12 @@
     "selected": "Sélectionné",
     "all": "Tous ({{count}})",
     "noSelection": "Aucune citation sélectionnée"
+  },
+  "citation": {
+    "site": "Site",
+    "type": "Type",
+    "searchScore": "Score de recherche",
+    "relevanceScore": "Pertinence"
   },
   "history": {
     "title": "Historique de recherche",

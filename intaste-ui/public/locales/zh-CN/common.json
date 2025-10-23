@@ -22,6 +22,9 @@
     "searching": "搜索中...",
     "resultsFound": "找到{{count}}条结果",
     "topResults": "搜索结果",
+    "evaluatingRelevance": "评估相关性中...",
+    "relevanceEvaluated": "已评估{{count}}条结果",
+    "maxRelevanceScore": "最佳匹配",
     "generatingAnswer": "生成答案中...",
     "analyzingQuery": "分析查询中..."
   },
@@ -29,6 +32,12 @@
     "selected": "已选择",
     "all": "全部 ({{count}}条)",
     "noSelection": "未选择引用"
+  },
+  "citation": {
+    "site": "网站",
+    "type": "类型",
+    "searchScore": "搜索分数",
+    "relevanceScore": "相关性"
   },
   "history": {
     "title": "搜索历史",

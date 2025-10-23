@@ -60,6 +60,14 @@ class Settings(BaseSettings):
     # Request Timeout Budget (ms)
     req_timeout_ms: int = Field(default=15000, validation_alias="REQ_TIMEOUT_MS")
 
+    # Relevance Evaluation
+    intaste_relevance_threshold: float = Field(
+        default=0.3, ge=0.0, le=1.0, validation_alias="INTASTE_RELEVANCE_THRESHOLD"
+    )
+    intaste_max_retry_count: int = Field(
+        default=2, ge=0, le=5, validation_alias="INTASTE_MAX_RETRY_COUNT"
+    )
+
     # LLM Warmup
     intaste_llm_warmup_enabled: bool = Field(
         default=True, validation_alias="INTASTE_LLM_WARMUP_ENABLED"
@@ -94,18 +102,43 @@ class Settings(BaseSettings):
 
     @property
     def intent_timeout_ms(self) -> int:
-        """Timeout for intent extraction (40% of total budget)."""
-        return int(self.req_timeout_ms * 0.4)
+        """Timeout for intent extraction (20% of total budget)."""
+        return int(self.req_timeout_ms * 0.2)
 
     @property
     def search_timeout_ms(self) -> int:
-        """Timeout for search (40% of total budget)."""
-        return int(self.req_timeout_ms * 0.4)
+        """Timeout for search execution (15% of total budget)."""
+        return int(self.req_timeout_ms * 0.15)
+
+    @property
+    def relevance_timeout_ms(self) -> int:
+        """Timeout for relevance evaluation (20% of total budget)."""
+        return int(self.req_timeout_ms * 0.2)
+
+    @property
+    def retry_budget_ms(self) -> int:
+        """Total budget for retry attempts (25% of total budget)."""
+        return int(self.req_timeout_ms * 0.25)
+
+    @property
+    def retry_intent_timeout_ms(self) -> int:
+        """Timeout for intent extraction during retry (40% of retry budget)."""
+        return int(self.retry_budget_ms * 0.4)
+
+    @property
+    def retry_search_timeout_ms(self) -> int:
+        """Timeout for search execution during retry (40% of retry budget)."""
+        return int(self.retry_budget_ms * 0.4)
+
+    @property
+    def retry_relevance_timeout_ms(self) -> int:
+        """Timeout for relevance evaluation during retry (20% of retry budget)."""
+        return int(self.retry_budget_ms * 0.2)
 
     @property
     def compose_timeout_ms(self) -> int:
-        """Timeout for answer composition (20% of total budget)."""
-        return int(self.req_timeout_ms * 0.2)
+        """Timeout for answer composition (10% of total budget)."""
+        return int(self.req_timeout_ms * 0.1)
 
 
 # Global settings instance
