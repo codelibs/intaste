@@ -23,7 +23,7 @@ from typing import Any
 
 from ..llm.base import IntentOutput, LLMClient
 from ..llm.prompts import INTENT_SYSTEM_PROMPT, INTENT_USER_TEMPLATE
-from ..search_provider.base import SearchProvider, SearchQuery
+from ..search_provider.base import SearchHit, SearchProvider, SearchQuery
 from .base import (
     BaseSearchAgent,
     CitationsEventData,
@@ -71,140 +71,306 @@ class FessSearchAgent(BaseSearchAgent):
         options: dict[str, Any] | None = None,
     ) -> AsyncGenerator[SearchEvent]:
         """
-        Execute search with streaming progress updates.
+        Execute search with streaming progress updates, including relevance evaluation and retry.
 
         Yields:
             SearchEvent(type="status"): Processing phase updates
             SearchEvent(type="intent"): Intent extraction completed
-            SearchEvent(type="citations"): Search results available
+            SearchEvent(type="citations"): Search results available (intermediate, if retry happens)
+            SearchEvent(type="relevance"): Relevance evaluation completed
+            SearchEvent(type="retry"): Retry search starting
+            SearchEvent(type="citations"): Final search results
         """
+        from ..config import settings
+        from .base import RelevanceEventData, RetryEventData, StatusEventData
+
         options = options or {}
         session_id = options.get("session_id", "unknown")
 
-        logger.debug(f"[{session_id}] FessSearchAgent.search_stream started: query={query!r}")
+        # Configuration
+        max_retries = options.get("max_retries", settings.intaste_max_retry_count)
+        threshold = options.get("relevance_threshold", settings.intaste_relevance_threshold)
 
-        # Yield status: intent extraction starting
-        from .base import StatusEventData
-
-        yield SearchEvent(
-            type="status",
-            data=StatusEventData(phase="intent"),
-        )
-
-        # Step 1: Intent extraction
-        logger.info(f"[{session_id}] Starting intent extraction")
-        intent_start = time.time()
-        intent: IntentOutput
-
-        try:
-            intent = await self.llm_client.intent(
-                query=query,
-                system_prompt=INTENT_SYSTEM_PROMPT,
-                user_template=INTENT_USER_TEMPLATE,
-                language=options.get("language", "en"),
-                filters=options.get("filters"),
-                query_history=options.get("query_history"),
-                timeout_ms=options.get("intent_timeout_ms", self.intent_timeout_ms),
-            )
-            intent_ms = int((time.time() - intent_start) * 1000)
-            logger.info(
-                f"[{session_id}] Intent extracted: {intent.normalized_query} "
-                f"(ambiguity: {intent.ambiguity}, {intent_ms}ms)"
-            )
-            logger.debug(
-                f"[{session_id}] Intent details: normalized_query={intent.normalized_query!r}, "
-                f"filters={intent.filters}, followups={intent.followups}"
-            )
-
-        except (TimeoutError, Exception) as e:
-            intent_ms = int((time.time() - intent_start) * 1000)
-            logger.warning(f"[{session_id}] Intent extraction failed after {intent_ms}ms: {e}")
-            logger.debug(f"[{session_id}] Intent error: {type(e).__name__}, details: {str(e)}")
-
-            # Fallback: use original query
-            intent = IntentOutput(
-                normalized_query=query.strip(),
-                filters=options.get("filters"),
-                followups=[],
-                ambiguity="medium",
-            )
-            logger.debug(f"[{session_id}] Using fallback intent: {intent}")
-
-        # Yield intent event
-        yield SearchEvent(
-            type="intent",
-            data=IntentEventData(
-                normalized_query=intent.normalized_query,
-                filters=intent.filters,
-                followups=intent.followups,
-                ambiguity=intent.ambiguity,
-                timing_ms=intent_ms,
-            ),
-        )
-
-        # Yield status: search execution starting
-        yield SearchEvent(
-            type="status",
-            data=StatusEventData(phase="search"),
-        )
-
-        # Step 2: Search execution
-        logger.info(f"[{session_id}] Executing search")
         logger.debug(
-            f"[{session_id}] Search input: normalized_query={intent.normalized_query!r}, "
-            f"max_results={options.get('max_results', 5)}"
+            f"[{session_id}] FessSearchAgent.search_stream started: query={query!r}, "
+            f"max_retries={max_retries}, threshold={threshold}"
         )
 
-        search_start = time.time()
+        # Tracking variables
+        retry_count = 0
+        intent: IntentOutput | None = None
+        previous_normalized_query: str | None = None
+        search_result: Any = None
+        evaluated_hits: list[SearchHit] = []
 
-        try:
-            search_query = SearchQuery(
-                q=intent.normalized_query,
-                page=1,
-                size=options.get("max_results", 5),
-                language=options.get("language", "en"),
-                filters=intent.filters or options.get("filters"),
-                timeout_ms=options.get("search_timeout_ms", self.search_timeout_ms),
+        # Timing accumulators
+        total_intent_ms = 0
+        total_search_ms = 0
+        total_relevance_ms = 0
+
+        # Retry loop
+        while retry_count <= max_retries:
+            is_retry = retry_count > 0
+
+            # ========================================
+            # Step 1: Intent extraction
+            # ========================================
+            yield SearchEvent(
+                type="status",
+                data=StatusEventData(phase="intent"),
             )
-            logger.debug(f"[{session_id}] SearchQuery created: {search_query}")
 
-            search_result = await self.search_provider.search(search_query)
-            search_ms = int((time.time() - search_start) * 1000)
             logger.info(
-                f"[{session_id}] Search completed: {len(search_result.hits)} hits "
-                f"(total: {search_result.total}, {search_ms}ms)"
+                f"[{session_id}] Starting {'retry ' if is_retry else ''}intent extraction "
+                f"(attempt {retry_count + 1})"
             )
+            intent_start = time.time()
 
-            if logger.isEnabledFor(logging.DEBUG) and search_result.hits:
-                for idx, hit in enumerate(search_result.hits[:3], 1):
-                    logger.debug(
-                        f"[{session_id}] Hit #{idx}: id={hit.id}, "
-                        f"title={hit.title[:50]}, score={hit.score}"
+            try:
+                if is_retry and previous_normalized_query and evaluated_hits:
+                    # Retry intent extraction with low-score context
+                    intent = await self._extract_retry_intent(
+                        query=query,
+                        previous_normalized_query=previous_normalized_query,
+                        hits=evaluated_hits,
+                        language=options.get("language", "en"),
+                        session_id=session_id,
+                        timeout_ms=options.get(
+                            "retry_intent_timeout_ms", settings.retry_intent_timeout_ms
+                        ),
+                    )
+                else:
+                    # Normal intent extraction
+                    intent = await self.llm_client.intent(
+                        query=query,
+                        system_prompt=INTENT_SYSTEM_PROMPT,
+                        user_template=INTENT_USER_TEMPLATE,
+                        language=options.get("language", "en"),
+                        filters=options.get("filters"),
+                        query_history=options.get("query_history"),
+                        timeout_ms=options.get("intent_timeout_ms", self.intent_timeout_ms),
                     )
 
-        except (TimeoutError, Exception) as e:
-            search_ms = int((time.time() - search_start) * 1000)
-            logger.error(f"[{session_id}] Search failed after {search_ms}ms: {e}")
-            logger.debug(
-                f"[{session_id}] Search error: {type(e).__name__}, "
-                f"query={intent.normalized_query!r}"
-            )
-            # Search failure is critical - propagate exception
-            raise RuntimeError(f"Search provider error: {e}") from e
+                intent_ms = int((time.time() - intent_start) * 1000)
+                total_intent_ms += intent_ms
+                logger.info(
+                    f"[{session_id}] Intent extracted: {intent.normalized_query} "
+                    f"(ambiguity: {intent.ambiguity}, {intent_ms}ms)"
+                )
+                logger.debug(
+                    f"[{session_id}] Intent details: normalized_query={intent.normalized_query!r}, "
+                    f"filters={intent.filters}, followups={intent.followups}"
+                )
 
-        # Yield citations event
+            except (TimeoutError, Exception) as e:
+                intent_ms = int((time.time() - intent_start) * 1000)
+                total_intent_ms += intent_ms
+                logger.warning(f"[{session_id}] Intent extraction failed after {intent_ms}ms: {e}")
+                logger.debug(f"[{session_id}] Intent error: {type(e).__name__}, details: {str(e)}")
+
+                # Fallback: use original query
+                intent = IntentOutput(
+                    normalized_query=query.strip(),
+                    filters=options.get("filters"),
+                    followups=[],
+                    ambiguity="medium",
+                )
+                logger.debug(f"[{session_id}] Using fallback intent: {intent}")
+
+            # Yield intent event
+            yield SearchEvent(
+                type="intent",
+                data=IntentEventData(
+                    normalized_query=intent.normalized_query,
+                    filters=intent.filters,
+                    followups=intent.followups,
+                    ambiguity=intent.ambiguity,
+                    timing_ms=intent_ms,
+                ),
+            )
+
+            # ========================================
+            # Step 2: Search execution
+            # ========================================
+            yield SearchEvent(
+                type="status",
+                data=StatusEventData(phase="search"),
+            )
+
+            logger.info(f"[{session_id}] Executing {'retry ' if is_retry else ''}search")
+            logger.debug(
+                f"[{session_id}] Search input: normalized_query={intent.normalized_query!r}, "
+                f"max_results={options.get('max_results', 5)}"
+            )
+
+            search_start = time.time()
+
+            try:
+                search_query = SearchQuery(
+                    q=intent.normalized_query,
+                    page=1,
+                    size=options.get("max_results", 5),
+                    language=options.get("language", "en"),
+                    filters=intent.filters or options.get("filters"),
+                    timeout_ms=options.get(
+                        "retry_search_timeout_ms" if is_retry else "search_timeout_ms",
+                        settings.retry_search_timeout_ms if is_retry else self.search_timeout_ms,
+                    ),
+                )
+                logger.debug(f"[{session_id}] SearchQuery created: {search_query}")
+
+                search_result = await self.search_provider.search(search_query)
+                search_ms = int((time.time() - search_start) * 1000)
+                total_search_ms += search_ms
+                logger.info(
+                    f"[{session_id}] Search completed: {len(search_result.hits)} hits "
+                    f"(total: {search_result.total}, {search_ms}ms)"
+                )
+
+                if logger.isEnabledFor(logging.DEBUG) and search_result.hits:
+                    for idx, hit in enumerate(search_result.hits[:3], 1):
+                        logger.debug(
+                            f"[{session_id}] Hit #{idx}: id={hit.id}, "
+                            f"title={hit.title[:50]}, score={hit.score}"
+                        )
+
+            except (TimeoutError, Exception) as e:
+                search_ms = int((time.time() - search_start) * 1000)
+                total_search_ms += search_ms
+                logger.error(f"[{session_id}] Search failed after {search_ms}ms: {e}")
+                logger.debug(
+                    f"[{session_id}] Search error: {type(e).__name__}, "
+                    f"query={intent.normalized_query!r}"
+                )
+                # Search failure is critical - propagate exception
+                raise RuntimeError(f"Search provider error: {e}") from e
+
+            # ========================================
+            # Step 3: Relevance evaluation
+            # ========================================
+            if search_result.hits:
+                yield SearchEvent(
+                    type="status",
+                    data=StatusEventData(phase="relevance"),
+                )
+
+                logger.info(f"[{session_id}] Starting relevance evaluation")
+                relevance_start = time.time()
+
+                try:
+                    evaluated_hits = await self._evaluate_relevance(
+                        query=query,
+                        normalized_query=intent.normalized_query,
+                        hits=search_result.hits,
+                        session_id=session_id,
+                        timeout_ms=options.get(
+                            "retry_relevance_timeout_ms" if is_retry else "relevance_timeout_ms",
+                            (
+                                settings.retry_relevance_timeout_ms
+                                if is_retry
+                                else settings.relevance_timeout_ms
+                            ),
+                        ),
+                    )
+
+                    relevance_ms = int((time.time() - relevance_start) * 1000)
+                    total_relevance_ms += relevance_ms
+
+                    # Get max score
+                    max_score = max(
+                        (
+                            hit.relevance_score
+                            for hit in evaluated_hits
+                            if hit.relevance_score is not None
+                        ),
+                        default=0.0,
+                    )
+
+                    logger.info(
+                        f"[{session_id}] Relevance evaluation completed: "
+                        f"max_score={max_score:.2f}, {relevance_ms}ms"
+                    )
+
+                    # Yield relevance event
+                    yield SearchEvent(
+                        type="relevance",
+                        data=RelevanceEventData(
+                            evaluated_count=len(evaluated_hits),
+                            max_score=max_score,
+                            timing_ms=relevance_ms,
+                        ),
+                    )
+
+                except Exception as e:
+                    relevance_ms = int((time.time() - relevance_start) * 1000)
+                    total_relevance_ms += relevance_ms
+                    logger.error(
+                        f"[{session_id}] Relevance evaluation failed after {relevance_ms}ms: {e}"
+                    )
+                    # Continue with unevaluated hits
+                    evaluated_hits = search_result.hits
+                    max_score = 0.0
+            else:
+                # No hits to evaluate
+                evaluated_hits = []
+                max_score = 0.0
+                logger.info(f"[{session_id}] No hits to evaluate")
+
+            # ========================================
+            # Step 4: Retry decision
+            # ========================================
+            should_retry = self._should_retry(
+                hits=evaluated_hits,
+                threshold=threshold,
+                retry_count=retry_count,
+                max_retries=max_retries,
+            )
+
+            if should_retry:
+                retry_count += 1
+                previous_normalized_query = intent.normalized_query
+
+                logger.info(
+                    f"[{session_id}] Max score ({max_score:.2f}) below threshold ({threshold}). "
+                    f"Retrying (attempt {retry_count + 1}/{max_retries + 1})"
+                )
+
+                # Yield retry event
+                yield SearchEvent(
+                    type="retry",
+                    data=RetryEventData(
+                        attempt=retry_count,
+                        reason=f"Max relevance score ({max_score:.2f}) below threshold ({threshold})",
+                        previous_max_score=max_score,
+                    ),
+                )
+
+                # Continue to next iteration
+                continue
+            else:
+                # Exit retry loop
+                logger.info(
+                    f"[{session_id}] Search complete. Max score: {max_score:.2f}, "
+                    f"retry_count: {retry_count}"
+                )
+                break
+
+        # ========================================
+        # Final: Yield citations event
+        # ========================================
         yield SearchEvent(
             type="citations",
             data=CitationsEventData(
-                hits=search_result.hits,
-                total=search_result.total,
-                timing_ms=search_ms,
+                hits=evaluated_hits,
+                total=search_result.total if search_result else 0,
+                timing_ms=total_search_ms,
             ),
         )
 
         logger.debug(
             f"[{session_id}] FessSearchAgent.search_stream completed: "
-            f"intent={intent_ms}ms, search={search_ms}ms"
+            f"intent={total_intent_ms}ms, search={total_search_ms}ms, "
+            f"relevance={total_relevance_ms}ms, retry_count={retry_count}"
         )
 
     async def health(self) -> tuple[bool, dict[str, Any]]:
@@ -231,3 +397,195 @@ class FessSearchAgent(BaseSearchAgent):
         """
         await self.search_provider.close()
         await self.llm_client.close()
+
+    async def _evaluate_relevance(
+        self,
+        query: str,
+        normalized_query: str,
+        hits: list[SearchHit],
+        session_id: str,
+        timeout_ms: int,
+    ) -> list[SearchHit]:
+        """
+        Evaluate relevance of search results and update relevance_score field.
+
+        Args:
+            query: Original user query
+            normalized_query: Normalized search query
+            hits: Search results to evaluate
+            session_id: Session identifier for logging
+            timeout_ms: Total timeout budget for all evaluations
+
+        Returns:
+            List of SearchHit with relevance_score populated, sorted by relevance_score descending
+        """
+        from ..llm.prompts import RELEVANCE_SYSTEM_PROMPT, RELEVANCE_USER_TEMPLATE
+
+        logger.info(f"[{session_id}] Evaluating relevance for {len(hits)} results")
+
+        # Calculate per-hit timeout (distribute budget evenly)
+        per_hit_timeout = timeout_ms // max(len(hits), 1) if hits else timeout_ms
+
+        evaluated_hits = []
+        for idx, hit in enumerate(hits, 1):
+            try:
+                search_result_dict = {
+                    "title": hit.title,
+                    "snippet": hit.snippet or "",
+                    "url": hit.url,
+                }
+
+                relevance_output = await self.llm_client.relevance(
+                    query=query,
+                    normalized_query=normalized_query,
+                    search_result=search_result_dict,
+                    system_prompt=RELEVANCE_SYSTEM_PROMPT,
+                    user_template=RELEVANCE_USER_TEMPLATE,
+                    timeout_ms=per_hit_timeout,
+                )
+
+                # Create new SearchHit with relevance_score
+                evaluated_hit = hit.model_copy(update={"relevance_score": relevance_output.score})
+                evaluated_hits.append(evaluated_hit)
+
+                logger.debug(
+                    f"[{session_id}] Hit #{idx} relevance: score={relevance_output.score:.2f}, "
+                    f"reason={relevance_output.reason[:50]}"
+                )
+
+            except Exception as e:
+                logger.warning(f"[{session_id}] Failed to evaluate relevance for hit #{idx}: {e}")
+                # Keep hit without relevance_score
+                evaluated_hits.append(hit)
+
+        # Sort by relevance_score descending (None values go to end)
+        evaluated_hits.sort(
+            key=lambda h: h.relevance_score if h.relevance_score is not None else -1.0,
+            reverse=True,
+        )
+
+        if evaluated_hits and evaluated_hits[0].relevance_score is not None:
+            logger.info(
+                f"[{session_id}] Relevance evaluation complete. "
+                f"Max score: {evaluated_hits[0].relevance_score:.2f}"
+            )
+
+        return evaluated_hits
+
+    def _should_retry(
+        self,
+        hits: list[SearchHit],
+        threshold: float,
+        retry_count: int,
+        max_retries: int,
+    ) -> bool:
+        """
+        Determine if retry search is needed based on relevance scores.
+
+        Args:
+            hits: Evaluated search results (may be empty for 0 results)
+            threshold: Minimum acceptable relevance score
+            retry_count: Current retry count
+            max_retries: Maximum allowed retries
+
+        Returns:
+            True if retry is needed, False otherwise
+        """
+        # No retry if max retries reached
+        if retry_count >= max_retries:
+            return False
+
+        # If no results, always retry to find alternative queries
+        if not hits:
+            return True
+
+        # Check if best result meets threshold
+        max_score = max(
+            (hit.relevance_score for hit in hits if hit.relevance_score is not None),
+            default=0.0,
+        )
+
+        should_retry = max_score < threshold
+        return should_retry
+
+    async def _extract_retry_intent(
+        self,
+        query: str,
+        previous_normalized_query: str,
+        hits: list[SearchHit],
+        language: str,
+        session_id: str,
+        timeout_ms: int,
+    ) -> IntentOutput:
+        """
+        Extract improved search intent for retry based on low-scoring results or no results.
+
+        Args:
+            query: Original user query
+            previous_normalized_query: Previous normalized query that yielded poor results
+            hits: Low-scoring search results (may be empty for 0 results)
+            language: Query language
+            session_id: Session identifier for logging
+            timeout_ms: Timeout for intent extraction
+
+        Returns:
+            Improved IntentOutput for retry search
+        """
+        from ..llm.prompts import (
+            RETRY_INTENT_NO_RESULTS_USER_TEMPLATE,
+            RETRY_INTENT_SYSTEM_PROMPT,
+            RETRY_INTENT_USER_TEMPLATE,
+        )
+
+        logger.info(f"[{session_id}] Extracting retry intent")
+
+        # Choose appropriate template based on whether we have results
+        if not hits:
+            # No results case: use broader query strategy
+            logger.info(f"[{session_id}] Using no-results template for retry")
+            user_prompt = RETRY_INTENT_NO_RESULTS_USER_TEMPLATE.format(
+                query=query,
+                previous_normalized_query=previous_normalized_query,
+                language=language,
+            )
+        else:
+            # Low-score results case: analyze why scores were low
+            logger.info(f"[{session_id}] Using low-score template for retry ({len(hits)} results)")
+            # Format low-scoring results for prompt
+            low_score_results_lines = []
+            for idx, hit in enumerate(hits[:5], 1):
+                score = hit.relevance_score if hit.relevance_score is not None else 0.0
+                low_score_results_lines.append(f"{idx}. [Score: {score:.2f}] {hit.title[:100]}")
+            low_score_results = "\n".join(low_score_results_lines)
+
+            user_prompt = RETRY_INTENT_USER_TEMPLATE.format(
+                query=query,
+                previous_normalized_query=previous_normalized_query,
+                language=language,
+                low_score_results=low_score_results,
+            )
+
+        logger.debug(f"[{session_id}] Retry intent extraction started")
+
+        try:
+            intent = await self.llm_client.intent(
+                query=query,
+                system_prompt=RETRY_INTENT_SYSTEM_PROMPT,
+                user_template=user_prompt,
+                language=language,
+                filters=None,
+                query_history=None,
+                timeout_ms=timeout_ms,
+            )
+            logger.info(f"[{session_id}] Retry intent extracted: {intent.normalized_query}")
+            return intent
+
+        except Exception as e:
+            logger.error(f"[{session_id}] Retry intent extraction failed: {e}")
+            # Fallback: use original query
+            return IntentOutput(
+                normalized_query=query.strip(),
+                filters=None,
+                followups=[],
+                ambiguity="medium",
+            )

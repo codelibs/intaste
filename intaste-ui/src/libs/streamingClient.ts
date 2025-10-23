@@ -17,7 +17,14 @@
 import { useUIStore } from '@/store/ui.store';
 import { APIError } from '@/libs/apiClient';
 import { generateUUID } from '@/libs/uuid';
-import type { ErrorResponse } from '@/types/api';
+import type {
+  ErrorResponse,
+  StatusEventData,
+  IntentEventData,
+  CitationsEventData,
+  RelevanceEventData,
+  RetryEventData,
+} from '@/types/api';
 
 export interface StreamEvent {
   event: string;
@@ -26,9 +33,11 @@ export interface StreamEvent {
 
 export interface StreamCallbacks {
   onStart?: (data: any) => void;
-  onStatus?: (data: { phase: 'intent' | 'search' | 'compose' }) => void;
-  onIntent?: (data: any) => void;
-  onCitations?: (data: any) => void;
+  onStatus?: (data: StatusEventData) => void;
+  onIntent?: (data: IntentEventData) => void;
+  onCitations?: (data: CitationsEventData) => void;
+  onRelevance?: (data: RelevanceEventData) => void;
+  onRetry?: (data: RetryEventData) => void;
   onChunk?: (data: { text: string }) => void;
   onComplete?: (data: any) => void;
   onError?: (data: any) => void;
@@ -128,6 +137,12 @@ export async function queryAssistStream(
               break;
             case 'citations':
               callbacks?.onCitations?.(data);
+              break;
+            case 'relevance':
+              callbacks?.onRelevance?.(data);
+              break;
+            case 'retry':
+              callbacks?.onRetry?.(data);
               break;
             case 'chunk':
               callbacks?.onChunk?.(data);

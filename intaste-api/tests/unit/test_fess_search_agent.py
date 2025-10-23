@@ -55,12 +55,19 @@ def search_agent(mock_search_provider, mock_llm_client):
 @pytest.mark.asyncio
 async def test_search_stream_success(search_agent, mock_llm_client, mock_search_provider):
     """Test successful search_stream execution."""
+    from app.core.llm.base import RelevanceOutput
+
     # Mock intent extraction
     mock_llm_client.intent.return_value = IntentOutput(
         normalized_query="test query",
         filters={"site": "example.com"},
         followups=["related question?"],
         ambiguity="low",
+    )
+
+    # Mock relevance evaluation (high score to avoid retry)
+    mock_llm_client.relevance.return_value = RelevanceOutput(
+        score=0.9, reason="Highly relevant"
     )
 
     # Mock search results
@@ -86,8 +93,9 @@ async def test_search_stream_success(search_agent, mock_llm_client, mock_search_
     async for event in search_agent.search_stream("user query", {"session_id": "test"}):
         events.append(event)
 
-    # Verify events (now includes status events)
-    assert len(events) == 4
+    # Verify events (now includes status and relevance events)
+    # Expected: status(intent), intent, status(search), status(relevance), relevance, citations
+    assert len(events) == 6
     assert events[0].type == "status"
     assert events[0].status_data.phase == "intent"
     assert events[1].type == "intent"
@@ -95,16 +103,27 @@ async def test_search_stream_success(search_agent, mock_llm_client, mock_search_
     assert events[1].intent_data.filters == {"site": "example.com"}
     assert events[2].type == "status"
     assert events[2].status_data.phase == "search"
-    assert events[3].type == "citations"
-    assert len(events[3].citations_data.hits) == 1
-    assert events[3].citations_data.total == 10
+    assert events[3].type == "status"
+    assert events[3].status_data.phase == "relevance"
+    assert events[4].type == "relevance"
+    assert events[4].relevance_data.max_score == 0.9
+    assert events[5].type == "citations"
+    assert len(events[5].citations_data.hits) == 1
+    assert events[5].citations_data.total == 10
 
 
 @pytest.mark.asyncio
 async def test_search_stream_intent_fallback(search_agent, mock_llm_client, mock_search_provider):
     """Test search_stream with intent extraction failure (fallback)."""
+    from app.core.llm.base import RelevanceOutput
+
     # Mock intent extraction failure
     mock_llm_client.intent.side_effect = TimeoutError("LLM timeout")
+
+    # Mock relevance evaluation (high score to avoid retry)
+    mock_llm_client.relevance.return_value = RelevanceOutput(
+        score=0.8, reason="Relevant"
+    )
 
     # Mock search results
     mock_search_provider.search.return_value = SearchResult(
@@ -128,8 +147,9 @@ async def test_search_stream_intent_fallback(search_agent, mock_llm_client, mock
     async for event in search_agent.search_stream("user query", {"session_id": "test"}):
         events.append(event)
 
-    # Verify fallback behavior (now includes status events)
-    assert len(events) == 4
+    # Verify fallback behavior (now includes status and relevance events)
+    # Expected: status(intent), intent, status(search), status(relevance), relevance, citations
+    assert len(events) == 6
     assert events[0].type == "status"
     assert events[0].status_data.phase == "intent"
     assert events[1].type == "intent"
@@ -137,7 +157,10 @@ async def test_search_stream_intent_fallback(search_agent, mock_llm_client, mock
     assert events[1].intent_data.ambiguity == "medium"
     assert events[2].type == "status"
     assert events[2].status_data.phase == "search"
-    assert events[3].type == "citations"
+    assert events[3].type == "status"
+    assert events[3].status_data.phase == "relevance"
+    assert events[4].type == "relevance"
+    assert events[5].type == "citations"
 
 
 @pytest.mark.asyncio
@@ -244,3 +267,144 @@ async def test_close(search_agent, mock_search_provider, mock_llm_client):
 
     mock_search_provider.close.assert_called_once()
     mock_llm_client.close.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_evaluate_relevance(search_agent, mock_llm_client):
+    """Test _evaluate_relevance method."""
+    from app.core.llm.base import RelevanceOutput
+
+    # Mock relevance evaluation
+    mock_llm_client.relevance.side_effect = [
+        RelevanceOutput(score=0.9, reason="Highly relevant"),
+        RelevanceOutput(score=0.6, reason="Moderately relevant"),
+        RelevanceOutput(score=0.3, reason="Barely relevant"),
+    ]
+
+    hits = [
+        SearchHit(
+            id="1", title="Doc 1", url="https://example.com/1", snippet="snippet 1", score=0.95
+        ),
+        SearchHit(
+            id="2", title="Doc 2", url="https://example.com/2", snippet="snippet 2", score=0.85
+        ),
+        SearchHit(
+            id="3", title="Doc 3", url="https://example.com/3", snippet="snippet 3", score=0.75
+        ),
+    ]
+
+    evaluated_hits = await search_agent._evaluate_relevance(
+        query="test query",
+        normalized_query="test query normalized",
+        hits=hits,
+        session_id="test-session",
+        timeout_ms=3000,
+    )
+
+    # Verify results are sorted by relevance_score descending
+    assert len(evaluated_hits) == 3
+    assert evaluated_hits[0].relevance_score == 0.9
+    assert evaluated_hits[1].relevance_score == 0.6
+    assert evaluated_hits[2].relevance_score == 0.3
+    assert mock_llm_client.relevance.call_count == 3
+
+
+@pytest.mark.asyncio
+async def test_should_retry():
+    """Test _should_retry method."""
+    agent = FessSearchAgent(
+        search_provider=AsyncMock(),
+        llm_client=AsyncMock(),
+        intent_timeout_ms=2000,
+        search_timeout_ms=2000,
+    )
+
+    # Test: should retry when max score below threshold
+    hits = [
+        SearchHit(
+            id="1",
+            title="Doc 1",
+            url="https://example.com/1",
+            snippet="snippet",
+            relevance_score=0.2,
+        )
+    ]
+    assert agent._should_retry(hits, threshold=0.3, retry_count=0, max_retries=2) is True
+
+    # Test: should not retry when max score meets threshold
+    hits[0].relevance_score = 0.5
+    assert agent._should_retry(hits, threshold=0.3, retry_count=0, max_retries=2) is False
+
+    # Test: should not retry when max retries reached
+    hits[0].relevance_score = 0.2
+    assert agent._should_retry(hits, threshold=0.3, retry_count=2, max_retries=2) is False
+
+    # Test: should retry when no hits (0 results)
+    assert agent._should_retry([], threshold=0.3, retry_count=0, max_retries=2) is True
+
+    # Test: should not retry when no hits but max retries reached
+    assert agent._should_retry([], threshold=0.3, retry_count=2, max_retries=2) is False
+
+
+@pytest.mark.asyncio
+async def test_extract_retry_intent(search_agent, mock_llm_client):
+    """Test _extract_retry_intent method."""
+    # Mock retry intent extraction
+    mock_llm_client.intent.return_value = IntentOutput(
+        normalized_query="improved test query",
+        filters=None,
+        followups=[],
+        ambiguity="low",
+    )
+
+    hits = [
+        SearchHit(
+            id="1",
+            title="Low relevance doc",
+            url="https://example.com/1",
+            snippet="snippet",
+            relevance_score=0.2,
+        )
+    ]
+
+    intent = await search_agent._extract_retry_intent(
+        query="original query",
+        previous_normalized_query="test query",
+        hits=hits,
+        language="en",
+        session_id="test-session",
+        timeout_ms=2000,
+    )
+
+    assert intent.normalized_query == "improved test query"
+    mock_llm_client.intent.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_extract_retry_intent_no_results(search_agent, mock_llm_client):
+    """Test _extract_retry_intent method with 0 results."""
+    # Mock retry intent extraction for no results
+    mock_llm_client.intent.return_value = IntentOutput(
+        normalized_query="broader search query",
+        filters=None,
+        followups=[],
+        ambiguity="medium",
+    )
+
+    # Empty hits list (0 results)
+    hits = []
+
+    intent = await search_agent._extract_retry_intent(
+        query="very specific query",
+        previous_normalized_query="specific query",
+        hits=hits,
+        language="en",
+        session_id="test-session",
+        timeout_ms=2000,
+    )
+
+    assert intent.normalized_query == "broader search query"
+    mock_llm_client.intent.assert_called_once()
+    # Verify that the no-results template was used (check the prompt contains "0 results")
+    call_args = mock_llm_client.intent.call_args
+    assert "0 results" in call_args.kwargs["user_template"]

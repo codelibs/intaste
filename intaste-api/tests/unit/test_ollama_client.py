@@ -255,3 +255,103 @@ async def test_complete_timeout(ollama_client):
     with patch("httpx.AsyncClient.post", side_effect=asyncio.TimeoutError()):
         with pytest.raises(Exception):
             await ollama_client._complete("test prompt", timeout_ms=100)
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_relevance_success(ollama_client):
+    """Test successful relevance evaluation"""
+    from app.core.llm.base import RelevanceOutput
+    from app.core.llm.prompts import RELEVANCE_SYSTEM_PROMPT, RELEVANCE_USER_TEMPLATE
+
+    mock_response = {
+        "score": 0.85,
+        "reason": "The search result closely matches the user's query intent.",
+    }
+
+    search_result = {
+        "title": "Security Policy Document",
+        "snippet": "Our company's security policy covers all aspects...",
+        "url": "https://example.com/security-policy",
+    }
+
+    with patch.object(
+        ollama_client, "_complete", return_value=json.dumps(mock_response)
+    ):
+        result = await ollama_client.relevance(
+            query="What is the company security policy?",
+            normalized_query="company security policy",
+            search_result=search_result,
+            system_prompt=RELEVANCE_SYSTEM_PROMPT,
+            user_template=RELEVANCE_USER_TEMPLATE,
+        )
+
+        assert isinstance(result, RelevanceOutput)
+        assert result.score == 0.85
+        assert "closely matches" in result.reason
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_relevance_fallback_on_error(ollama_client):
+    """Test relevance fallback when evaluation fails"""
+    from app.core.llm.base import RelevanceOutput
+    from app.core.llm.prompts import RELEVANCE_SYSTEM_PROMPT, RELEVANCE_USER_TEMPLATE
+
+    search_result = {
+        "title": "Test Document",
+        "snippet": "Test content",
+        "url": "https://example.com/test",
+    }
+
+    # Both attempts fail
+    with patch.object(ollama_client, "_complete", side_effect=Exception("LLM error")):
+        result = await ollama_client.relevance(
+            query="test query",
+            normalized_query="test query",
+            search_result=search_result,
+            system_prompt=RELEVANCE_SYSTEM_PROMPT,
+            user_template=RELEVANCE_USER_TEMPLATE,
+        )
+
+        # Should fallback to neutral score
+        assert isinstance(result, RelevanceOutput)
+        assert result.score == 0.5
+        assert "Unable to evaluate" in result.reason
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_relevance_retry_on_json_error(ollama_client):
+    """Test relevance retry with lower temperature on JSON error"""
+    from app.core.llm.base import RelevanceOutput
+    from app.core.llm.prompts import RELEVANCE_SYSTEM_PROMPT, RELEVANCE_USER_TEMPLATE
+
+    search_result = {
+        "title": "Test Document",
+        "snippet": "Test content",
+        "url": "https://example.com/test",
+    }
+
+    valid_response = {"score": 0.7, "reason": "Moderately relevant"}
+
+    # First call returns invalid JSON, second call succeeds
+    with patch.object(
+        ollama_client,
+        "_complete",
+        side_effect=[
+            "invalid json",  # First attempt fails
+            json.dumps(valid_response),  # Retry succeeds
+        ],
+    ):
+        result = await ollama_client.relevance(
+            query="test query",
+            normalized_query="test query",
+            search_result=search_result,
+            system_prompt=RELEVANCE_SYSTEM_PROMPT,
+            user_template=RELEVANCE_USER_TEMPLATE,
+        )
+
+        assert isinstance(result, RelevanceOutput)
+        assert result.score == 0.7
+        assert result.reason == "Moderately relevant"

@@ -22,6 +22,9 @@
     "searching": "Searching...",
     "resultsFound": "{{count}} results found",
     "topResults": "Top Results",
+    "evaluatingRelevance": "Evaluating relevance...",
+    "relevanceEvaluated": "Evaluated {{count}} results",
+    "maxRelevanceScore": "Best match",
     "generatingAnswer": "Generating answer...",
     "analyzingQuery": "Analyzing query..."
   },
@@ -29,6 +32,12 @@
     "selected": "Selected",
     "all": "All ({{count}})",
     "noSelection": "No citation selected"
+  },
+  "citation": {
+    "site": "Site",
+    "type": "Type",
+    "searchScore": "Search Score",
+    "relevanceScore": "Relevance"
   },
   "history": {
     "title": "Search History",

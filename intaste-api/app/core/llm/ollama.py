@@ -22,7 +22,7 @@ from typing import Any
 import httpx
 from pydantic import ValidationError
 
-from .base import ComposeOutput, IntentOutput
+from .base import ComposeOutput, IntentOutput, RelevanceOutput
 from .prompts import (
     COMPOSE_SYSTEM_PROMPT,
     COMPOSE_USER_TEMPLATE,
@@ -270,6 +270,94 @@ class OllamaClient:
             )
             logger.debug(f"Using fallback compose: {fallback_compose}")
             return fallback_compose
+
+    async def relevance(
+        self,
+        query: str,
+        normalized_query: str,
+        search_result: dict[str, Any],
+        system_prompt: str,
+        user_template: str,
+        timeout_ms: int | None = None,
+    ) -> RelevanceOutput:
+        """
+        Evaluate relevance of a single search result to the user's query intent.
+        """
+
+        actual_timeout = timeout_ms or self.timeout_ms
+
+        # Extract title and snippet from search result
+        title = search_result.get("title", "No title")
+        snippet = search_result.get("snippet", "No snippet available")
+
+        logger.debug(
+            f"Relevance evaluation started: model={self.model}, timeout={actual_timeout}ms"
+        )
+        logger.debug(
+            f"Relevance input: query={query!r}, normalized_query={normalized_query!r}, title={title[:50]}"
+        )
+
+        user_prompt = user_template.format(
+            query=query,
+            normalized_query=normalized_query,
+            title=title,
+            snippet=snippet,
+        )
+
+        if logger.isEnabledFor(logging.DEBUG):
+            from ..config import settings
+
+            max_chars = settings.log_max_prompt_chars
+            logger.debug(f"Relevance system prompt: {system_prompt[:max_chars]}")
+            logger.debug(f"Relevance user prompt: {user_prompt[:max_chars]}")
+
+        json_output = None
+        try:
+            json_output = await self._complete(
+                system=system_prompt,
+                user=user_prompt,
+                timeout_ms=actual_timeout,
+            )
+            logger.debug(f"Relevance raw response: {json_output[:500]}")
+
+            relevance = RelevanceOutput.model_validate_json(json_output)
+            logger.debug(
+                f"Relevance parsed successfully: score={relevance.score}, reason={relevance.reason[:50]}"
+            )
+            return relevance
+
+        except (json.JSONDecodeError, ValidationError, Exception) as e:
+            logger.warning(f"Relevance evaluation failed, retrying with lower temperature: {e}")
+            logger.debug(f"Failed JSON output: {json_output if json_output else 'N/A'}")
+
+            # Retry with lower temperature
+            retry_json_output = None
+            try:
+                logger.debug("Retrying relevance evaluation with temperature=0.1")
+                retry_json_output = await self._complete(
+                    system=system_prompt,
+                    user=user_prompt + "\n\nREMINDER: Output ONLY valid JSON.",
+                    timeout_ms=actual_timeout,
+                    temperature=0.1,
+                )
+                logger.debug(f"Relevance retry raw response: {retry_json_output[:500]}")
+
+                relevance = RelevanceOutput.model_validate_json(retry_json_output)
+                logger.info(f"Relevance evaluation retry succeeded: score={relevance.score}")
+                return relevance
+            except Exception as retry_error:
+                logger.error(f"Relevance evaluation retry failed: {retry_error}")
+                logger.debug(
+                    f"Retry failed JSON output: {retry_json_output if retry_json_output else 'N/A'}"
+                )
+
+                # Fallback: assign neutral score
+                fallback_relevance = RelevanceOutput(
+                    score=0.5,
+                    reason="Unable to evaluate relevance due to LLM error. Assigned neutral score.",
+                )
+                logger.debug(f"Using fallback relevance: {fallback_relevance}")
+                return fallback_relevance
 
     def _format_citations(self, citations_data: list[dict[str, Any]]) -> str:
         """Format citations for prompt context."""

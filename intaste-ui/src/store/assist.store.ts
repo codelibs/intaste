@@ -29,7 +29,7 @@ interface AssistState {
   timings: Timings | null;
   fallbackNotice: string | null;
   queryHistory: string[];
-  processingPhase: 'intent' | 'search' | 'compose' | null;
+  processingPhase: 'intent' | 'search' | 'relevance' | 'compose' | null;
   intentData: {
     normalized_query: string;
     filters?: Record<string, any>;
@@ -38,6 +38,15 @@ interface AssistState {
   citationsData: {
     total: number;
     topResults: string[];
+  } | null;
+  relevanceData: {
+    evaluated_count: number;
+    max_score: number;
+  } | null;
+  retryData: {
+    attempt: number;
+    reason: string;
+    previous_max_score: number;
   } | null;
 
   send: (query: string, options?: Record<string, any>) => Promise<void>;
@@ -60,6 +69,8 @@ export const useAssistStore = create<AssistState>((set, get) => ({
   processingPhase: null,
   intentData: null,
   citationsData: null,
+  relevanceData: null,
+  retryData: null,
 
   send: async (query: string, options?: Record<string, any>) => {
     set({
@@ -71,6 +82,8 @@ export const useAssistStore = create<AssistState>((set, get) => ({
       processingPhase: null,
       intentData: null,
       citationsData: null,
+      relevanceData: null,
+      retryData: null,
     });
 
     try {
@@ -112,6 +125,25 @@ export const useAssistStore = create<AssistState>((set, get) => ({
               },
             });
           },
+          onRelevance: (data) => {
+            console.log('Relevance evaluated:', data);
+            set({
+              relevanceData: {
+                evaluated_count: data.evaluated_count,
+                max_score: data.max_score,
+              },
+            });
+          },
+          onRetry: (data) => {
+            console.log('Retry search:', data);
+            set({
+              retryData: {
+                attempt: data.attempt,
+                reason: data.reason,
+                previous_max_score: data.previous_max_score,
+              },
+            });
+          },
           onChunk: (data) => {
             // Clear processing info on first chunk
             if (accumulatedText === '') {
@@ -119,6 +151,8 @@ export const useAssistStore = create<AssistState>((set, get) => ({
                 processingPhase: null,
                 intentData: null,
                 citationsData: null,
+                relevanceData: null,
+                retryData: null,
               });
             }
             accumulatedText += data.text;

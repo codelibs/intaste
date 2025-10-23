@@ -15,7 +15,7 @@
 import { useTranslation } from '@/libs/i18n/client';
 
 interface ProcessingStatusProps {
-  phase: 'intent' | 'search' | 'compose';
+  phase: 'intent' | 'search' | 'relevance' | 'compose';
   intentData?: {
     normalized_query: string;
     filters?: Record<string, any>;
@@ -25,9 +25,18 @@ interface ProcessingStatusProps {
     total: number;
     topResults: string[];
   };
+  relevanceData?: {
+    evaluated_count: number;
+    max_score: number;
+  };
 }
 
-export function ProcessingStatus({ phase, intentData, citationsData }: ProcessingStatusProps) {
+export function ProcessingStatus({
+  phase,
+  intentData,
+  citationsData,
+  relevanceData,
+}: ProcessingStatusProps) {
   const { t } = useTranslation();
 
   return (
@@ -94,6 +103,30 @@ export function ProcessingStatus({ phase, intentData, citationsData }: Processin
               </ol>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Relevance evaluation in progress indicator */}
+      {phase === 'relevance' && (
+        <div className="flex items-center gap-2 text-primary animate-pulse">
+          <span className="inline-block animate-spin h-4 w-4 border-2 border-primary border-t-transparent rounded-full"></span>
+          <span>⚖️ {t('processing.evaluatingRelevance')}</span>
+        </div>
+      )}
+
+      {/* Relevance data */}
+      {relevanceData && (
+        <div className="space-y-2">
+          <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400">
+            <span>⚖️</span>
+            <span className="font-medium">
+              {t('processing.relevanceEvaluated', { count: relevanceData.evaluated_count })}
+            </span>
+          </div>
+          <div className="pl-6 text-sm text-muted-foreground">
+            {t('processing.maxRelevanceScore')}:{' '}
+            <span className="font-mono">{(relevanceData.max_score * 100).toFixed(0)}%</span>
+          </div>
         </div>
       )}
 

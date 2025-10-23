@@ -59,7 +59,29 @@ class StatusEventData(BaseModel):
     Used to provide user feedback while waiting for results.
     """
 
-    phase: Literal["intent", "search", "compose"]
+    phase: Literal["intent", "search", "relevance", "compose"]
+
+
+class RelevanceEventData(BaseModel):
+    """
+    Event data emitted when relevance evaluation is complete.
+    """
+
+    evaluated_count: int = Field(..., ge=0, description="Number of results evaluated")
+    max_score: float = Field(..., ge=0.0, le=1.0, description="Highest relevance score")
+    timing_ms: int = Field(..., ge=0)
+
+
+class RetryEventData(BaseModel):
+    """
+    Event data emitted when retry search is starting.
+    """
+
+    attempt: int = Field(..., ge=1, description="Retry attempt number (1-based)")
+    reason: str = Field(..., min_length=1, description="Reason for retry")
+    previous_max_score: float = Field(
+        ..., ge=0.0, le=1.0, description="Max score from previous attempt"
+    )
 
 
 class SearchEvent(BaseModel):
@@ -71,10 +93,15 @@ class SearchEvent(BaseModel):
     2. intent: Intent extraction completed
     3. status(search): Search execution starting
     4. citations: Search results available
+    5. status(relevance): Relevance evaluation starting
+    6. relevance: Relevance evaluation completed
+    7. retry: Retry search starting (if needed)
     """
 
-    type: Literal["intent", "citations", "status"]
-    data: IntentEventData | CitationsEventData | StatusEventData
+    type: Literal["intent", "citations", "status", "relevance", "retry"]
+    data: (
+        IntentEventData | CitationsEventData | StatusEventData | RelevanceEventData | RetryEventData
+    )
 
     @property
     def intent_data(self) -> IntentEventData | None:
@@ -91,6 +118,16 @@ class SearchEvent(BaseModel):
         """Get status data if this is a status event."""
         return self.data if isinstance(self.data, StatusEventData) else None
 
+    @property
+    def relevance_data(self) -> RelevanceEventData | None:
+        """Get relevance data if this is a relevance event."""
+        return self.data if isinstance(self.data, RelevanceEventData) else None
+
+    @property
+    def retry_data(self) -> RetryEventData | None:
+        """Get retry data if this is a retry event."""
+        return self.data if isinstance(self.data, RetryEventData) else None
+
 
 class SearchAgentTimings(BaseModel):
     """
@@ -99,6 +136,8 @@ class SearchAgentTimings(BaseModel):
 
     intent_ms: int = Field(..., ge=0)
     search_ms: int = Field(..., ge=0)
+    relevance_ms: int = Field(default=0, ge=0, description="Time for relevance evaluation")
+    retry_count: int = Field(default=0, ge=0, description="Number of retry attempts")
 
 
 class SearchAgentResult(BaseModel):
