@@ -79,7 +79,7 @@ export function LanguageSwitcher({ className }: LanguageSwitcherProps) {
         <div
           className={cn(
             'absolute right-0 mt-2 w-56 rounded-lg shadow-lg',
-            'bg-white dark:bg-slate-950 border border-border',
+            'bg-popover text-popover-foreground border border-border',
             'z-50'
           )}
           role="menu"
