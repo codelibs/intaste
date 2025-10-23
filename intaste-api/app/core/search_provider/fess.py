@@ -58,11 +58,11 @@ class FessSearchProvider:
 
         # Map sort parameter
         if query.sort == "date_desc":
-            params["sort"] = "last_modified desc"
+            params["sort"] = "last_modified.desc"
         elif query.sort == "date_asc":
-            params["sort"] = "last_modified asc"
+            params["sort"] = "last_modified.asc"
         else:
-            params["sort"] = "score"
+            params["sort"] = "score.desc"
 
         # Apply filters if provided
         if query.filters:

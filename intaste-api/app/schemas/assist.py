@@ -30,6 +30,9 @@ class Citation(BaseModel):
     snippet: str | None = Field(None, description="HTML snippet (must be sanitized in UI)")
     url: str
     score: float | None = None
+    relevance_score: float | None = Field(
+        None, ge=0.0, le=1.0, description="LLM-evaluated relevance score (0.0-1.0)"
+    )
     meta: dict[str, Any] | None = None
 
 

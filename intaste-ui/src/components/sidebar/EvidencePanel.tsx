@@ -68,13 +68,45 @@ export function EvidencePanel({ citations, selectedId, onSelect, className }: Ev
       {/* Tab Content */}
       <div className="flex-1 overflow-y-auto p-4" role="tabpanel">
         {tab === 'selected' ? (
-          selectedCitation ? (
-            <EvidenceItem citation={selectedCitation} active={true} onSelect={() => {}} showFull />
-          ) : (
-            <div className="text-center text-sm text-muted-foreground py-8">
-              {t('evidence.noSelection')}
-            </div>
-          )
+          (() => {
+            // Filter citations by relevance threshold (default 0.8 = 80%)
+            const RELEVANCE_THRESHOLD = 0.8;
+            const highRelevanceCitations = citations.filter(
+              (c) => (c.relevance_score ?? 0) >= RELEVANCE_THRESHOLD
+            );
+
+            // Show high relevance citations if any exist, otherwise show selected citation
+            if (highRelevanceCitations.length > 0) {
+              return (
+                <div className="space-y-3">
+                  {highRelevanceCitations.map((citation) => (
+                    <EvidenceItem
+                      key={citation.id}
+                      citation={citation}
+                      active={citation.id === selectedId}
+                      onSelect={() => onSelect(citation.id)}
+                      showFull
+                    />
+                  ))}
+                </div>
+              );
+            } else if (selectedCitation) {
+              return (
+                <EvidenceItem
+                  citation={selectedCitation}
+                  active={true}
+                  onSelect={() => {}}
+                  showFull
+                />
+              );
+            } else {
+              return (
+                <div className="text-center text-sm text-muted-foreground py-8">
+                  {t('evidence.noSelection')}
+                </div>
+              );
+            }
+          })()
         ) : (
           <div className="space-y-3">
             {citations.map((citation) => (

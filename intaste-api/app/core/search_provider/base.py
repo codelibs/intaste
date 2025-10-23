@@ -54,7 +54,7 @@ class SearchQuery(BaseModel):
 
     q: str
     page: int = Field(default=1, ge=1)
-    size: int = Field(default=5, ge=1, le=50)
+    size: int = Field(default=5, ge=1, le=500)
     sort: Literal["score", "date_desc", "date_asc"] = "score"
     language: str | None = None
     filters: dict[str, Any] | None = None
