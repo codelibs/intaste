@@ -200,7 +200,7 @@ class FessSearchAgent(BaseSearchAgent):
             logger.info(f"[{session_id}] Executing {'retry ' if is_retry else ''}search")
             logger.debug(
                 f"[{session_id}] Search input: normalized_query={intent.normalized_query!r}, "
-                f"max_results={options.get('max_results', 5)}"
+                f"max_results={options.get('max_results', settings.intaste_max_search_results)}"
             )
 
             search_start = time.time()
@@ -209,7 +209,7 @@ class FessSearchAgent(BaseSearchAgent):
                 search_query = SearchQuery(
                     q=intent.normalized_query,
                     page=1,
-                    size=options.get("max_results", 5),
+                    size=options.get("max_results", settings.intaste_max_search_results),
                     language=options.get("language", "en"),
                     filters=intent.filters or options.get("filters"),
                     timeout_ms=options.get(
@@ -270,6 +270,10 @@ class FessSearchAgent(BaseSearchAgent):
                                 if is_retry
                                 else settings.relevance_timeout_ms
                             ),
+                        ),
+                        evaluation_count=options.get(
+                            "relevance_evaluation_count",
+                            settings.intaste_relevance_evaluation_count,
                         ),
                     )
 
@@ -405,6 +409,7 @@ class FessSearchAgent(BaseSearchAgent):
         hits: list[SearchHit],
         session_id: str,
         timeout_ms: int,
+        evaluation_count: int | None = None,
     ) -> list[SearchHit]:
         """
         Evaluate relevance of search results and update relevance_score field.
@@ -415,19 +420,28 @@ class FessSearchAgent(BaseSearchAgent):
             hits: Search results to evaluate
             session_id: Session identifier for logging
             timeout_ms: Total timeout budget for all evaluations
+            evaluation_count: Number of top results to evaluate (None = evaluate all)
 
         Returns:
             List of SearchHit with relevance_score populated, sorted by relevance_score descending
         """
         from ..llm.prompts import RELEVANCE_SYSTEM_PROMPT, RELEVANCE_USER_TEMPLATE
 
-        logger.info(f"[{session_id}] Evaluating relevance for {len(hits)} results")
+        # Determine which hits to evaluate
+        hits_to_evaluate = hits[:evaluation_count] if evaluation_count else hits
+        hits_not_evaluated = hits[evaluation_count:] if evaluation_count else []
+
+        logger.info(
+            f"[{session_id}] Evaluating relevance for {len(hits_to_evaluate)} of {len(hits)} results"
+        )
 
         # Calculate per-hit timeout (distribute budget evenly)
-        per_hit_timeout = timeout_ms // max(len(hits), 1) if hits else timeout_ms
+        per_hit_timeout = (
+            timeout_ms // max(len(hits_to_evaluate), 1) if hits_to_evaluate else timeout_ms
+        )
 
         evaluated_hits = []
-        for idx, hit in enumerate(hits, 1):
+        for idx, hit in enumerate(hits_to_evaluate, 1):
             try:
                 search_result_dict = {
                     "title": hit.title,
@@ -458,19 +472,22 @@ class FessSearchAgent(BaseSearchAgent):
                 # Keep hit without relevance_score
                 evaluated_hits.append(hit)
 
+        # Combine evaluated and non-evaluated hits
+        all_hits = evaluated_hits + hits_not_evaluated
+
         # Sort by relevance_score descending (None values go to end)
-        evaluated_hits.sort(
+        all_hits.sort(
             key=lambda h: h.relevance_score if h.relevance_score is not None else -1.0,
             reverse=True,
         )
 
-        if evaluated_hits and evaluated_hits[0].relevance_score is not None:
+        if all_hits and all_hits[0].relevance_score is not None:
             logger.info(
                 f"[{session_id}] Relevance evaluation complete. "
-                f"Max score: {evaluated_hits[0].relevance_score:.2f}"
+                f"Max score: {all_hits[0].relevance_score:.2f}"
             )
 
-        return evaluated_hits
+        return all_hits
 
     def _should_retry(
         self,

@@ -549,19 +549,19 @@ async def test_search_with_sort_parameters(fess_provider, mock_fess_response):
         query = SearchQuery(q="test", sort="date_desc")
         await fess_provider.search(query)
         params = mock_get.call_args[1]["params"]
-        assert params["sort"] == "last_modified desc"
+        assert params["sort"] == "last_modified.desc"
 
         # Test date_asc sort
         query = SearchQuery(q="test", sort="date_asc")
         await fess_provider.search(query)
         params = mock_get.call_args[1]["params"]
-        assert params["sort"] == "last_modified asc"
+        assert params["sort"] == "last_modified.asc"
 
         # Test default (relevance) sort
         query = SearchQuery(q="test")
         await fess_provider.search(query)
         params = mock_get.call_args[1]["params"]
-        assert params["sort"] == "score"
+        assert params["sort"] == "score.desc"
 
 
 @pytest.mark.unit
@@ -609,7 +609,7 @@ async def test_search_with_filters_and_sorting_combined(fess_provider, mock_fess
         await fess_provider.search(query)
 
         params = mock_get.call_args[1]["params"]
-        assert params["sort"] == "last_modified desc"
+        assert params["sort"] == "last_modified.desc"
         assert params["site"] == "example.com"
 
 

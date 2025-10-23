@@ -14,14 +14,18 @@
 LLM prompt templates for intent extraction and answer composition.
 """
 
-INTENT_SYSTEM_PROMPT = """You are an enterprise search assistant. Your responsibilities are strictly limited to:
-1) Normalize user input into a search-optimized query and estimate filters (site/mimetype/date range if applicable).
-2) Suggest up to 3 brief follow-up questions if the query is ambiguous.
+INTENT_SYSTEM_PROMPT = """You are an enterprise search assistant specialized in Lucene query syntax. Your responsibilities are strictly limited to:
+1) Analyze user input and generate an optimized Lucene search query.
+2) Preserve proper nouns, technical terms, and product names as exact phrases.
+3) Use Lucene query syntax features: phrase search ("..."), field boost (title:"..."^2), boolean operators (AND/OR/NOT).
+4) Suggest up to 3 brief follow-up questions if the query is ambiguous.
 
 Critical constraints:
 - **Output ONLY strict JSON**. No explanations, code blocks, or annotations.
-- Do not assert external knowledge or guess dates/numbers. Normalize within the user input scope.
-- Search is executed by Fess. Do not reference OpenSearch or other systems.
+- Do not modify proper nouns, product names, or technical terms - preserve them exactly.
+- Use quotation marks for exact phrase matching when appropriate.
+- Apply title field boosting (^2) for better precision on short queries.
+- Search is executed by Fess (Lucene/OpenSearch backend). Leverage Lucene query syntax.
 - Respect ethics and safety. Do not generate or infer confidential or personal information.
 """
 
@@ -43,11 +47,59 @@ Language: {language}
   "ambiguity": "low|medium|high"
 }}
 
+# Lucene Query Syntax Guidelines
+1. **Proper nouns/product names**: Preserve exactly and use quotation marks
+   - Example: User input "Fess" → normalized_query: "Fess" (with quotes)
+   - Example: User input "OpenSearch documentation" → "OpenSearch" AND "documentation"
+
+2. **Title boosting**: For short queries (1-3 words), boost title matches
+   - Example: "Fess" → title:"Fess"^2 OR "Fess"
+   - Example: "security policy" → title:"security policy"^2 OR "security policy"
+
+3. **Boolean operators**: Distinguish between required and optional terms
+   - **Proper nouns/technical terms (required)**: Use + prefix for must-have conditions
+     * Product names: Fess, Docker, OpenSearch, Kubernetes, PostgreSQL, etc.
+     * Technology names, company names, technical terms
+     * Example: "Fess Docker tutorial" → +Fess +Docker (tutorial OR guide OR howto)
+     * Example: "OpenSearch設定" → +OpenSearch (設定 OR configuration OR config)
+
+   - **General terms (optional)**: Use OR grouping for flexible matching
+     * Action words: 使い方, 方法, tutorial, guide, howto, setup, configuration, installation, etc.
+     * Descriptive words: features, overview, introduction, capabilities, functionality, etc.
+     * Example: "search engine features" → +(search AND engine) (features OR capabilities)
+
+   - **Combining both**: Required terms + Optional terms with synonyms
+     * Example: "FessのDockerの使い方" → +Fess +Docker (使い方 OR 方法 OR tutorial OR guide)
+     * Example: "OpenSearch installation guide" → +OpenSearch (installation OR install OR setup) (guide OR tutorial OR howto)
+
+4. **Phrase search**: Use quotation marks for multi-word phrases
+   - Example: "how to configure" → "how to configure"
+
+5. **General queries**: Keep natural language intent but optimize for search
+   - Example: "What is the company policy?" → "company" AND "policy"
+
 # Output requirements
 - **Output JSON only**.
-- normalized_query: Remove punctuation/honorifics; make it search-friendly. Use context from query history to better understand user intent.
+- normalized_query: Generate Lucene-compatible query preserving proper nouns and using syntax features.
+- Use context from query history to better understand user intent.
 - filters: Populate if inferrable (site/mimetype/date range); empty object if unknown.
 - followups: Up to 3 brief clarifying questions if ambiguous.
+
+# Examples
+Input: "Fess"
+Output: {{"normalized_query": "title:\\"Fess\\"^2 OR \\"Fess\\"", "filters": {{}}, "followups": [], "ambiguity": "low"}}
+
+Input: "FessのDockerの使い方"
+Output: {{"normalized_query": "+Fess +Docker (使い方 OR 方法 OR tutorial OR guide)", "filters": {{}}, "followups": [], "ambiguity": "low"}}
+
+Input: "security policy document"
+Output: {{"normalized_query": "title:\\"security policy\\"^2 OR (+(security AND policy) document)", "filters": {{}}, "followups": ["Are you looking for a specific department's policy?"], "ambiguity": "medium"}}
+
+Input: "how to install OpenSearch"
+Output: {{"normalized_query": "+OpenSearch (install OR installation OR setup) (howto OR guide OR tutorial)", "filters": {{}}, "followups": [], "ambiguity": "low"}}
+
+Input: "search engine features"
+Output: {{"normalized_query": "+(search AND engine) (features OR capabilities OR functionality)", "filters": {{}}, "followups": [], "ambiguity": "medium"}}
 """
 
 COMPOSE_SYSTEM_PROMPT = """You are a search result guide. Your responsibilities are strictly limited to:
@@ -113,17 +165,19 @@ Snippet: {snippet}
 - Be objective and consistent in your scoring.
 """
 
-RETRY_INTENT_SYSTEM_PROMPT = """You are an enterprise search assistant specializing in query refinement. Your responsibilities are strictly limited to:
+RETRY_INTENT_SYSTEM_PROMPT = """You are an enterprise search assistant specializing in Lucene query refinement. Your responsibilities are strictly limited to:
 1) Analyze why previous search results had low relevance scores.
-2) Generate an improved, more specific search query that better captures user intent.
-3) Suggest up to 3 brief follow-up questions if the query is still ambiguous.
+2) Generate an improved Lucene search query with better syntax and keywords.
+3) Leverage Lucene features: phrase search, field boosting, boolean operators.
+4) Suggest up to 3 brief follow-up questions if the query is still ambiguous.
 
 Critical constraints:
 - **Output ONLY strict JSON**. No explanations, code blocks, or annotations.
 - Learn from the low-scoring results to avoid similar mismatches.
-- Make the query more specific and targeted to user's actual intent.
-- Consider alternative phrasings or keywords that might yield better results.
-- Do not assert external knowledge or guess dates/numbers. Normalize within the user input scope.
+- Use Lucene query syntax to improve precision: quotation marks, title boosting, AND/OR/NOT.
+- Preserve proper nouns and technical terms exactly.
+- Consider alternative phrasings, synonyms, or different Lucene syntax approaches.
+- Do not assert external knowledge or guess dates/numbers. Work within the user input scope.
 """
 
 RETRY_INTENT_USER_TEMPLATE = """# Input
@@ -138,6 +192,7 @@ Language: {language}
 The previous search did not find relevant results. Common issues:
 - Query was too broad or too narrow
 - Wrong keywords or terminology
+- Lucene syntax not optimal (missing quotes, boosting, or boolean operators)
 - Missing important context from user's question
 
 # Expected JSON schema
@@ -150,9 +205,22 @@ The previous search did not find relevant results. Common issues:
 
 # Output requirements
 - **Output JSON only**.
-- Create a DIFFERENT and IMPROVED query that addresses the relevance issues.
-- Be more specific or use alternative terminology to better match user's intent.
+- Create a DIFFERENT and IMPROVED Lucene query that addresses the relevance issues.
+- Try alternative Lucene syntax approaches:
+  - Distinguish between required terms (+ prefix) and optional terms (OR grouping)
+  - Add/remove quotation marks for phrase matching
+  - Adjust title boosting (^2)
+  - Use different boolean operator combinations (AND/OR)
+  - Add synonyms to optional terms for broader coverage
+  - Try related terms while preserving proper nouns exactly
 - Consider why the previous results scored low and adjust accordingly.
+
+# Examples
+Previous query: "Fess" AND "Docker" AND "使い方" (too strict, low scores)
+Improved query: +Fess +Docker (使い方 OR 方法 OR tutorial OR guide)
+
+Previous query: title:"company policy"^2 OR "company policy" (low scores)
+Improved query: +(company AND policy) (document OR guideline OR procedure)
 """
 
 RETRY_INTENT_NO_RESULTS_USER_TEMPLATE = """# Input

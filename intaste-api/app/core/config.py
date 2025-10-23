@@ -68,6 +68,17 @@ class Settings(BaseSettings):
         default=2, ge=0, le=5, validation_alias="INTASTE_MAX_RETRY_COUNT"
     )
 
+    # Search Results Configuration
+    intaste_max_search_results: int = Field(
+        default=100, ge=1, le=500, validation_alias="INTASTE_MAX_SEARCH_RESULTS"
+    )
+    intaste_relevance_evaluation_count: int = Field(
+        default=10, ge=1, le=100, validation_alias="INTASTE_RELEVANCE_EVALUATION_COUNT"
+    )
+    intaste_selected_relevance_threshold: float = Field(
+        default=0.8, ge=0.0, le=1.0, validation_alias="INTASTE_SELECTED_RELEVANCE_THRESHOLD"
+    )
+
     # LLM Warmup
     intaste_llm_warmup_enabled: bool = Field(
         default=True, validation_alias="INTASTE_LLM_WARMUP_ENABLED"
