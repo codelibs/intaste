@@ -78,10 +78,22 @@ Language: {language}
 5. **General queries**: Keep natural language intent but optimize for search
    - Example: "What is the company policy?" → "company" AND "policy"
 
+# Leveraging Query History for Context
+When query history is available, use it to:
+1. **Resolve ambiguous references**: If current query contains pronouns ("it", "that", "その"), map them to entities from previous queries
+   - Example: History: ["Fess installation"] → Current: "How to configure it?" → Resolve "it" to "Fess"
+2. **Maintain topic continuity**: If current query is a follow-up, incorporate context from previous queries
+   - Example: History: ["Docker deployment"] → Current: "configuration file location" → Combine: +Docker (configuration OR config) (file OR location)
+3. **Refine or drill down**: If current query is more specific than previous, combine both contexts
+   - Example: History: ["search system"] → Current: "performance tuning" → Combine: +(search AND system) (performance OR tuning OR optimization)
+4. **Expand abbreviations**: Use history to understand domain-specific abbreviations
+   - Example: History: ["Fess Enterprise Search"] → Current: "FES setup" → Interpret "FES" as "Fess Enterprise Search"
+
 # Output requirements
 - **Output JSON only**.
 - normalized_query: Generate Lucene-compatible query preserving proper nouns and using syntax features.
-- Use context from query history to better understand user intent.
+- **When history available**: Actively incorporate context to resolve ambiguities and improve query precision.
+- **When no history**: Generate query based solely on current input.
 - filters: Populate if inferrable (site/mimetype/date range); empty object if unknown.
 - followups: Up to 3 brief clarifying questions if ambiguous.
 
@@ -252,4 +264,80 @@ No documents matched the search query. Common issues:
 - Consider synonyms, related terms, or more general concepts that might match documents.
 - Avoid overly specific or technical terms that may not be in the document corpus.
 - Try to capture the core intent of the user's question in a different way.
+"""
+
+# ========================================
+# Merge Results Prompts
+# ========================================
+
+MERGE_RESULTS_SYSTEM_PROMPT = """You are a search quality evaluator responsible for selecting the best search results from multiple search agents.
+
+Your task:
+1. Evaluate search results from different search agents (Fess, MCP, external APIs, vector search, etc.)
+2. Select the agent(s) with the most relevant and high-quality results
+3. Decide whether to use results from a single agent or merge results from multiple agents
+4. Provide a clear explanation for your decision
+
+Evaluation criteria:
+- Relevance to user's query intent
+- Quality and completeness of search results
+- Diversity of sources
+- Maximum relevance scores
+- Number of high-quality results
+
+Critical constraints:
+- **Output ONLY strict JSON**. No explanations, code blocks, or annotations.
+- Always select at least one agent
+- Prefer single agent if one clearly dominates in quality
+- Consider merging if multiple agents provide complementary results
+"""
+
+MERGE_RESULTS_USER_TEMPLATE = """# Input
+User's query: "{query}"
+
+# Search Agent Results
+
+{agent_results_text}
+
+# Expected JSON schema
+{{
+  "selected_agent_ids": ["agent_id1", "agent_id2", ...],
+  "reason": "string (required, explain why these agents were selected)",
+  "merge_strategy": "single|merge"
+}}
+
+# Output requirements
+- **Output JSON only**.
+- selected_agent_ids: List of agent IDs in priority order (at least 1, at most all)
+- reason: Brief explanation (max 500 chars) of why these agents were selected
+- merge_strategy:
+  - "single": Use results from only the first agent in selected_agent_ids
+  - "merge": Combine results from all selected agents
+- Prioritize quality and relevance over quantity
+- If one agent clearly has better results, use "single" strategy
+- Use "merge" strategy only if multiple agents provide complementary high-quality results
+
+# Examples
+
+## Example 1: Single agent clearly dominates
+Input agents:
+- fess: 10 results, max_score=0.85
+- mcp: 3 results, max_score=0.42
+
+Output: {{"selected_agent_ids": ["fess"], "reason": "Fess agent provided significantly higher relevance scores (0.85 vs 0.42) and more comprehensive results", "merge_strategy": "single"}}
+
+## Example 2: Multiple agents provide complementary results
+Input agents:
+- fess: 5 results, max_score=0.78
+- vector: 8 results, max_score=0.76
+- external_api: 6 results, max_score=0.74
+
+Output: {{"selected_agent_ids": ["fess", "vector", "external_api"], "reason": "All three agents provided high-quality results with similar relevance scores, offering diverse perspectives", "merge_strategy": "merge"}}
+
+## Example 3: Two agents, prefer one with higher quality
+Input agents:
+- fess: 12 results, max_score=0.65
+- vector: 15 results, max_score=0.88
+
+Output: {{"selected_agent_ids": ["vector"], "reason": "Vector search agent achieved significantly higher relevance score (0.88 vs 0.65), indicating better semantic matching", "merge_strategy": "single"}}
 """

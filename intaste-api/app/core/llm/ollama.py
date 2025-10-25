@@ -22,7 +22,7 @@ from typing import Any
 import httpx
 from pydantic import ValidationError
 
-from .base import ComposeOutput, IntentOutput, RelevanceOutput
+from .base import ComposeOutput, IntentOutput, MergeOutput, RelevanceOutput
 from .prompts import (
     COMPOSE_SYSTEM_PROMPT,
     COMPOSE_USER_TEMPLATE,
@@ -358,6 +358,106 @@ class OllamaClient:
                 )
                 logger.debug(f"Using fallback relevance: {fallback_relevance}")
                 return fallback_relevance
+
+    async def merge_results(
+        self,
+        query: str,
+        agent_results: list[tuple[str, str, list[dict[str, Any]], float]],
+        system_prompt: str,
+        user_template: str,
+        timeout_ms: int | None = None,
+    ) -> MergeOutput:
+        """
+        Merge and select best results from multiple search agents using LLM evaluation.
+        """
+        actual_timeout = timeout_ms or self.timeout_ms
+
+        # Format agent results for prompt
+        agent_results_lines = []
+        for agent_id, agent_name, citations, max_score in agent_results:
+            result_count = len(citations)
+            top_titles = [c.get("title", "No title")[:60] for c in citations[:3]]
+            agent_results_lines.append(
+                f"## {agent_name} (ID: {agent_id})\n"
+                f"- Results: {result_count}\n"
+                f"- Max relevance score: {max_score:.2f}\n"
+                f"- Top results:\n  "
+                + "\n  ".join([f"{i+1}. {title}" for i, title in enumerate(top_titles)])
+            )
+        agent_results_text = "\n\n".join(agent_results_lines)
+
+        logger.debug(
+            f"Merge evaluation started: model={self.model}, timeout={actual_timeout}ms, "
+            f"num_agents={len(agent_results)}"
+        )
+        logger.debug(
+            f"Merge input: query={query!r}, agents={[aid for aid, _, _, _ in agent_results]}"
+        )
+
+        user_prompt = user_template.format(
+            query=query,
+            agent_results_text=agent_results_text,
+        )
+
+        if logger.isEnabledFor(logging.DEBUG):
+            from ..config import settings
+
+            max_chars = settings.log_max_prompt_chars
+            logger.debug(f"Merge system prompt: {system_prompt[:max_chars]}")
+            logger.debug(f"Merge user prompt: {user_prompt[:max_chars]}")
+
+        json_output = None
+        try:
+            json_output = await self._complete(
+                system=system_prompt,
+                user=user_prompt,
+                timeout_ms=actual_timeout,
+            )
+            logger.debug(f"Merge raw response: {json_output[:500]}")
+
+            merge_output = MergeOutput.model_validate_json(json_output)
+            logger.debug(
+                f"Merge parsed successfully: selected={merge_output.selected_agent_ids}, "
+                f"strategy={merge_output.merge_strategy}"
+            )
+            return merge_output
+
+        except (json.JSONDecodeError, ValidationError, Exception) as e:
+            logger.warning(f"Merge evaluation failed, retrying with lower temperature: {e}")
+            logger.debug(f"Failed JSON output: {json_output if json_output else 'N/A'}")
+
+            # Retry with lower temperature
+            retry_json_output = None
+            try:
+                logger.debug("Retrying merge evaluation with temperature=0.1")
+                retry_json_output = await self._complete(
+                    system=system_prompt,
+                    user=user_prompt + "\n\nREMINDER: Output ONLY valid JSON.",
+                    timeout_ms=actual_timeout,
+                    temperature=0.1,
+                )
+                logger.debug(f"Merge retry raw response: {retry_json_output[:500]}")
+
+                merge_output = MergeOutput.model_validate_json(retry_json_output)
+                logger.info(
+                    f"Merge evaluation retry succeeded: selected={merge_output.selected_agent_ids}"
+                )
+                return merge_output
+            except Exception as retry_error:
+                logger.error(f"Merge evaluation retry failed: {retry_error}")
+                logger.debug(
+                    f"Retry failed JSON output: {retry_json_output if retry_json_output else 'N/A'}"
+                )
+
+                # Fallback: select first agent with highest score
+                best_agent = max(agent_results, key=lambda x: x[3])  # x[3] is max_score
+                fallback_merge = MergeOutput(
+                    selected_agent_ids=[best_agent[0]],
+                    reason="Unable to evaluate results due to LLM error. Selected agent with highest relevance score.",
+                    merge_strategy="single",
+                )
+                logger.debug(f"Using fallback merge: {fallback_merge}")
+                return fallback_merge
 
     def _format_citations(self, citations_data: list[dict[str, Any]]) -> str:
         """Format citations for prompt context."""

@@ -14,10 +14,27 @@
 Configuration management for Intaste API.
 """
 
-from typing import Literal
+from typing import Any, Literal
 
-from pydantic import Field, field_validator
+from pydantic import BaseModel, Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+class SearchAgentConfig(BaseModel):
+    """
+    Configuration for a single search agent.
+
+    Used for multi-agent scenarios where multiple search agents
+    can be configured and executed in parallel.
+    """
+
+    enabled: bool = True
+    agent_type: Literal["fess", "mcp", "external_api", "vector"] = "fess"
+    agent_id: str
+    agent_name: str
+    priority: int = 1  # Lower priority = executed first
+    timeout_ms: int = 5000
+    config: dict[str, Any] = Field(default_factory=dict)  # Agent-specific configuration
 
 
 class Settings(BaseSettings):
@@ -87,6 +104,14 @@ class Settings(BaseSettings):
         default=30000, validation_alias="INTASTE_LLM_WARMUP_TIMEOUT_MS"
     )
 
+    # Multi-Agent Configuration
+    intaste_multi_agent_enabled: bool = Field(
+        default=False, validation_alias="INTASTE_MULTI_AGENT_ENABLED"
+    )
+    intaste_search_agents: str | list[SearchAgentConfig] = Field(
+        default="[]", validation_alias="INTASTE_SEARCH_AGENTS"
+    )
+
     # CORS
     cors_origins: str | list[str] = Field(
         default=["http://localhost:3000"], validation_alias="CORS_ORIGINS"
@@ -109,6 +134,26 @@ class Settings(BaseSettings):
         if isinstance(v, str):
             # Handle comma-separated string
             return [origin.strip() for origin in v.split(",") if origin.strip()]
+        return v
+
+    @field_validator("intaste_search_agents", mode="before")
+    @classmethod
+    def parse_search_agents(cls, v: str | list[SearchAgentConfig]) -> list[SearchAgentConfig]:
+        """
+        Parse INTASTE_SEARCH_AGENTS from environment variable.
+        Accepts JSON string or list of SearchAgentConfig objects.
+        """
+        import json
+
+        if isinstance(v, str):
+            # Parse JSON string
+            if not v or v == "[]":
+                return []
+            try:
+                agents_data = json.loads(v)
+                return [SearchAgentConfig(**agent) for agent in agents_data]
+            except (json.JSONDecodeError, ValueError) as e:
+                raise ValueError(f"Invalid INTASTE_SEARCH_AGENTS format: {e}") from e
         return v
 
     @property
