@@ -50,6 +50,8 @@ class FessSearchAgent(BaseSearchAgent):
         llm_client: LLMClient,
         intent_timeout_ms: int = 2000,
         search_timeout_ms: int = 2000,
+        agent_id: str | None = None,
+        agent_name: str | None = None,
     ):
         """
         Initialize FessSearchAgent.
@@ -59,11 +61,15 @@ class FessSearchAgent(BaseSearchAgent):
             llm_client: LLM client for intent extraction
             intent_timeout_ms: Timeout for intent extraction (default: 2000ms)
             search_timeout_ms: Timeout for search execution (default: 2000ms)
+            agent_id: Unique identifier for multi-agent scenarios
+            agent_name: Human-readable agent name
         """
         self.search_provider = search_provider
         self.llm_client = llm_client
         self.intent_timeout_ms = intent_timeout_ms
         self.search_timeout_ms = search_timeout_ms
+        self.agent_id = agent_id or "fess"
+        self.agent_name = agent_name or "FessSearchAgent"
 
     async def search_stream(
         self,
@@ -118,6 +124,8 @@ class FessSearchAgent(BaseSearchAgent):
             yield SearchEvent(
                 type="status",
                 data=StatusEventData(phase="intent"),
+                agent_id=self.agent_id,
+                agent_name=self.agent_name,
             )
 
             logger.info(
@@ -187,6 +195,8 @@ class FessSearchAgent(BaseSearchAgent):
                     ambiguity=intent.ambiguity,
                     timing_ms=intent_ms,
                 ),
+                agent_id=self.agent_id,
+                agent_name=self.agent_name,
             )
 
             # ========================================
@@ -195,6 +205,8 @@ class FessSearchAgent(BaseSearchAgent):
             yield SearchEvent(
                 type="status",
                 data=StatusEventData(phase="search"),
+                agent_id=self.agent_id,
+                agent_name=self.agent_name,
             )
 
             logger.info(f"[{session_id}] Executing {'retry ' if is_retry else ''}search")
@@ -252,6 +264,8 @@ class FessSearchAgent(BaseSearchAgent):
                 yield SearchEvent(
                     type="status",
                     data=StatusEventData(phase="relevance"),
+                    agent_id=self.agent_id,
+                    agent_name=self.agent_name,
                 )
 
                 logger.info(f"[{session_id}] Starting relevance evaluation")
@@ -303,6 +317,8 @@ class FessSearchAgent(BaseSearchAgent):
                             max_score=max_score,
                             timing_ms=relevance_ms,
                         ),
+                        agent_id=self.agent_id,
+                        agent_name=self.agent_name,
                     )
 
                 except Exception as e:
@@ -347,6 +363,8 @@ class FessSearchAgent(BaseSearchAgent):
                         reason=f"Max relevance score ({max_score:.2f}) below threshold ({threshold})",
                         previous_max_score=max_score,
                     ),
+                    agent_id=self.agent_id,
+                    agent_name=self.agent_name,
                 )
 
                 # Continue to next iteration
@@ -369,6 +387,8 @@ class FessSearchAgent(BaseSearchAgent):
                 total=search_result.total if search_result else 0,
                 timing_ms=total_search_ms,
             ),
+            agent_id=self.agent_id,
+            agent_name=self.agent_name,
         )
 
         logger.debug(

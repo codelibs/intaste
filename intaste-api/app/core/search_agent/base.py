@@ -102,6 +102,8 @@ class SearchEvent(BaseModel):
     data: (
         IntentEventData | CitationsEventData | StatusEventData | RelevanceEventData | RetryEventData
     )
+    agent_id: str | None = None  # Identifier for multi-agent scenarios
+    agent_name: str | None = None  # Human-readable agent name
 
     @property
     def intent_data(self) -> IntentEventData | None:

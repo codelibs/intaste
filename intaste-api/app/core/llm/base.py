@@ -50,6 +50,26 @@ class RelevanceOutput(BaseModel):
     reason: str = Field(..., min_length=1, max_length=500, description="Explanation for the score")
 
 
+class MergeOutput(BaseModel):
+    """
+    Output from merging multiple search agent results.
+    LLM evaluates and selects/merges the best results from multiple agents.
+    """
+
+    selected_agent_ids: list[str] = Field(
+        ...,
+        min_length=1,
+        description="IDs of agents whose results were selected (in priority order)",
+    )
+    reason: str = Field(
+        ..., min_length=1, max_length=500, description="Explanation for the selection"
+    )
+    merge_strategy: str = Field(
+        default="single",
+        description="Strategy used: 'single' (one agent) or 'merge' (combined results)",
+    )
+
+
 class LLMClient(Protocol):
     """
     Protocol for LLM clients (e.g., Ollama, OpenAI).
@@ -112,6 +132,29 @@ class LLMClient(Protocol):
 
         Returns:
             RelevanceOutput with score (0.0-1.0) and reason
+        """
+        ...
+
+    async def merge_results(
+        self,
+        query: str,
+        agent_results: list[tuple[str, str, list[dict[str, Any]], float]],
+        system_prompt: str,
+        user_template: str,
+        timeout_ms: int | None = None,
+    ) -> MergeOutput:
+        """
+        Merge and select best results from multiple search agents using LLM evaluation.
+
+        Args:
+            query: Original user query
+            agent_results: List of (agent_id, agent_name, citations, max_relevance_score)
+            system_prompt: System prompt for merge evaluation
+            user_template: User prompt template for merge evaluation
+            timeout_ms: Optional timeout in milliseconds
+
+        Returns:
+            MergeOutput with selected agent IDs, reason, and merge strategy
         """
         ...
 
