@@ -69,8 +69,14 @@ import DOMPurify from 'dompurify';
  */
 export function sanitizeHtml(dirty: string): string {
   if (typeof window === 'undefined') {
-    // Server-side: return plain text
-    return dirty.replace(/<[^>]*>/g, '');
+    // Server-side: return plain text by repeatedly removing all HTML tags
+    let sanitized = dirty;
+    let previous;
+    do {
+      previous = sanitized;
+      sanitized = sanitized.replace(/<[^>]*>/g, '');
+    } while (sanitized !== previous);
+    return sanitized;
   }
 
   return DOMPurify.sanitize(dirty, {
