@@ -18,6 +18,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 
 from ..core.config import settings
 from ..core.security.auth import verify_api_token
+from ..i18n import _
 from ..schemas.models import ModelSelectRequest, ModelSelectResponse, ModelsResponse
 
 router = APIRouter(prefix="/models", tags=["models"])
@@ -74,7 +75,7 @@ async def select_model(request: ModelSelectRequest) -> ModelSelectResponse:
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail={
                     "code": "BAD_REQUEST",
-                    "message": "session_id is required when scope=session",
+                    "message": _("session_id is required when scope=session", language="en"),
                 },
             )
         selected_models[request.session_id] = request.model

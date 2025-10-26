@@ -13,7 +13,8 @@
 .PHONY: help up down logs ps restart pull-model clean dev test lint format up-gpu dev-gpu gpu-check \
         test-docker test-docker-api test-docker-ui lint-docker-api lint-docker-ui \
         test-docker-build test-docker-clean check-docker init-test-cache \
-        lint-api lint-ui format-api format-ui format-docker-api format-docker-ui
+        lint-api lint-ui format-api format-ui format-docker-api format-docker-ui \
+        i18n-extract i18n-update i18n-compile
 
 help: ## Show this help message
 	@echo 'Usage: make [target]'
@@ -207,3 +208,22 @@ check-docker: ## Run all checks (lint + test) in Docker
 	@echo "=========================================="
 	@echo "✓ All checks passed successfully!"
 	@echo "=========================================="
+
+# ========================================
+# i18n Commands
+# ========================================
+
+i18n-extract: ## Extract translatable messages from source code
+	@echo "Extracting messages from source code..."
+	cd intaste-api && uv run pybabel extract --keywords=_:1 -o locales/messages.pot app/
+	@echo "✓ Messages extracted to locales/messages.pot"
+
+i18n-update: ## Update .po files with new messages
+	@echo "Updating .po files..."
+	cd intaste-api && uv run pybabel update -i locales/messages.pot -d locales
+	@echo "✓ .po files updated. Please translate new messages in locales/*/LC_MESSAGES/messages.po"
+
+i18n-compile: ## Compile .po files to .mo files
+	@echo "Compiling .po files to .mo files..."
+	cd intaste-api && uv run pybabel compile -d locales
+	@echo "✓ .mo files compiled"

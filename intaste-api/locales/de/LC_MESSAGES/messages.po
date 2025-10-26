@@ -1,0 +1,62 @@
+# German translations for PROJECT.
+# Copyright (C) 2025 ORGANIZATION
+# This file is distributed under the same license as the PROJECT project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PROJECT VERSION\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2025-10-26 14:54+0900\n"
+"PO-Revision-Date: 2025-10-26 14:53+0900\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: de\n"
+"Language-Team: de <LL@li.org>\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: app/main.py:188
+msgid "Internal server error"
+msgstr ""
+
+#: app/core/llm/ollama.py:271
+msgid "Results are displayed. Please review the sources for details."
+msgstr ""
+
+#: app/core/llm/ollama.py:362
+msgid "Unable to evaluate relevance due to LLM error. Assigned neutral score."
+msgstr ""
+
+#: app/core/llm/ollama.py:461
+msgid ""
+"Unable to evaluate results due to LLM error. Selected agent with highest "
+"relevance score."
+msgstr ""
+
+#: app/core/llm/ollama.py:474
+msgid "No search results available."
+msgstr ""
+
+#: app/core/llm/ollama.py:750
+msgid "[Error: Response timeout]"
+msgstr ""
+
+#: app/core/llm/ollama.py:769
+msgid "[Error: Streaming failed]"
+msgstr ""
+
+#: app/core/security/auth.py:43
+msgid "Invalid or missing API token"
+msgstr ""
+
+#: app/routers/assist_stream.py:89
+msgid "Processing query..."
+msgstr ""
+
+#: app/routers/models.py:78
+msgid "session_id is required when scope=session"
+msgstr ""
+
