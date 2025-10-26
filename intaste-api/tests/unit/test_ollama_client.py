@@ -219,6 +219,37 @@ async def test_compose_fallback_on_error(ollama_client):
 
 @pytest.mark.unit
 @pytest.mark.asyncio
+async def test_compose_with_language(ollama_client):
+    """Test compose with language parameter"""
+    mock_response_ja = {
+        "text": "検索結果が表示されています。詳細は各ソースをご確認ください。",
+        "suggested_questions": ["パスワードの要件は何ですか？", "パスワードの変更頻度は？"],
+    }
+
+    with patch.object(
+        ollama_client, "_complete", return_value=json.dumps(mock_response_ja)
+    ) as mock_complete:
+        result = await ollama_client.compose(
+            query="パスワードポリシーは何ですか？",
+            normalized_query="パスワードポリシー",
+            citations_data=[
+                {"title": "Policy 1", "snippet": "強力なパスワードが必要", "url": "http://example.com/1"},
+            ],
+            language="ja",
+        )
+
+        # Verify _complete was called
+        assert mock_complete.called
+        # Verify the user prompt includes the language
+        call_args = mock_complete.call_args
+        assert "ja" in call_args.kwargs["user"].lower()
+
+        assert isinstance(result, ComposeOutput)
+        assert "検索結果" in result.text or "ソース" in result.text
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
 async def test_health_check_success(ollama_client):
     """Test health check when Ollama is healthy"""
     mock_tags_response = {

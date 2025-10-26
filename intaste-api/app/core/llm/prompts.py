@@ -129,6 +129,7 @@ COMPOSE_USER_TEMPLATE = """# Input
 User's question: "{query}"
 Normalized search term: "{normalized_query}"
 Ambiguity level: {ambiguity}
+Language: {language}
 
 # Search highlights (reference text, top N results)
 {citations_text}
@@ -136,6 +137,7 @@ Ambiguity level: {ambiguity}
 
 # Output requirements
 - **Output plain text only** (no JSON, no markup).
+- **Respond in the specified language** ({language}).
 - Within 2 sentences / 300 characters maximum.
 - Encourage users to check the linked sources for details.
 - Do NOT include citation markers like [1] or [2] - the UI will add them automatically.

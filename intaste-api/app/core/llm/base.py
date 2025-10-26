@@ -94,6 +94,7 @@ class LLMClient(Protocol):
         normalized_query: str,
         citations_data: list[dict[str, Any]],
         followups: list[str] | None = None,
+        language: str | None = None,
         timeout_ms: int | None = None,
     ) -> ComposeOutput:
         """Compose brief answer from search results."""
@@ -105,6 +106,7 @@ class LLMClient(Protocol):
         normalized_query: str,
         citations_data: list[dict[str, Any]],
         followups: list[str] | None = None,
+        language: str | None = None,
         timeout_ms: int | None = None,
     ) -> AsyncGenerator[str]:
         """Compose answer with streaming response. Yields text chunks."""
