@@ -260,5 +260,116 @@ describe('sanitizeHtml', () => {
       // Restore window
       global.window = originalWindow;
     });
+
+    it('should remove overlapping tags (<<script>script>) - CVE bypass attack', () => {
+      // This test verifies the fix for incomplete multi-character sanitization
+      const originalWindow = global.window;
+      // @ts-ignore
+      delete global.window;
+
+      const dirty = '<<script>script>alert("xss")</script>';
+      const clean = sanitizeHtml(dirty);
+
+      // After iterative sanitization, all tags should be removed
+      expect(clean).not.toContain('<script');
+      expect(clean).not.toContain('script>');
+      expect(clean).not.toContain('</script>');
+      expect(clean).not.toContain('<');
+      expect(clean).toContain('alert'); // Text content should remain
+
+      // Restore window
+      global.window = originalWindow;
+    });
+
+    it('should remove deeply nested malformed tags', () => {
+      const originalWindow = global.window;
+      // @ts-ignore
+      delete global.window;
+
+      const dirty = '<<<div><script>>>malicious</script></div>>';
+      const clean = sanitizeHtml(dirty);
+
+      // All tag-like structures should be removed
+      expect(clean).not.toContain('<');
+      expect(clean).not.toContain('>');
+      expect(clean).toBe('malicious');
+
+      // Restore window
+      global.window = originalWindow;
+    });
+
+    it('should handle tag-like strings that are not actually tags', () => {
+      const originalWindow = global.window;
+      // @ts-ignore
+      delete global.window;
+
+      const dirty = 'Use <variable> or <function> syntax in code';
+      const clean = sanitizeHtml(dirty);
+
+      // Simple < > patterns should also be removed
+      expect(clean).not.toContain('<');
+      expect(clean).not.toContain('>');
+      expect(clean).toBe('Use  or  syntax in code');
+
+      // Restore window
+      global.window = originalWindow;
+    });
+
+    it('should handle complex nested attack pattern', () => {
+      const originalWindow = global.window;
+      // @ts-ignore
+      delete global.window;
+
+      // Multiple levels of nesting to test iterative approach
+      const dirty = '<div><<strong><<em><<mark>nested</mark>></em>></strong>></div>';
+      const clean = sanitizeHtml(dirty);
+
+      expect(clean).not.toContain('<');
+      expect(clean).not.toContain('>');
+      expect(clean).toBe('nested');
+
+      // Restore window
+      global.window = originalWindow;
+    });
+
+    it('should handle mixed malformed and well-formed tags', () => {
+      const originalWindow = global.window;
+      // @ts-ignore
+      delete global.window;
+
+      const dirty = 'Normal <em>text</em> with <<script>malicious>content</script>';
+      const clean = sanitizeHtml(dirty);
+
+      expect(clean).not.toContain('<');
+      expect(clean).not.toContain('>');
+      expect(clean).toContain('Normal');
+      expect(clean).toContain('text');
+      expect(clean).toContain('malicious');
+
+      // Restore window
+      global.window = originalWindow;
+    });
+
+    it('should complete within iteration limit for extremely nested input', () => {
+      const originalWindow = global.window;
+      // @ts-ignore
+      delete global.window;
+
+      // Create a very deeply nested structure that would take many iterations
+      // but should still complete within MAX_ITERATIONS (10)
+      let dirty = 'content';
+      for (let i = 0; i < 15; i++) {
+        dirty = `<div>${dirty}</div>`;
+      }
+
+      const clean = sanitizeHtml(dirty);
+
+      // Should remove as many tags as possible within iteration limit
+      expect(clean).toContain('content');
+      // May still have some tags if hitting the iteration limit, but should not hang
+
+      // Restore window
+      global.window = originalWindow;
+    });
   });
 });

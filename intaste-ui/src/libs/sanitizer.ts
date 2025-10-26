@@ -41,7 +41,9 @@ import DOMPurify from 'dompurify';
  * - `<a href="..." title="...">`: Links with href (http/https only) and title
  *
  * **Server-side rendering:**
- * When running on the server (window undefined), falls back to stripping all HTML tags.
+ * When running on the server (window undefined), falls back to iteratively
+ * stripping all HTML tags until no tags remain. This prevents bypass attacks
+ * from malformed or overlapping tags (e.g., <<script>script>).
  *
  * @param dirty - The potentially unsafe HTML string to sanitize
  * @returns Sanitized HTML string safe for rendering with dangerouslySetInnerHTML
@@ -69,8 +71,21 @@ import DOMPurify from 'dompurify';
  */
 export function sanitizeHtml(dirty: string): string {
   if (typeof window === 'undefined') {
-    // Server-side: return plain text
-    return dirty.replace(/<[^>]*>/g, '');
+    // Server-side: iteratively remove all HTML tags to prevent bypass attacks
+    // from malformed or overlapping tags (e.g., <<script>script>)
+    let sanitized = dirty;
+    let previous;
+    let iterations = 0;
+    const MAX_ITERATIONS = 10; // Safety limit to prevent DoS
+
+    do {
+      previous = sanitized;
+      // Remove both complete tags (<...>) and orphaned < or > characters
+      sanitized = sanitized.replace(/<[^>]*>|[<>]/g, '');
+      iterations++;
+    } while (sanitized !== previous && iterations < MAX_ITERATIONS);
+
+    return sanitized;
   }
 
   return DOMPurify.sanitize(dirty, {
