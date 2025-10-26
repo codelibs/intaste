@@ -25,6 +25,7 @@ from fastapi.responses import StreamingResponse
 
 from app.core.config import settings
 from app.core.security.auth import verify_api_token
+from app.i18n import _
 from app.schemas.assist import AssistQueryRequest
 from app.services.assist import AssistService
 
@@ -79,10 +80,14 @@ async def stream_assist_response(
     )
 
     try:
+        # Get language from options
+        language = request_options.get("language", "en")
+
         # Send start event
         event_count += 1
         start_event = await format_sse(
-            "start", {"message": "Processing query...", "query": request.query}
+            "start",
+            {"message": _("Processing query...", language=language), "query": request.query},
         )
         logger.debug(
             f"[{session_id}] Streaming event #{event_count}: type=start, size={len(start_event)} bytes"

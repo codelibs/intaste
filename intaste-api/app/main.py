@@ -29,6 +29,7 @@ from .core.search_agent.factory import create_search_agent
 from .core.search_provider.base import SearchProvider
 from .core.search_provider.factory import SearchProviderFactory
 from .core.security.middleware import add_request_id_middleware, setup_cors
+from .i18n import _
 from .routers import assist_stream, health, models
 from .services.assist import AssistService
 
@@ -184,7 +185,7 @@ async def global_exception_handler(request: Request, exc: Exception) -> JSONResp
         status_code=500,
         content={
             "code": "INTERNAL",
-            "message": "Internal server error",
+            "message": _("Internal server error", language="en"),
             "request_id": request_id,
         },
     )

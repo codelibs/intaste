@@ -16,6 +16,7 @@ API authentication using X-Intaste-Token header.
 
 from fastapi import Header, HTTPException, status
 
+from ...i18n import _
 from ..config import settings
 
 
@@ -39,7 +40,7 @@ async def verify_api_token(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail={
                 "code": "UNAUTHORIZED",
-                "message": "Invalid or missing API token",
+                "message": _("Invalid or missing API token", language="en"),
             },
         )
     return x_intaste_token

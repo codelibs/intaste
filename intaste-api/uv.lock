@@ -25,65 +25,12 @@ wheels = [
 ]
 
 [[package]]
-name = "intaste-api"
-version = "0.1.0"
-source = { editable = "." }
-dependencies = [
-    { name = "fastapi" },
-    { name = "httpx" },
-    { name = "pydantic" },
-    { name = "pydantic-settings" },
-    { name = "uvicorn", extra = ["standard"] },
-]
-
-[package.optional-dependencies]
-dev = [
-    { name = "black" },
-    { name = "httpx" },
-    { name = "mypy" },
-    { name = "pytest" },
-    { name = "pytest-asyncio" },
-    { name = "pytest-cov" },
-    { name = "pytest-httpx" },
-    { name = "respx" },
-    { name = "ruff" },
-]
-
-[package.dev-dependencies]
-dev = [
-    { name = "pytest" },
-    { name = "pytest-asyncio" },
-    { name = "pytest-cov" },
-    { name = "pytest-httpx" },
-    { name = "respx" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "black", marker = "extra == 'dev'", specifier = ">=25.9.0" },
-    { name = "fastapi", specifier = ">=0.118.3" },
-    { name = "httpx", specifier = ">=0.28.1" },
-    { name = "httpx", marker = "extra == 'dev'", specifier = ">=0.28.1" },
-    { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.18.2" },
-    { name = "pydantic", specifier = ">=2.12.0" },
-    { name = "pydantic-settings", specifier = ">=2.11.0" },
-    { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.4.2" },
-    { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=1.2.0" },
-    { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=7.0.0" },
-    { name = "pytest-httpx", marker = "extra == 'dev'", specifier = ">=0.35.0" },
-    { name = "respx", marker = "extra == 'dev'", specifier = ">=0.22.0" },
-    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.14.0" },
-    { name = "uvicorn", extras = ["standard"], specifier = ">=0.37.0" },
-]
-provides-extras = ["dev"]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "pytest", specifier = ">=8.4.2" },
-    { name = "pytest-asyncio", specifier = ">=1.2.0" },
-    { name = "pytest-cov", specifier = ">=7.0.0" },
-    { name = "pytest-httpx", specifier = ">=0.35.0" },
-    { name = "respx", specifier = ">=0.22.0" },
+name = "babel"
+version = "2.17.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/7d/6b/d52e42361e1aa00709585ecc30b3f9684b3ab62530771402248b1b1d6240/babel-2.17.0.tar.gz", hash = "sha256:0c54cffb19f690cdcc52a3b50bcbf71e07a808d1c80d549f2459b9d2cf0afb9d", size = 9951852, upload-time = "2025-02-01T15:17:41.026Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/b7/b8/3fe70c75fe32afc4bb507f75563d39bc5642255d1d94f1f23604725780bf/babel-2.17.0-py3-none-any.whl", hash = "sha256:4d0b53093fdfb4b21c92b5213dba5a1b23885afa8383709427046b21c366e5f2", size = 10182537, upload-time = "2025-02-01T15:17:37.39Z" },
 ]
 
 [[package]]
@@ -287,6 +234,70 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/f2/97/ebf4da567aa6827c909642694d71c9fcf53e5b504f2d96afea02718862f3/iniconfig-2.1.0.tar.gz", hash = "sha256:3abbd2e30b36733fee78f9c7f7308f2d0050e88f0087fd25c2645f63c773e1c7", size = 4793, upload-time = "2025-03-19T20:09:59.721Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/2c/e1/e6716421ea10d38022b952c159d5161ca1193197fb744506875fbb87ea7b/iniconfig-2.1.0-py3-none-any.whl", hash = "sha256:9deba5723312380e77435581c6bf4935c94cbfab9b1ed33ef8d238ea168eb760", size = 6050, upload-time = "2025-03-19T20:10:01.071Z" },
+]
+
+[[package]]
+name = "intaste-api"
+version = "0.1.0"
+source = { editable = "." }
+dependencies = [
+    { name = "fastapi" },
+    { name = "httpx" },
+    { name = "pydantic" },
+    { name = "pydantic-settings" },
+    { name = "uvicorn", extra = ["standard"] },
+]
+
+[package.optional-dependencies]
+dev = [
+    { name = "babel" },
+    { name = "black" },
+    { name = "httpx" },
+    { name = "mypy" },
+    { name = "pytest" },
+    { name = "pytest-asyncio" },
+    { name = "pytest-cov" },
+    { name = "pytest-httpx" },
+    { name = "respx" },
+    { name = "ruff" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "pytest" },
+    { name = "pytest-asyncio" },
+    { name = "pytest-cov" },
+    { name = "pytest-httpx" },
+    { name = "respx" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "babel", marker = "extra == 'dev'", specifier = ">=2.14.0" },
+    { name = "black", marker = "extra == 'dev'", specifier = ">=25.9.0" },
+    { name = "fastapi", specifier = ">=0.118.3" },
+    { name = "httpx", specifier = ">=0.28.1" },
+    { name = "httpx", marker = "extra == 'dev'", specifier = ">=0.28.1" },
+    { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.18.2" },
+    { name = "pydantic", specifier = ">=2.12.0" },
+    { name = "pydantic-settings", specifier = ">=2.11.0" },
+    { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.4.2" },
+    { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=1.2.0" },
+    { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=7.0.0" },
+    { name = "pytest-httpx", marker = "extra == 'dev'", specifier = ">=0.35.0" },
+    { name = "respx", marker = "extra == 'dev'", specifier = ">=0.22.0" },
+    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.14.0" },
+    { name = "uvicorn", extras = ["standard"], specifier = ">=0.37.0" },
+]
+provides-extras = ["dev"]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "pytest", specifier = ">=8.4.2" },
+    { name = "pytest-asyncio", specifier = ">=1.2.0" },
+    { name = "pytest-cov", specifier = ">=7.0.0" },
+    { name = "pytest-httpx", specifier = ">=0.35.0" },
+    { name = "respx", specifier = ">=0.22.0" },
 ]
 
 [[package]]

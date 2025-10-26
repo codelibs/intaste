@@ -22,6 +22,7 @@ from typing import Any
 import httpx
 from pydantic import ValidationError
 
+from ...i18n import _
 from .base import ComposeOutput, IntentOutput, MergeOutput, RelevanceOutput
 from .prompts import (
     COMPOSE_SYSTEM_PROMPT,
@@ -267,16 +268,9 @@ class OllamaClient:
             )
 
             # Fallback: return generic message in appropriate language
-            fallback_messages = {
-                "ja": "検索結果が表示されています。詳細は各ソースをご確認ください。",
-                "en": "Results are displayed. Please review the sources for details.",
-                "zh-CN": "搜索结果已显示。请查看各来源以获取详细信息。",
-                "zh-TW": "搜尋結果已顯示。請查看各來源以獲取詳細資訊。",
-                "de": "Suchergebnisse werden angezeigt. Bitte überprüfen Sie die Quellen für Details.",
-                "es": "Se muestran los resultados. Por favor, revise las fuentes para obtener detalles.",
-                "fr": "Les résultats sont affichés. Veuillez consulter les sources pour plus de détails.",
-            }
-            fallback_text = fallback_messages.get(lang, fallback_messages["en"])
+            fallback_text = _(
+                "Results are displayed. Please review the sources for details.", language=lang
+            )
             fallback_compose = ComposeOutput(
                 text=fallback_text,
                 suggested_questions=[],
@@ -367,7 +361,10 @@ class OllamaClient:
                 # Fallback: assign neutral score
                 fallback_relevance = RelevanceOutput(
                     score=0.5,
-                    reason="Unable to evaluate relevance due to LLM error. Assigned neutral score.",
+                    reason=_(
+                        "Unable to evaluate relevance due to LLM error. Assigned neutral score.",
+                        language="en",
+                    ),
                 )
                 logger.debug(f"Using fallback relevance: {fallback_relevance}")
                 return fallback_relevance
@@ -466,7 +463,10 @@ class OllamaClient:
                 best_agent = max(agent_results, key=lambda x: x[3])  # x[3] is max_score
                 fallback_merge = MergeOutput(
                     selected_agent_ids=[best_agent[0]],
-                    reason="Unable to evaluate results due to LLM error. Selected agent with highest relevance score.",
+                    reason=_(
+                        "Unable to evaluate results due to LLM error. Selected agent with highest relevance score.",
+                        language="en",
+                    ),
                     merge_strategy="single",
                 )
                 logger.debug(f"Using fallback merge: {fallback_merge}")
@@ -479,7 +479,7 @@ class OllamaClient:
             title = cit.get("title", "Untitled")
             snippet = cit.get("snippet", "")[:200]  # Limit snippet length
             lines.append(f"[{idx}] {title}\n{snippet}")
-        return "\n\n".join(lines) if lines else "No search results available."
+        return "\n\n".join(lines) if lines else _("No search results available.", language="en")
 
     async def _complete(
         self,
@@ -755,7 +755,7 @@ class OllamaClient:
             logger.debug(
                 f"Stream progress before timeout: chunks={chunk_count}, total_chars={total_chars}"
             )
-            yield "[Error: Response timeout]"
+            yield _("[Error: Response timeout]", language="en")
         except httpx.HTTPStatusError as e:
             elapsed_ms = int((time.time() - start_time) * 1000)
             logger.error(
@@ -774,7 +774,7 @@ class OllamaClient:
             logger.debug(
                 f"Stream error details: type={type(e).__name__}, chunks_received={chunk_count}"
             )
-            yield "[Error: Streaming failed]"
+            yield _("[Error: Streaming failed]", language="en")
 
     async def close(self) -> None:
         """Close HTTP client."""
