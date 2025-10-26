@@ -156,15 +156,17 @@ class OllamaClient:
         normalized_query: str,
         citations_data: list[dict[str, Any]],
         followups: list[str] | None = None,
+        language: str | None = None,
         timeout_ms: int | None = None,
     ) -> ComposeOutput:
         """
         Compose brief answer from search results.
         """
+        lang = language or "en"
         actual_timeout = timeout_ms or self.timeout_ms
 
         logger.debug(
-            f"Compose started: model={self.model}, timeout={actual_timeout}ms, citations_count={len(citations_data)}"
+            f"Compose started: model={self.model}, timeout={actual_timeout}ms, citations_count={len(citations_data)}, language={lang}"
         )
         logger.debug(
             f"Compose input: query={query!r}, normalized_query={normalized_query!r}, followups={followups}"
@@ -178,6 +180,7 @@ class OllamaClient:
             query=query,
             normalized_query=normalized_query,
             ambiguity="medium",  # Could be passed from intent
+            language=lang,
             followups_json=followups_json,
             citations_text=citations_text,
         )
@@ -263,12 +266,22 @@ class OllamaClient:
                 f"Failed JSON output: {json_output if 'json_output' in locals() else 'N/A'}"
             )
 
-            # Fallback: return generic message
+            # Fallback: return generic message in appropriate language
+            fallback_messages = {
+                "ja": "検索結果が表示されています。詳細は各ソースをご確認ください。",
+                "en": "Results are displayed. Please review the sources for details.",
+                "zh-CN": "搜索结果已显示。请查看各来源以获取详细信息。",
+                "zh-TW": "搜尋結果已顯示。請查看各來源以獲取詳細資訊。",
+                "de": "Suchergebnisse werden angezeigt. Bitte überprüfen Sie die Quellen für Details.",
+                "es": "Se muestran los resultados. Por favor, revise las fuentes para obtener detalles.",
+                "fr": "Les résultats sont affichés. Veuillez consulter les sources pour plus de détails.",
+            }
+            fallback_text = fallback_messages.get(lang, fallback_messages["en"])
             fallback_compose = ComposeOutput(
-                text="Results are displayed. Please review the sources for details.",
+                text=fallback_text,
                 suggested_questions=[],
             )
-            logger.debug(f"Using fallback compose: {fallback_compose}")
+            logger.debug(f"Using fallback compose ({lang}): {fallback_compose}")
             return fallback_compose
 
     async def relevance(
@@ -644,6 +657,7 @@ class OllamaClient:
         normalized_query: str,
         citations_data: list[dict[str, Any]],
         followups: list[str] | None = None,
+        language: str | None = None,
         timeout_ms: int | None = None,
     ) -> AsyncGenerator[str]:
         """
@@ -652,10 +666,11 @@ class OllamaClient:
         """
         import time
 
+        lang = language or "en"
         actual_timeout = timeout_ms or self.timeout_ms
 
         logger.debug(
-            f"Compose stream started: model={self.model}, timeout={actual_timeout}ms, citations_count={len(citations_data)}"
+            f"Compose stream started: model={self.model}, timeout={actual_timeout}ms, citations_count={len(citations_data)}, language={lang}"
         )
         logger.debug(
             f"Compose stream input: query={query!r}, normalized_query={normalized_query!r}"
@@ -668,6 +683,7 @@ class OllamaClient:
             query=query,
             normalized_query=normalized_query,
             ambiguity="medium",
+            language=lang,
             citations_text=citations_text,
         )
 

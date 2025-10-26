@@ -399,3 +399,120 @@ async def test_stream_query_error_handling(
     # Verify complete event has empty followups due to intent failure
     complete_event = next(e for e in events if e["event"] == "complete")
     assert complete_event["data"]["answer"]["suggested_questions"] == []
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_stream_query_with_language_option(
+    async_client, auth_headers, mock_search_provider, mock_llm_client
+):
+    """Test streaming query with language option"""
+    from app.core.search_agent.fess import FessSearchAgent
+    from app.services.assist import AssistService
+    from app.core.search_provider.base import SearchResult, SearchHit
+
+    # Mock intent extraction
+    from app.core.llm.base import IntentOutput
+
+    async def mock_intent(*args, **kwargs):
+        # Verify language parameter is passed
+        assert "language" in kwargs
+        assert kwargs["language"] == "ja"
+        return IntentOutput(
+            normalized_query="パスワードポリシー",
+            filters=None,
+            followups=["パスワードの要件は何ですか？"],
+            ambiguity="low",
+        )
+
+    mock_llm_client.intent = mock_intent
+
+    # Mock search
+    mock_search_provider.search.return_value = SearchResult(
+        total=1,
+        hits=[
+            SearchHit(
+                id="1",
+                title="Test Document",
+                url="https://example.com/doc",
+                snippet="Test content",
+                score=0.95,
+            )
+        ],
+        page=1,
+        size=5,
+    )
+
+    # Mock relevance evaluation
+    from app.core.llm.base import RelevanceOutput
+
+    async def mock_relevance(*args, **kwargs):
+        return RelevanceOutput(score=0.9, reason="Highly relevant")
+
+    mock_llm_client.relevance = mock_relevance
+
+    # Mock streaming response
+    async def mock_compose_stream(*args, **kwargs):
+        # Verify language parameter is passed
+        assert "language" in kwargs
+        assert kwargs["language"] == "ja"
+        yield "検索結果が"
+        yield "表示されています。"
+
+    mock_llm_client.compose_stream = mock_compose_stream
+
+    search_agent = FessSearchAgent(
+        search_provider=mock_search_provider,
+        llm_client=mock_llm_client,
+        intent_timeout_ms=2000,
+        search_timeout_ms=2000,
+    )
+    assist_service = AssistService(search_agent=search_agent, llm_client=mock_llm_client)
+
+    from unittest.mock import patch
+
+    with patch("app.main.assist_service", assist_service):
+        response = await async_client.post(
+            "/api/v1/assist/query",
+            json={
+                "query": "パスワードポリシーは何ですか？",
+                "options": {"language": "ja"},
+            },
+            headers={**auth_headers, "Accept": "text/event-stream"},
+        )
+
+    assert response.status_code == 200
+
+    # Parse events
+    events = []
+    for line in response.text.strip().split("\n\n"):
+        if line:
+            lines = line.split("\n")
+            event_type = None
+            event_data = None
+
+            for l in lines:
+                if l.startswith("event: "):
+                    event_type = l.replace("event: ", "").strip()
+                elif l.startswith("data: "):
+                    event_data = json.loads(l.replace("data: ", ""))
+
+            if event_type and event_data:
+                events.append({"event": event_type, "data": event_data})
+
+    # Verify events were emitted
+    event_types = [e["event"] for e in events]
+    assert "start" in event_types
+    assert "intent" in event_types
+    assert "citations" in event_types
+    assert "chunk" in event_types
+    assert "complete" in event_types
+
+    # Verify Japanese content in chunks
+    chunk_events = [e for e in events if e["event"] == "chunk"]
+    all_text = "".join([e["data"]["text"] for e in chunk_events])
+    assert "検索結果が表示されています。" == all_text
+
+    # Verify complete event
+    complete_event = next(e for e in events if e["event"] == "complete")
+    assert "検索結果が表示されています。" in complete_event["data"]["answer"]["text"]

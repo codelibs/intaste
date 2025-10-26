@@ -247,6 +247,7 @@ async def stream_assist_response(
             normalized_query=intent_data.normalized_query,
             citations_data=citations_for_llm,
             followups=intent_data.followups,
+            language=request_options.get("language", "en"),
             timeout_ms=settings.compose_timeout_ms,
         )
         async for chunk in compose_stream:

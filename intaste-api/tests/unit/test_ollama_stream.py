@@ -241,3 +241,39 @@ async def test_compose_stream_unicode(ollama_client, httpx_mock):
         chunks.append(chunk)
 
     assert chunks == ["日本語 ", "テスト ", "🚀"]
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_compose_stream_with_language(ollama_client, httpx_mock):
+    """Test streaming with language parameter."""
+    stream_data = [
+        {"message": {"content": "検索結果が"}, "done": False},
+        {"message": {"content": "表示されています。"}, "done": False},
+        {"message": {"content": ""}, "done": True},
+    ]
+
+    ndjson_content = "\n".join(json.dumps(item) for item in stream_data)
+
+    httpx_mock.add_response(
+        url="http://localhost:11434/api/chat",
+        method="POST",
+        status_code=200,
+        content=ndjson_content.encode("utf-8"),
+    )
+
+    chunks = []
+    async for chunk in ollama_client.compose_stream(
+        query="パスワードポリシーは？",
+        normalized_query="パスワードポリシー",
+        citations_data=[{"title": "Policy", "snippet": "強力なパスワード", "url": "http://example.com"}],
+        language="ja",
+    ):
+        chunks.append(chunk)
+
+    assert chunks == ["検索結果が", "表示されています。"]
+    # Verify request was made with language parameter
+    assert len(httpx_mock.get_requests()) == 1
+    request_body = json.loads(httpx_mock.get_requests()[0].content)
+    # Verify the user message contains "ja" (language code should be in prompt)
+    assert any("ja" in str(msg.get("content", "")).lower() for msg in request_body.get("messages", []))

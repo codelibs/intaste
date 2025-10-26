@@ -15,6 +15,7 @@
 import { useState } from 'react';
 import { useAssistStore } from '@/store/assist.store';
 import { useUIStore } from '@/store/ui.store';
+import { useLanguageStore } from '@/store/language.store';
 import { useTranslation } from '@/libs/i18n/client';
 import { QueryInput } from '@/components/input/QueryInput';
 import { QueryHistory } from '@/components/history/QueryHistory';
@@ -30,6 +31,7 @@ export default function HomePage() {
   const [query, setQuery] = useState('');
   const apiToken = useUIStore((state) => state.apiToken);
   const setApiToken = useUIStore((state) => state.setApiToken);
+  const currentLanguage = useLanguageStore((state) => state.currentLanguage);
 
   const {
     loading,
@@ -67,7 +69,8 @@ export default function HomePage() {
     addQueryToHistory(query);
 
     // All queries use streaming (no separate non-streaming endpoint)
-    await send(query);
+    // Pass language option to ensure response is in the selected language
+    await send(query, { language: currentLanguage });
     // Clear query input after successful submission
     setQuery('');
   };
