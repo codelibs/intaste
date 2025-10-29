@@ -215,7 +215,7 @@ Intaste is an open-source AI-assisted search platform combining Fess search with
 
 - ✅ README.md - Quick start guide and overview
 - ✅ LICENSE - Apache License 2.0
-- ✅ CONTRIBUTING.md - Development and contribution guidelines
+- ✅ DEVELOPMENT.md - Development and contribution guidelines
 - ✅ TESTING.md - Test execution and writing guide
 - ✅ All source files have Apache License headers
 - ✅ All documentation in English
@@ -255,7 +255,7 @@ intaste/
 ├── Makefile                 ✅ Complete
 ├── LICENSE                  ✅ Apache 2.0
 ├── README.md                ✅ Complete
-└── CONTRIBUTING.md          ✅ Complete
+└── DEVELOPMENT.md           ✅ Complete
 ```
 
 ---

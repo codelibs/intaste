@@ -4,356 +4,211 @@
 
 > **An open platform for intelligent, assistive, and human-centered search**
 
-**Intaste** is an open-source platform that combines enterprise search with intelligent assistance. Designed with a human-centered philosophy, Intaste keeps users in control while providing AI-powered intent extraction and evidence-based guidance. Search results from Fess serve as transparent evidence, with LLM usage carefully limited to assistance rather than replacement. Built with Next.js (UI) and FastAPI (API).
+**Intaste** is an open-source AI-assisted search platform that combines enterprise-grade search with intelligent assistance. It uses search results as transparent evidence and provides concise, cited answers with LLM-powered understanding—keeping users in control while delivering actionable insights.
 
----
+## Why Intaste?
 
-## 1. Overview
+- **🤖 AI-Powered Intelligence**: Natural language query understanding, relevance evaluation, and evidence-based answer composition with automatic citation
+- **🏢 Enterprise Search Foundation**: Built on [Fess](https://fess.codelibs.org/), a battle-tested enterprise search platform with powerful crawling and indexing capabilities
+- **🔒 Privacy-First**: Uses local LLM (Ollama) by default—no external API calls, no data leakage, full control over your search data
+- **🌐 Open Source**: Apache 2.0 licensed with active community development and transparent architecture
+- **⚡ Real-Time Streaming**: Server-Sent Events (SSE) for instant answer updates and responsive user experience
+- **🌍 Multilingual**: Supports English, Japanese, Chinese (Simplified/Traditional), German, Spanish, and French
 
-- **Architecture**: `intaste-ui` (Next.js) / `intaste-api` (FastAPI) / `fess` (Search) / `opensearch` (For Fess) / `ollama` (LLM)
-- **Principle**: Intaste **does not directly access OpenSearch** (only via Fess REST/OpenAPI)
-- **Default Model**: Ollama `gpt-oss` (configurable)
-- **License**: Apache License 2.0
+## System Requirements
 
----
+- **Docker**: 24+ with Docker Compose v2+
+- **Memory**: 6-8GB RAM recommended (includes OpenSearch, Fess, and Ollama)
+- **CPU**: x86_64 (arm64 supported, depending on model compatibility)
+- **GPU**: NVIDIA GPU recommended for faster responses (CPU-only mode available but slower)
 
-## 2. Requirements
+> **Note**: Intaste uses Ollama with the `gpt-oss` model by default. GPU acceleration significantly improves response times, but the system works on CPU-only machines with increased latency.
 
-- Docker 24+ / Docker Compose v2+
-- CPU x86_64 (arm64 also works, depending on Ollama model compatibility)
-- Memory: 6–8GB recommended (including OpenSearch/Fess/Ollama)
+## Quick Start (5 Minutes)
 
----
-
-## 3. Quick Start (5 Minutes)
+### 1. Clone and Setup
 
 ```bash
-# 1) Clone repository
-$ git clone https://github.com/codelibs/intaste.git
-$ cd intaste
+# Clone repository
+git clone https://github.com/codelibs/intaste.git
+cd intaste
 
-# 2) Setup environment variables
-$ cp .env.example .env
-$ sed -i.bak \
+# Setup environment variables
+cp .env.example .env
+sed -i.bak \
   -e "s/INTASTE_API_TOKEN=.*/INTASTE_API_TOKEN=$(openssl rand -hex 24)/" \
   -e "s/INTASTE_UID=.*/INTASTE_UID=$(id -u)/" \
   -e "s/INTASTE_GID=.*/INTASTE_GID=$(id -g)/" \
   .env
 
-# 3) Initialize data directories (Linux only)
-$ make init-dirs
+# Initialize data directories (Linux only, requires sudo)
+sudo mkdir -p data/{opensearch,dictionary,ollama}
+sudo chown -R $(id -u):$(id -g) data/
 # Note: macOS/Windows users can skip this step
-
-# 4) Start services (build on first run)
-$ docker compose up -d --build
-
-# 5) Pull LLM model (first time only)
-$ docker compose exec ollama ollama pull gpt-oss
-
-# 6) Health check
-$ curl -fsS http://localhost:3000 > /dev/null && echo 'UI OK'
-$ curl -fsS http://localhost:8000/api/v1/health && echo 'API OK'
-
-# 7) Access in browser
-# http://localhost:3000
 ```
 
-> **Note**: Initial startup of OpenSearch/Fess may take several minutes. Compose uses `depends_on + healthcheck` to control startup order.
-
----
-
-## 4. Health Checks
-
-Intaste provides multiple health check endpoints for monitoring and orchestration:
-
-### 4.1 Basic Health Check
+### 2. Start Services
 
 ```bash
-curl http://localhost:8000/api/v1/health
-# Returns: {"status":"ok"}
+# Start all services
+docker compose up -d --build
+
+# Pull LLM model (first time only)
+docker compose exec ollama ollama pull gpt-oss
+
+# Check health
+curl -sS http://localhost:8000/api/v1/health && echo " - API OK"
+curl -sS http://localhost:3000 > /dev/null && echo "UI OK"
 ```
 
-### 4.2 Liveness Probe (Kubernetes)
+> **First Startup**: OpenSearch and Fess initialization may take 3-5 minutes. Wait until health checks return successfully.
 
-```bash
-curl http://localhost:8000/api/v1/health/live
-# Returns: {"status":"ok"}
+### 3. Access Intaste
+
+Open your browser and navigate to:
+
+```
+http://localhost:3000
 ```
 
-- Use for Kubernetes `livenessProbe`
-- Checks if the process is alive
-- Does NOT check dependencies
+## Your First Search
 
-### 4.3 Readiness Probe (Kubernetes)
+Before you can search with Intaste, you need to configure Fess to crawl and index content.
 
-```bash
-curl http://localhost:8000/api/v1/health/ready
-# Returns: {"status":"ready"} or {"status":"not_ready"}
+### 1. Access Fess Admin Panel
+
+Navigate to Fess:
+
+```
+http://localhost:8080/admin
 ```
 
-- Use for Kubernetes `readinessProbe`
-- Checks if service is ready to accept traffic
-- Verifies Fess and Ollama are healthy
-- Returns HTTP 503 if not ready
+**Default credentials**: `admin` / `admin`
 
-### 4.4 Detailed Health Check
+### 2. Create a Crawler Configuration
 
-```bash
-curl http://localhost:8000/api/v1/health/detailed | jq .
-```
+1. Go to **Crawler > Web Crawler**
+2. Click **Create New**
+3. Configure the crawler:
+   - **Name**: Give your crawler a descriptive name (e.g., "Company Documentation")
+   - **URLs**: Enter the website URL you want to crawl (e.g., `https://example.com/docs/`)
+   - **Max Access Count**: Set crawl depth limit (e.g., `1000`)
+   - **Depth**: Set how many levels deep to crawl (e.g., `3`)
+4. Click **Create**
 
-Example response:
+### 3. Start Crawling
 
-```json
-{
-  "status": "healthy",
-  "timestamp": "2025-01-10T12:34:56.789Z",
-  "version": "0.1.0",
-  "dependencies": {
-    "fess": {
-      "status": "healthy",
-      "response_time_ms": 45,
-      "error": null
-    },
-    "ollama": {
-      "status": "healthy",
-      "response_time_ms": 123,
-      "error": null
-    }
-  }
-}
-```
+1. Go to **System > Scheduler**
+2. Find the **Default Crawler** job
+3. Click **Start Now**
+4. Monitor crawl progress in **System > Crawling Info**
 
-**Status values**:
+> **Tip**: Start with a small website (10-100 pages) for testing. Large crawls can take hours.
 
-- `healthy` - All dependencies are healthy
-- `degraded` - Some dependencies are degraded but service still operational
-- `unhealthy` - Critical dependencies are down
+### 4. Perform Your First Search
 
-See [intaste-api/kubernetes-example.yaml](intaste-api/kubernetes-example.yaml) for Kubernetes deployment configuration.
+1. Open Intaste at `http://localhost:3000`
+2. Enter a natural language question related to your crawled content (e.g., "What are the system requirements?")
+3. Wait for the AI-powered answer with citations like `[1][2]`
+4. Click citation numbers to view source evidence in the sidebar
+5. Try suggested follow-up questions to explore further
 
----
+> **Note**: If no results appear, ensure crawling has completed and indexed documents are visible in Fess search (`http://localhost:8080/search`).
 
-## 5. Testing the System
+## Using Intaste
 
-### 5.1 API Smoke Test
+### Search Interface
 
-```bash
-# Use INTASTE_API_TOKEN from .env for X-Intaste-Token header
-TOKEN=$(grep ^INTASTE_API_TOKEN .env | cut -d= -f2)
+- **Query Input**: Enter natural language questions or keywords
+- **Answer Display**: View AI-generated answers with citation markers (`[1]`, `[2]`, etc.)
+- **Evidence Panel**: Right sidebar shows source documents with relevance scores
+- **Follow-ups**: Suggested questions appear below the answer for conversational exploration
 
-curl -sS -H "X-Intaste-Token: $TOKEN" \
-     -H 'Content-Type: application/json' \
-     -X POST http://localhost:8000/api/v1/assist/query \
-     -d '{"query":"What is the latest security policy?"}' | jq .
-```
+### Language Selection
 
-- Success if you receive `answer.text` with `[1][2]…` style `citations`.
+Intaste automatically responds in your selected language. Use the language selector in the top-right corner to switch between:
 
-### 5.2 Model List / Selection
+- English (en)
+- Japanese (ja)
+- Chinese Simplified (zh-CN)
+- Chinese Traditional (zh-TW)
+- German (de)
+- Spanish (es)
+- French (fr)
 
-```bash
-curl -sS -H "X-Intaste-Token: $TOKEN" http://localhost:8000/api/v1/models | jq .
-# Example: {"default":"gpt-oss","available":["gpt-oss","mistral","llama3"]}
+### Understanding Citations
 
-curl -sS -H "X-Intaste-Token: $TOKEN" \
-     -H 'Content-Type: application/json' \
-     -X POST http://localhost:8000/api/v1/models/select \
-     -d '{"model":"mistral","scope":"session","session_id":"00000000-0000-0000-0000-000000000000"}'
-```
+Citations link answers to source evidence:
 
-### 5.3 Streaming Responses (SSE)
+- `[1][2]`: Answer is supported by documents 1 and 2
+- Click numbers to view source snippets in the sidebar
+- Click **"Open in Fess"** to view the full original document
 
-Intaste streams LLM responses in real-time using Server-Sent Events (SSE).
+## Configuration
 
-**Using the UI**:
-- Streaming is enabled by default
-- Answer text appears incrementally as it's generated
-- Citations are displayed as soon as search completes
+### Essential Environment Variables
 
-**Testing the API**:
-```bash
-# Server-Sent Events (SSE) endpoint
-curl -sS -H "X-Intaste-Token: $TOKEN" \
-     -H 'Content-Type: application/json' \
-     -X POST http://localhost:8000/api/v1/assist/query \
-     -d '{"query":"What is the latest security policy?"}'
-
-# Event stream format:
-# event: start
-# data: {"message":"Processing query..."}
-#
-# event: intent
-# data: {"normalized_query":"...","filters":{...}}
-#
-# event: citations
-# data: {"citations":[...]}
-#
-# event: chunk
-# data: {"text":"Answer text..."}
-#
-# event: complete
-# data: {"answer":{...},"session":{...},"timings":{...}}
-```
-
-**Note**: All queries use streaming by default. The unified `/api/v1/assist/query` endpoint supports SSE for real-time updates.
-
----
-
-## 6. Development Mode (Hot Reload)
-
-```bash
-# Specify dev compose as layer
-$ docker compose -f compose.yaml -f compose.dev.yaml up -d --build
-
-# Follow logs
-$ docker compose logs -f intaste-api intaste-ui
-```
-
-- `intaste-api`: `uvicorn --reload`
-- `intaste-ui`: `npm run dev -p 3000`
-
----
-
-## 7. Configuration (.env)
+Edit `.env` to customize Intaste:
 
 | Variable | Default | Description |
 |---|---|---|
-| `INTASTE_API_TOKEN` | — | UI→API authentication key (required) |
-| `INTASTE_DEFAULT_MODEL` | `gpt-oss` | Default Ollama model |
-| `INTASTE_SEARCH_PROVIDER` | `fess` | Search provider (v0.1 supports fess only) |
-| `INTASTE_LLM_PROVIDER` | `ollama` | LLM provider (v0.1 supports ollama only) |
-| `FESS_BASE_URL` | `http://intaste-fess:8080` | Internal URL for API to call Fess |
-| `OLLAMA_BASE_URL` | `http://intaste-ollama:11434` | Internal URL for API to call Ollama |
-| `INTASTE_LLM_WARMUP_ENABLED` | `true` | Preload model on startup for faster first requests |
-| `INTASTE_UID` | `1000` | Docker user ID for file permissions |
-| `INTASTE_GID` | `1000` | Docker group ID for file permissions |
-| `NEXT_PUBLIC_API_BASE` | `/api/v1` | API base path from UI |
-| `REQ_TIMEOUT_MS` | `15000` | Total request timeout budget (ms) |
-| `TZ` | `UTC` | Timezone |
+| `INTASTE_API_TOKEN` | *(required)* | Authentication token for UI↔API communication |
+| `INTASTE_DEFAULT_MODEL` | `gpt-oss` | Default Ollama model for LLM operations |
+| `INTASTE_UID` / `INTASTE_GID` | `1000` | Docker user/group IDs for file permissions |
+| `REQ_TIMEOUT_MS` | `180000` | Total request timeout (3 minutes) |
 
-> **Security**: Set `INTASTE_API_TOKEN` to a sufficiently long random value.
+> **Security**: Always set `INTASTE_API_TOKEN` to a secure random value. Use `openssl rand -hex 24` to generate one.
 
----
+### GPU Support
 
-## 8. Directory Structure
+If you have an NVIDIA GPU:
 
-```
-intaste/
-├─ compose.yaml                # Production deployment
-├─ compose.dev.yaml            # Development (hot reload)
-├─ compose.gpu.yaml            # GPU support configuration
-├─ compose.test.yaml           # Docker-based testing
-├─ .env.example                # Environment variables sample
-├─ Makefile                    # Common commands (up/down/logs/test)
-├─ intaste-ui/                  # Next.js (App Router)
-│   ├─ app/                    # Pages
-│   ├─ src/                    # State/Components/Libs
-│   │   ├─ components/         # UI components (answer/history/input/sidebar/common)
-│   │   ├─ libs/               # Utilities (apiClient/streamingClient/sanitizer)
-│   │   ├─ store/              # Zustand state management
-│   │   └─ types/              # TypeScript type definitions
-│   └─ Dockerfile
-├─ intaste-api/                 # FastAPI
-│   ├─ app/                    # Routers/Services
-│   ├─ core/                   # LLM/Search provider abstractions
-│   └─ Dockerfile
-└─ docs/                       # Comprehensive design documentation
-```
+1. Install [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html)
+2. Start services with GPU support:
+   ```bash
+   docker compose -f compose.yaml -f compose.gpu.yaml up -d
+   ```
+3. Verify GPU detection:
+   ```bash
+   docker compose exec ollama nvidia-smi
+   ```
 
----
+## Troubleshooting
 
-## 9. Using the UI
-
-1. Enter a natural language question in the input field at the top and press Enter
-2. View the brief answer with citation markers like `[1][2]…` in the center
-3. Check selected document snippets in the right panel
-4. Click "Open in Fess" to view the original document
-5. Click suggested follow-ups at the bottom for conversational drill-down
-
-> If no citations are found, the UI provides hints for refining the search.
-
----
-
-## 10. Security Considerations
-
-- Only `intaste-ui:3000` should be externally exposed. Keep `intaste-api`, `fess`, `opensearch`, and `ollama` on internal network
-- UI→API authentication uses `X-Intaste-Token` header (no cookies)
-- UI CSP/CORS configured with minimal privileges (see Security Design Document v0.1)
-
----
-
-## 11. Troubleshooting
-
-| Symptom | Cause / Solution |
+| Issue | Solution |
 |---|---|
-| Permission denied on data/ directory (Linux) | Container UID/GID mismatch with host. Run `make init-dirs` or manually: `sudo chown -R 1000:1000 data/{opensearch,dictionary}` |
-| UI returns 404/timeout | API health check failed. Check `docker compose ps` and `docker compose logs intaste-api` |
-| Search always returns 0 results | Fess index not built. Check Fess admin panel / Crawl configuration |
-| LLM error 503 | `ollama pull gpt-oss` not executed / insufficient memory. Switch to lighter model |
-| API 401 error | `X-Intaste-Token` not set or mismatch. Sync `.env` value with UI |
-| Slow startup | OpenSearch/Fess initialization in progress. Wait until health status shows `green/yellow` |
+| **Permission denied on `data/` directory** | Run: `sudo chown -R $(id -u):$(id -g) data/` |
+| **UI shows "Connection failed"** | Check API health: `docker compose logs intaste-api` |
+| **Search returns no results** | Verify Fess crawling completed: visit `http://localhost:8080/admin` |
+| **LLM timeouts or 503 errors** | Ensure `ollama pull gpt-oss` completed. Check: `docker compose logs ollama` |
+| **Slow responses on CPU** | This is expected without GPU. Consider using a lighter model or adding GPU support |
+| **OpenSearch fails to start** | Increase Docker memory limit to 8GB or more in Docker Desktop settings |
 
----
+## Next Steps
 
-## 12. Contributing
+### For Developers
 
-1. Create an Issue with reproduction steps and expected behavior
-2. Fork → Create branch (`feat/*`, `fix/*`)
-3. Pass lint/unit tests and create PR
-4. Update design documents (docs/) for major changes
+See [DEVELOPMENT.md](DEVELOPMENT.md) for:
+- Development environment setup with hot reload
+- Architecture overview and coding standards
+- Testing guide and CI/CD workflows
+- Contributing guidelines and PR process
 
-Code conventions (recommended):
-- API: `ruff` + `black`, UI: ESLint + Prettier
-- Commit messages: Conventional Commits (`feat:`, `fix:`, `docs:` …)
+### Full Documentation
 
----
+- [TESTING.md](TESTING.md) - Comprehensive testing guide
 
-## 13. License
+## Community
+
+- **Issues**: [GitHub Issues](https://github.com/codelibs/intaste/issues) for bugs and feature requests
+- **Contributions**: We welcome contributions! See [DEVELOPMENT.md](DEVELOPMENT.md) to get started
+
+## License
 
 ```
 Apache License 2.0
-Copyright (c) 2025 CodeLibs
+Copyright (c) 2025 CodeLibs Project
 ```
 
-- Copyright notices in `NOTICE`
-- Dependent OSS licenses consolidated in `THIRD-PARTY-NOTICES` (future)
-
----
-
-## 14. Testing
-
-```bash
-# API tests (local)
-cd intaste-api
-uv run pytest --cov
-
-# UI unit tests (local)
-cd intaste-ui
-npm test
-
-# E2E tests (local)
-cd intaste-ui
-npm run test:e2e
-
-# Docker-based testing (isolated environment)
-make test-docker                # Run all tests in Docker
-make test-docker-api            # Run API tests in Docker
-make test-docker-ui             # Run UI tests in Docker
-make check-docker               # Run all checks (lint + test)
-```
-
-See [TESTING.md](TESTING.md) for detailed documentation.
-
-## 15. Documentation
-
-- [TESTING.md](TESTING.md) - Test execution and test writing guide
-- [CONTRIBUTING.md](CONTRIBUTING.md) - Development and contribution guide
-- [docs/](docs/) - Comprehensive design documents
-  - [System Architecture](docs/02_architecture/system-architecture.md)
-  - [Streaming Responses](docs/02_architecture/streaming-responses.md)
-  - [Implementation Status](docs/01_requirements/implementation-status.md)
-  - [Development Guidelines](docs/08_development/development-guidelines.md)
-- [intaste-api/README.md](intaste-api/README.md) - API specification and development guide
-- [intaste-ui/README.md](intaste-ui/README.md) - UI specification and development guide
+See [LICENSE](LICENSE) for full details.
 
