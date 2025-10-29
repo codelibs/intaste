@@ -231,7 +231,7 @@ Licensed under the Apache License, Version 2.0. See [LICENSE](../LICENSE) file f
 
 ## Contributing
 
-See [CONTRIBUTING.md](../CONTRIBUTING.md) for development guidelines.
+See [DEVELOPMENT.md](../DEVELOPMENT.md) for development guidelines.
 
 ## Support
 
