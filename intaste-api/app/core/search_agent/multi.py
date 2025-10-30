@@ -20,7 +20,7 @@ from collections.abc import AsyncGenerator
 from typing import Any
 
 from ..llm.base import LLMClient
-from ..llm.prompts import MERGE_RESULTS_SYSTEM_PROMPT, MERGE_RESULTS_USER_TEMPLATE
+from ..llm.prompts import MergeResultsParams, get_registry
 from .base import (
     BaseSearchAgent,
     CitationsEventData,
@@ -186,12 +186,15 @@ class MultiSearchAgent(BaseSearchAgent):
                 )
                 agent_results_for_llm.append((agent_id, agent_name, citations_data, max_score))
 
-            # Call LLM to merge results
+            # Call LLM to merge results - get template from registry
+            registry = get_registry()
+            merge_template = registry.get("merge_results", MergeResultsParams)
+
             merge_output = await self.llm_client.merge_results(
                 query=query,
                 agent_results=agent_results_for_llm,
-                system_prompt=MERGE_RESULTS_SYSTEM_PROMPT,
-                user_template=MERGE_RESULTS_USER_TEMPLATE,
+                system_prompt=merge_template.system_prompt,
+                user_template=merge_template.user_template,
                 timeout_ms=self.merge_timeout_ms,
             )
 

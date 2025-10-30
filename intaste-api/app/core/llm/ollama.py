@@ -24,10 +24,7 @@ from pydantic import ValidationError
 
 from ...i18n import _
 from .base import ComposeOutput, IntentOutput, MergeOutput, RelevanceOutput
-from .prompts import (
-    COMPOSE_SYSTEM_PROMPT,
-    COMPOSE_USER_TEMPLATE,
-)
+from .prompts import ComposeParams, get_registry
 
 logger = logging.getLogger(__name__)
 
@@ -61,22 +58,54 @@ class OllamaClient:
         filters: dict[str, Any] | None = None,
         query_history: list[str] | None = None,
         timeout_ms: int | None = None,
+        template_params: dict[str, Any] | None = None,
     ) -> IntentOutput:
         """
         Extract search intent from user query with optional query history context.
+
+        Args:
+            query: User's natural language query
+            system_prompt: System-level instructions for the LLM
+            user_template: User prompt template with placeholders
+            language: Response language code
+            filters: Optional search filters
+            query_history: Optional list of previous queries for context
+            timeout_ms: Timeout in milliseconds
+            template_params: Additional template parameters for custom templates (e.g., retry intent)
+                            If provided, these override the default parameters
+
+        Returns:
+            IntentOutput with normalized query, filters, followups, and ambiguity
         """
         lang = language or "ja"
-        filters_json = json.dumps(filters or {}, ensure_ascii=False)
         actual_timeout = timeout_ms or self.timeout_ms
 
-        # Format query history for prompt
-        if query_history and len(query_history) > 0:
-            history_lines = [f"{i+1}. {q}" for i, q in enumerate(query_history)]
-            query_history_text = "Previous queries (most recent first):\n" + "\n".join(
-                history_lines
-            )
+        # If template_params provided, use them directly (for custom templates like retry intent)
+        if template_params is not None:
+            # Custom template parameters (e.g., for retry intent)
+            # Ensure language is included if not already present
+            if "language" not in template_params:
+                template_params["language"] = lang
+            format_params = template_params
         else:
-            query_history_text = "No previous queries in this session."
+            # Default parameters for normal intent extraction
+            filters_json = json.dumps(filters or {}, ensure_ascii=False)
+
+            # Format query history for prompt
+            if query_history and len(query_history) > 0:
+                history_lines = [f"{i+1}. {q}" for i, q in enumerate(query_history)]
+                query_history_text = "Previous queries (most recent first):\n" + "\n".join(
+                    history_lines
+                )
+            else:
+                query_history_text = "No previous queries in this session."
+
+            format_params = {
+                "query": query,
+                "language": lang,
+                "query_history_text": query_history_text,
+                "filters_json": filters_json,
+            }
 
         logger.debug(
             f"Intent extraction started: model={self.model}, timeout={actual_timeout}ms, temperature={self.temperature}"
@@ -85,12 +114,7 @@ class OllamaClient:
             f"Intent input: query={query!r}, language={lang}, filters={filters}, history_count={len(query_history) if query_history else 0}"
         )
 
-        user_prompt = user_template.format(
-            query=query,
-            language=lang,
-            query_history_text=query_history_text,
-            filters_json=filters_json,
-        )
+        user_prompt = user_template.format(**format_params)
 
         if logger.isEnabledFor(logging.DEBUG):
             from ..config import settings
@@ -175,28 +199,31 @@ class OllamaClient:
 
         # Prepare citations text
         citations_text = self._format_citations(citations_data)
-        followups_json = json.dumps(followups or [], ensure_ascii=False)
 
-        user_prompt = COMPOSE_USER_TEMPLATE.format(
+        # Get prompt template from registry
+        registry = get_registry()
+        compose_template = registry.get("compose", ComposeParams)
+
+        # Format user prompt using Pydantic params
+        params = ComposeParams(
             query=query,
             normalized_query=normalized_query,
-            ambiguity="medium",  # Could be passed from intent
             language=lang,
-            followups_json=followups_json,
             citations_text=citations_text,
         )
+        user_prompt = compose_template.format(params)
 
         if logger.isEnabledFor(logging.DEBUG):
             from ..config import settings
 
             max_chars = settings.log_max_prompt_chars
-            logger.debug(f"Compose system prompt: {COMPOSE_SYSTEM_PROMPT[:max_chars]}")
+            logger.debug(f"Compose system prompt: {compose_template.system_prompt[:max_chars]}")
             logger.debug(f"Compose user prompt: {user_prompt[:max_chars]}")
             logger.debug(f"Compose citations text (first 300 chars): {citations_text[:300]}")
 
         try:
             json_output = await self._complete(
-                system=COMPOSE_SYSTEM_PROMPT,
+                system=compose_template.system_prompt,
                 user=user_prompt,
                 timeout_ms=actual_timeout,
             )
@@ -733,12 +760,18 @@ class OllamaClient:
             citations_data, selected_threshold=selected_threshold
         )
 
-        user_prompt = COMPOSE_USER_TEMPLATE.format(
+        # Get prompt template from registry
+        registry = get_registry()
+        compose_template = registry.get("compose", ComposeParams)
+
+        # Format user prompt using Pydantic params
+        params = ComposeParams(
             query=query,
             normalized_query=normalized_query,
             language=lang,
             citations_text=citations_text,
         )
+        user_prompt = compose_template.format(params)
 
         if logger.isEnabledFor(logging.DEBUG):
             from ..config import settings
@@ -750,7 +783,7 @@ class OllamaClient:
         payload = {
             "model": self.model,
             "messages": [
-                {"role": "system", "content": COMPOSE_SYSTEM_PROMPT},
+                {"role": "system", "content": compose_template.system_prompt},
                 {"role": "user", "content": user_prompt},
             ],
             "options": {

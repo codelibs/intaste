@@ -22,7 +22,13 @@ from collections.abc import AsyncGenerator
 from typing import Any
 
 from ..llm.base import IntentOutput, LLMClient
-from ..llm.prompts import INTENT_SYSTEM_PROMPT, INTENT_USER_TEMPLATE
+from ..llm.prompts import (
+    IntentParams,
+    RelevanceParams,
+    RetryIntentNoResultsParams,
+    RetryIntentParams,
+    get_registry,
+)
 from ..search_provider.base import SearchHit, SearchProvider, SearchQuery
 from .base import (
     BaseSearchAgent,
@@ -148,11 +154,14 @@ class FessSearchAgent(BaseSearchAgent):
                         ),
                     )
                 else:
-                    # Normal intent extraction
+                    # Normal intent extraction - get template from registry
+                    registry = get_registry()
+                    intent_template = registry.get("intent", IntentParams)
+
                     intent = await self.llm_client.intent(
                         query=query,
-                        system_prompt=INTENT_SYSTEM_PROMPT,
-                        user_template=INTENT_USER_TEMPLATE,
+                        system_prompt=intent_template.system_prompt,
+                        user_template=intent_template.user_template,
                         language=options.get("language", "en"),
                         filters=options.get("filters"),
                         query_history=options.get("query_history"),
@@ -445,7 +454,9 @@ class FessSearchAgent(BaseSearchAgent):
         Returns:
             List of SearchHit with relevance_score and relevance_reason populated, sorted by relevance_score descending
         """
-        from ..llm.prompts import RELEVANCE_SYSTEM_PROMPT, RELEVANCE_USER_TEMPLATE
+        # Get relevance template from registry
+        registry = get_registry()
+        relevance_template = registry.get("relevance", RelevanceParams)
 
         # Determine which hits to evaluate
         hits_to_evaluate = hits[:evaluation_count] if evaluation_count else hits
@@ -473,8 +484,8 @@ class FessSearchAgent(BaseSearchAgent):
                     query=query,
                     normalized_query=normalized_query,
                     search_result=search_result_dict,
-                    system_prompt=RELEVANCE_SYSTEM_PROMPT,
-                    user_template=RELEVANCE_USER_TEMPLATE,
+                    system_prompt=relevance_template.system_prompt,
+                    user_template=relevance_template.user_template,
                     timeout_ms=per_hit_timeout,
                 )
 
@@ -573,11 +584,8 @@ class FessSearchAgent(BaseSearchAgent):
         Returns:
             Improved IntentOutput for retry search
         """
-        from ..llm.prompts import (
-            RETRY_INTENT_NO_RESULTS_USER_TEMPLATE,
-            RETRY_INTENT_SYSTEM_PROMPT,
-            RETRY_INTENT_USER_TEMPLATE,
-        )
+        # Get retry intent templates from registry
+        registry = get_registry()
 
         logger.info(f"[{session_id}] Extracting retry intent")
 
@@ -585,14 +593,19 @@ class FessSearchAgent(BaseSearchAgent):
         if not hits:
             # No results case: use broader query strategy
             logger.info(f"[{session_id}] Using no-results template for retry")
-            user_prompt = RETRY_INTENT_NO_RESULTS_USER_TEMPLATE.format(
+            retry_template = registry.get("retry_intent_no_results", RetryIntentNoResultsParams)
+
+            # Prepare template parameters using Pydantic model
+            template_params = RetryIntentNoResultsParams(
                 query=query,
                 previous_normalized_query=previous_normalized_query,
                 language=language,
-            )
+            ).model_dump()
         else:
             # Low-score results case: analyze why scores were low
             logger.info(f"[{session_id}] Using low-score template for retry ({len(hits)} results)")
+            retry_template = registry.get("retry_intent", RetryIntentParams)
+
             # Format low-scoring results for prompt
             low_score_results_lines = []
             for idx, hit in enumerate(hits[:5], 1):
@@ -600,24 +613,26 @@ class FessSearchAgent(BaseSearchAgent):
                 low_score_results_lines.append(f"{idx}. [Score: {score:.2f}] {hit.title[:100]}")
             low_score_results = "\n".join(low_score_results_lines)
 
-            user_prompt = RETRY_INTENT_USER_TEMPLATE.format(
+            # Prepare template parameters using Pydantic model
+            template_params = RetryIntentParams(
                 query=query,
                 previous_normalized_query=previous_normalized_query,
                 language=language,
                 low_score_results=low_score_results,
-            )
+            ).model_dump()
 
         logger.debug(f"[{session_id}] Retry intent extraction started")
 
         try:
             intent = await self.llm_client.intent(
                 query=query,
-                system_prompt=RETRY_INTENT_SYSTEM_PROMPT,
-                user_template=user_prompt,
+                system_prompt=retry_template.system_prompt,
+                user_template=retry_template.user_template,
                 language=language,
                 filters=None,
                 query_history=None,
                 timeout_ms=timeout_ms,
+                template_params=template_params,
             )
             logger.info(f"[{session_id}] Retry intent extracted: {intent.normalized_query}")
             return intent

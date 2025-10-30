@@ -1,18 +1,26 @@
-# Copyright (c) 2025 CodeLibs
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#     http://www.apache.org/licenses/LICENSE-2.0
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+"""Prompt template definitions migrated from legacy prompts.py.
 
+This module defines all prompt templates used in the system and provides
+a registration function to populate the global registry on startup.
+
+Copyright (c) 2025 CodeLibs
+Licensed under the Apache License, Version 2.0
 """
-LLM prompt templates for intent extraction and answer composition.
-"""
+
+from .models import (
+    ComposeParams,
+    IntentParams,
+    MergeResultsParams,
+    PromptTemplate,
+    RelevanceParams,
+    RetryIntentNoResultsParams,
+    RetryIntentParams,
+)
+from .registry import get_registry
+
+# ========================================
+# Intent Extraction Prompts
+# ========================================
 
 INTENT_SYSTEM_PROMPT = """You are an enterprise search assistant specialized in Lucene query syntax. Your responsibilities are strictly limited to:
 1) Analyze user input and generate an optimized Lucene search query.
@@ -114,6 +122,19 @@ Input: "search engine features"
 Output: {{"normalized_query": "+(search AND engine) (features OR capabilities OR functionality)", "filters": {{}}, "followups": [], "ambiguity": "medium"}}
 """
 
+INTENT_PROMPT = PromptTemplate[IntentParams](
+    prompt_id="intent",
+    version="1.0",
+    system_prompt=INTENT_SYSTEM_PROMPT,
+    user_template=INTENT_USER_TEMPLATE,
+    description="Extract search intent and generate Lucene query from user input",
+    metadata={"output_format": "json", "output_schema": "IntentOutput"},
+)
+
+# ========================================
+# Answer Composition Prompts
+# ========================================
+
 COMPOSE_SYSTEM_PROMPT = """You are a search result analysis expert. Your responsibilities are strictly limited to:
 1) Explain why each selected search result matches the user's search intent.
 2) Present the relevance reasoning for each result in an organized, user-friendly manner.
@@ -164,6 +185,19 @@ Detailed explanation...
 - At the end, briefly encourage users to check the linked sources for detailed information.
 """
 
+COMPOSE_PROMPT = PromptTemplate[ComposeParams](
+    prompt_id="compose",
+    version="1.0",
+    system_prompt=COMPOSE_SYSTEM_PROMPT,
+    user_template=COMPOSE_USER_TEMPLATE,
+    description="Compose markdown answer from search results with relevance reasoning",
+    metadata={"output_format": "markdown", "streaming": "true"},
+)
+
+# ========================================
+# Relevance Evaluation Prompts
+# ========================================
+
 RELEVANCE_SYSTEM_PROMPT = """You are a search result relevance evaluator. Your responsibilities are strictly limited to:
 1) Evaluate how well a search result matches the user's search intent.
 2) Provide a relevance score from 0.0 to 1.0 with detailed reasoning.
@@ -208,6 +242,19 @@ Snippet: {snippet}
 - Focus on semantic meaning and practical usefulness, not superficial keyword matching.
 - Be objective and consistent in your scoring.
 """
+
+RELEVANCE_PROMPT = PromptTemplate[RelevanceParams](
+    prompt_id="relevance",
+    version="1.0",
+    system_prompt=RELEVANCE_SYSTEM_PROMPT,
+    user_template=RELEVANCE_USER_TEMPLATE,
+    description="Evaluate search result relevance with score and reasoning",
+    metadata={"output_format": "json", "output_schema": "RelevanceOutput"},
+)
+
+# ========================================
+# Retry Intent Extraction Prompts
+# ========================================
 
 RETRY_INTENT_SYSTEM_PROMPT = """You are an enterprise search assistant specializing in Lucene query refinement. Your responsibilities are strictly limited to:
 1) Analyze why previous search results had low relevance scores.
@@ -267,6 +314,19 @@ Previous query: title:"company policy"^2 OR "company policy" (low scores)
 Improved query: +(company AND policy) (document OR guideline OR procedure)
 """
 
+RETRY_INTENT_PROMPT = PromptTemplate[RetryIntentParams](
+    prompt_id="retry_intent",
+    version="1.0",
+    system_prompt=RETRY_INTENT_SYSTEM_PROMPT,
+    user_template=RETRY_INTENT_USER_TEMPLATE,
+    description="Generate improved search query after low relevance scores",
+    metadata={"output_format": "json", "output_schema": "IntentOutput"},
+)
+
+# ========================================
+# Retry Intent (No Results) Prompts
+# ========================================
+
 RETRY_INTENT_NO_RESULTS_USER_TEMPLATE = """# Input
 User's question: "{query}"
 Previous normalized query: "{previous_normalized_query}"
@@ -297,6 +357,15 @@ No documents matched the search query. Common issues:
 - Avoid overly specific or technical terms that may not be in the document corpus.
 - Try to capture the core intent of the user's question in a different way.
 """
+
+RETRY_INTENT_NO_RESULTS_PROMPT = PromptTemplate[RetryIntentNoResultsParams](
+    prompt_id="retry_intent_no_results",
+    version="1.0",
+    system_prompt=RETRY_INTENT_SYSTEM_PROMPT,  # Same system prompt as retry_intent
+    user_template=RETRY_INTENT_NO_RESULTS_USER_TEMPLATE,
+    description="Generate alternative search query when no results found",
+    metadata={"output_format": "json", "output_schema": "IntentOutput"},
+)
 
 # ========================================
 # Merge Results Prompts
@@ -373,3 +442,34 @@ Input agents:
 
 Output: {{"selected_agent_ids": ["vector"], "reason": "Vector search agent achieved significantly higher relevance score (0.88 vs 0.65), indicating better semantic matching", "merge_strategy": "single"}}
 """
+
+MERGE_RESULTS_PROMPT = PromptTemplate[MergeResultsParams](
+    prompt_id="merge_results",
+    version="1.0",
+    system_prompt=MERGE_RESULTS_SYSTEM_PROMPT,
+    user_template=MERGE_RESULTS_USER_TEMPLATE,
+    description="Select and merge results from multiple search agents",
+    metadata={"output_format": "json", "output_schema": "MergeOutput"},
+)
+
+
+# ========================================
+# Registry Registration
+# ========================================
+
+
+def register_all_prompts() -> None:
+    """Register all prompt templates to the global registry.
+
+    This function should be called during application startup to
+    populate the prompt registry with all available templates.
+    """
+    registry = get_registry()
+
+    # Register all prompts
+    registry.register(INTENT_PROMPT)
+    registry.register(COMPOSE_PROMPT)
+    registry.register(RELEVANCE_PROMPT)
+    registry.register(RETRY_INTENT_PROMPT)
+    registry.register(RETRY_INTENT_NO_RESULTS_PROMPT)
+    registry.register(MERGE_RESULTS_PROMPT)
