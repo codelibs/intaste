@@ -33,6 +33,7 @@ env:
 permissions:
   contents: read
   packages: write
+  security-events: write
 
 jobs:
   build-and-push-api:
@@ -83,8 +84,8 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=api
+          cache-to: type=gha,mode=max,scope=api
 
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
@@ -95,7 +96,7 @@ jobs:
 
       - name: Upload Trivy results
         uses: github/codeql-action/upload-sarif@v4
-        if: always()
+        if: always() && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
         with:
           sarif_file: 'trivy-results.sarif'
 
@@ -147,8 +148,8 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=ui
+          cache-to: type=gha,mode=max,scope=ui
 
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
@@ -159,7 +160,7 @@ jobs:
 
       - name: Upload Trivy results
         uses: github/codeql-action/upload-sarif@v4
-        if: always()
+        if: always() && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
         with:
           sarif_file: 'trivy-results.sarif'
 
