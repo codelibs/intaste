@@ -168,13 +168,13 @@ class Settings(BaseSettings):
 
     @property
     def relevance_timeout_ms(self) -> int:
-        """Timeout for relevance evaluation (20% of total budget)."""
-        return int(self.req_timeout_ms * 0.2)
+        """Timeout for relevance evaluation (25% of total budget, increased for detailed reasoning)."""
+        return int(self.req_timeout_ms * 0.25)
 
     @property
     def retry_budget_ms(self) -> int:
-        """Total budget for retry attempts (25% of total budget)."""
-        return int(self.req_timeout_ms * 0.25)
+        """Total budget for retry attempts (20% of total budget)."""
+        return int(self.req_timeout_ms * 0.20)
 
     @property
     def retry_intent_timeout_ms(self) -> int:
@@ -193,8 +193,8 @@ class Settings(BaseSettings):
 
     @property
     def compose_timeout_ms(self) -> int:
-        """Timeout for answer composition (10% of total budget)."""
-        return int(self.req_timeout_ms * 0.1)
+        """Timeout for answer composition (15% of total budget, increased for detailed explanations)."""
+        return int(self.req_timeout_ms * 0.15)
 
 
 # Global settings instance

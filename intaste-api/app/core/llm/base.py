@@ -47,7 +47,7 @@ class RelevanceOutput(BaseModel):
     """
 
     score: float = Field(..., ge=0.0, le=1.0, description="Relevance score from 0.0 to 1.0")
-    reason: str = Field(..., min_length=1, max_length=500, description="Explanation for the score")
+    reason: str = Field(..., min_length=1, max_length=1000, description="Explanation for the score")
 
 
 class MergeOutput(BaseModel):
@@ -108,6 +108,7 @@ class LLMClient(Protocol):
         followups: list[str] | None = None,
         language: str | None = None,
         timeout_ms: int | None = None,
+        selected_threshold: float | None = None,
     ) -> AsyncGenerator[str]:
         """Compose answer with streaming response. Yields text chunks."""
         ...

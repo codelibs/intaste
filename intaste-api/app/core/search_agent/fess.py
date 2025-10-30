@@ -432,7 +432,7 @@ class FessSearchAgent(BaseSearchAgent):
         evaluation_count: int | None = None,
     ) -> list[SearchHit]:
         """
-        Evaluate relevance of search results and update relevance_score field.
+        Evaluate relevance of search results and update relevance_score and relevance_reason fields.
 
         Args:
             query: Original user query
@@ -443,7 +443,7 @@ class FessSearchAgent(BaseSearchAgent):
             evaluation_count: Number of top results to evaluate (None = evaluate all)
 
         Returns:
-            List of SearchHit with relevance_score populated, sorted by relevance_score descending
+            List of SearchHit with relevance_score and relevance_reason populated, sorted by relevance_score descending
         """
         from ..llm.prompts import RELEVANCE_SYSTEM_PROMPT, RELEVANCE_USER_TEMPLATE
 
@@ -478,13 +478,18 @@ class FessSearchAgent(BaseSearchAgent):
                     timeout_ms=per_hit_timeout,
                 )
 
-                # Create new SearchHit with relevance_score
-                evaluated_hit = hit.model_copy(update={"relevance_score": relevance_output.score})
+                # Create new SearchHit with relevance_score and relevance_reason
+                evaluated_hit = hit.model_copy(
+                    update={
+                        "relevance_score": relevance_output.score,
+                        "relevance_reason": relevance_output.reason,
+                    }
+                )
                 evaluated_hits.append(evaluated_hit)
 
                 logger.debug(
                     f"[{session_id}] Hit #{idx} relevance: score={relevance_output.score:.2f}, "
-                    f"reason={relevance_output.reason[:50]}"
+                    f"reason={relevance_output.reason[:100]}"
                 )
 
             except Exception as e:

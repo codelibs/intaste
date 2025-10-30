@@ -125,14 +125,14 @@ class TestSettingsDefaults:
         # Search: 15% of total
         assert settings.search_timeout_ms == 2250
 
-        # Relevance: 20% of total
-        assert settings.relevance_timeout_ms == 3000
+        # Relevance: 25% of total (increased for detailed reasoning)
+        assert settings.relevance_timeout_ms == 3750
 
-        # Retry budget: 25% of total
-        assert settings.retry_budget_ms == 3750
+        # Retry budget: 20% of total (reduced to accommodate relevance increase)
+        assert settings.retry_budget_ms == 3000
 
-        # Compose: 10% of total
-        assert settings.compose_timeout_ms == 1500
+        # Compose: 15% of total (increased for detailed explanations)
+        assert settings.compose_timeout_ms == 2250
 
     def test_timeout_budget_custom_total(self, monkeypatch):
         """Test timeout budget with custom total."""
@@ -143,9 +143,9 @@ class TestSettingsDefaults:
 
         assert settings.intent_timeout_ms == 6000  # 20%
         assert settings.search_timeout_ms == 4500  # 15%
-        assert settings.relevance_timeout_ms == 6000  # 20%
-        assert settings.retry_budget_ms == 7500  # 25%
-        assert settings.compose_timeout_ms == 3000  # 10%
+        assert settings.relevance_timeout_ms == 7500  # 25%
+        assert settings.retry_budget_ms == 6000  # 20%
+        assert settings.compose_timeout_ms == 4500  # 15%
 
 
 @pytest.mark.unit
