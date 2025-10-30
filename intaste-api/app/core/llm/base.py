@@ -84,6 +84,7 @@ class LLMClient(Protocol):
         filters: dict[str, Any] | None = None,
         query_history: list[str] | None = None,
         timeout_ms: int | None = None,
+        template_params: dict[str, Any] | None = None,
     ) -> IntentOutput:
         """Extract search intent from user query with optional query history context."""
         ...

@@ -85,6 +85,13 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
         logger.debug(f"Log Max Response Chars: {settings.log_max_response_chars}")
         logger.debug("==============================")
 
+    # Register prompt templates
+    logger.debug("Registering prompt templates...")
+    from .core.llm.prompts import register_all_prompts
+
+    register_all_prompts()
+    logger.info("Prompt templates registered successfully")
+
     # Initialize providers using factories
     logger.debug("Initializing search provider...")
     search_provider = SearchProviderFactory.create_from_settings(settings)

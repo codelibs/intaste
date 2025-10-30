@@ -151,11 +151,13 @@ def mock_search_agent(mock_search_provider: AsyncMock, mock_llm_client: AsyncMoc
         if hasattr(mock_llm_client.intent, 'side_effect') and mock_llm_client.intent.side_effect is not None:
             # If side_effect is set (e.g., exception), use fallback
             try:
-                from app.core.llm.prompts import INTENT_SYSTEM_PROMPT, INTENT_USER_TEMPLATE
+                from app.core.llm.prompts import IntentParams, get_registry
+                registry = get_registry()
+                intent_template = registry.get("intent", IntentParams)
                 intent_output = await mock_llm_client.intent(
                     query=query,
-                    system_prompt=INTENT_SYSTEM_PROMPT,
-                    user_template=INTENT_USER_TEMPLATE,
+                    system_prompt=intent_template.system_prompt,
+                    user_template=intent_template.user_template,
                 )
             except Exception:
                 # Fallback intent
@@ -272,3 +274,17 @@ def sample_query_request() -> dict:
             "max_results": 5,
         },
     }
+
+
+@pytest.fixture(scope="session", autouse=True)
+def register_prompts():
+    """Register all prompt templates for tests (auto-used for all tests)."""
+    from app.core.llm.prompts import register_all_prompts, reset_registry
+
+    # Reset registry to ensure clean state
+    reset_registry()
+    # Register all prompts
+    register_all_prompts()
+    yield
+    # Cleanup after tests
+    reset_registry()

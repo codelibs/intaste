@@ -18,7 +18,36 @@ import json
 
 from app.core.llm.ollama import OllamaClient
 from app.core.llm.base import IntentOutput, ComposeOutput
-from app.core.llm.prompts import INTENT_SYSTEM_PROMPT, INTENT_USER_TEMPLATE
+from app.core.llm.prompts import IntentParams, RelevanceParams, get_registry, register_all_prompts
+
+
+# Helper functions to get prompt templates (for backward compatibility with tests)
+def _get_intent_prompts():
+    """Get intent prompt templates from registry."""
+    registry = get_registry()
+    template = registry.get("intent", IntentParams)
+    return template.system_prompt, template.user_template
+
+
+def _get_relevance_prompts():
+    """Get relevance prompt templates from registry."""
+    registry = get_registry()
+    template = registry.get("relevance", RelevanceParams)
+    return template.system_prompt, template.user_template
+
+
+# Legacy constants for backward compatibility (fetch from registry)
+INTENT_SYSTEM_PROMPT, INTENT_USER_TEMPLATE = None, None  # Will be set in fixture
+RELEVANCE_SYSTEM_PROMPT, RELEVANCE_USER_TEMPLATE = None, None  # Will be set in fixture
+
+
+@pytest.fixture(autouse=True)
+def setup_legacy_prompts():
+    """Setup legacy prompt constants for backward compatibility."""
+    global INTENT_SYSTEM_PROMPT, INTENT_USER_TEMPLATE, RELEVANCE_SYSTEM_PROMPT, RELEVANCE_USER_TEMPLATE
+    INTENT_SYSTEM_PROMPT, INTENT_USER_TEMPLATE = _get_intent_prompts()
+    RELEVANCE_SYSTEM_PROMPT, RELEVANCE_USER_TEMPLATE = _get_relevance_prompts()
+    yield
 
 
 @pytest.fixture
@@ -293,7 +322,6 @@ async def test_complete_timeout(ollama_client):
 async def test_relevance_success(ollama_client):
     """Test successful relevance evaluation"""
     from app.core.llm.base import RelevanceOutput
-    from app.core.llm.prompts import RELEVANCE_SYSTEM_PROMPT, RELEVANCE_USER_TEMPLATE
 
     mock_response = {
         "score": 0.85,
@@ -327,7 +355,6 @@ async def test_relevance_success(ollama_client):
 async def test_relevance_fallback_on_error(ollama_client):
     """Test relevance fallback when evaluation fails"""
     from app.core.llm.base import RelevanceOutput
-    from app.core.llm.prompts import RELEVANCE_SYSTEM_PROMPT, RELEVANCE_USER_TEMPLATE
 
     search_result = {
         "title": "Test Document",
@@ -356,7 +383,6 @@ async def test_relevance_fallback_on_error(ollama_client):
 async def test_relevance_retry_on_json_error(ollama_client):
     """Test relevance retry with lower temperature on JSON error"""
     from app.core.llm.base import RelevanceOutput
-    from app.core.llm.prompts import RELEVANCE_SYSTEM_PROMPT, RELEVANCE_USER_TEMPLATE
 
     search_result = {
         "title": "Test Document",
