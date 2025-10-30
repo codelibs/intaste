@@ -43,8 +43,8 @@ jobs:
           severity: 'CRITICAL,HIGH'
 
       - name: Upload Trivy results (API)
-        uses: github/codeql-action/upload-sarif@v3
-        if: always()
+        uses: github/codeql-action/upload-sarif@v4
+        if: always() && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
         with:
           sarif_file: 'trivy-api-results.sarif'
           category: 'trivy-api'
@@ -59,8 +59,8 @@ jobs:
           severity: 'CRITICAL,HIGH'
 
       - name: Upload Trivy results (UI)
-        uses: github/codeql-action/upload-sarif@v3
-        if: always()
+        uses: github/codeql-action/upload-sarif@v4
+        if: always() && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
         with:
           sarif_file: 'trivy-ui-results.sarif'
           category: 'trivy-ui'
@@ -93,8 +93,8 @@ jobs:
           severity: 'CRITICAL,HIGH'
 
       - name: Upload API image scan results
-        uses: github/codeql-action/upload-sarif@v3
-        if: always()
+        uses: github/codeql-action/upload-sarif@v4
+        if: always() && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
         with:
           sarif_file: 'trivy-api-image.sarif'
           category: 'trivy-api-image'
@@ -117,8 +117,8 @@ jobs:
           severity: 'CRITICAL,HIGH'
 
       - name: Upload UI image scan results
-        uses: github/codeql-action/upload-sarif@v3
-        if: always()
+        uses: github/codeql-action/upload-sarif@v4
+        if: always() && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
         with:
           sarif_file: 'trivy-ui-image.sarif'
           category: 'trivy-ui-image'
@@ -135,16 +135,16 @@ jobs:
         uses: actions/checkout@v5
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@v3
+        uses: github/codeql-action/init@v4
         with:
           languages: ${{ matrix.language }}
           config-file: ./.github/codeql/codeql-config.yml
 
       - name: Autobuild
-        uses: github/codeql-action/autobuild@v3
+        uses: github/codeql-action/autobuild@v4
 
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v3
+        uses: github/codeql-action/analyze@v4
         with:
           category: "/language:${{ matrix.language }}"
 
