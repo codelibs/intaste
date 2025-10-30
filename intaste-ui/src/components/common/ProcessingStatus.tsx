@@ -18,7 +18,7 @@ interface ProcessingStatusProps {
   phase: 'intent' | 'search' | 'relevance' | 'compose';
   intentData?: {
     normalized_query: string;
-    filters?: Record<string, any>;
+    filters?: Record<string, string | number | boolean | null>;
     followups: string[];
   };
   citationsData?: {

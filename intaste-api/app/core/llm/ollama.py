@@ -472,14 +472,55 @@ class OllamaClient:
                 logger.debug(f"Using fallback merge: {fallback_merge}")
                 return fallback_merge
 
-    def _format_citations(self, citations_data: list[dict[str, Any]]) -> str:
-        """Format citations for prompt context."""
+    def _format_citations(
+        self, citations_data: list[dict[str, Any]], selected_threshold: float | None = None
+    ) -> str:
+        """
+        Format citations for prompt context, including relevance reasoning.
+
+        Args:
+            citations_data: List of search result dictionaries
+            selected_threshold: Optional threshold for filtering by relevance_score
+
+        Returns:
+            Formatted citations text
+        """
+        # Filter by selected_threshold if provided
+        filtered_citations = (
+            [
+                cit
+                for cit in citations_data
+                if (score := cit.get("relevance_score")) is not None and score >= selected_threshold
+            ]
+            if selected_threshold is not None
+            else citations_data
+        )
+
+        if not filtered_citations:
+            return _("No high-relevance search results available.", language="en")
+
         lines = []
-        for idx, cit in enumerate(citations_data[:5], start=1):  # Top 5
+        for idx, cit in enumerate(filtered_citations, start=1):
             title = cit.get("title", "Untitled")
-            snippet = cit.get("snippet", "")[:200]  # Limit snippet length
-            lines.append(f"[{idx}] {title}\n{snippet}")
-        return "\n\n".join(lines) if lines else _("No search results available.", language="en")
+            snippet = cit.get("snippet", "")
+            url = cit.get("url", "")
+            relevance_score = cit.get("relevance_score")
+            relevance_reason = cit.get("relevance_reason", "")
+
+            # Format: [N] Title (Score: X.XX)\nReasoning: ...\nSnippet: ...\nURL: ...
+            parts = [f"[{idx}] {title}"]
+            if relevance_score is not None:
+                parts.append(f"(Score: {relevance_score:.2f})")
+            if relevance_reason:
+                parts.append(f"\nReasoning: {relevance_reason}")
+            if snippet:
+                parts.append(f"\nSnippet: {snippet}")
+            if url:
+                parts.append(f"\nURL: {url}")
+
+            lines.append(" ".join(parts[:2]) + "".join(parts[2:]))
+
+        return "\n\n".join(lines)
 
     async def _complete(
         self,
@@ -659,10 +700,20 @@ class OllamaClient:
         followups: list[str] | None = None,
         language: str | None = None,
         timeout_ms: int | None = None,
+        selected_threshold: float | None = None,
     ) -> AsyncGenerator[str]:
         """
         Compose answer with streaming response.
         Yields text chunks as they are generated.
+
+        Args:
+            query: Original user query
+            normalized_query: Normalized search query
+            citations_data: List of search result dictionaries
+            followups: Optional follow-up questions (currently unused)
+            language: Response language
+            timeout_ms: Timeout in milliseconds
+            selected_threshold: Optional threshold for filtering citations by relevance_score
         """
         import time
 
@@ -670,19 +721,21 @@ class OllamaClient:
         actual_timeout = timeout_ms or self.timeout_ms
 
         logger.debug(
-            f"Compose stream started: model={self.model}, timeout={actual_timeout}ms, citations_count={len(citations_data)}, language={lang}"
+            f"Compose stream started: model={self.model}, timeout={actual_timeout}ms, "
+            f"citations_count={len(citations_data)}, language={lang}, selected_threshold={selected_threshold}"
         )
         logger.debug(
             f"Compose stream input: query={query!r}, normalized_query={normalized_query!r}"
         )
 
-        # Prepare citations text
-        citations_text = self._format_citations(citations_data)
+        # Prepare citations text (filter by selected_threshold)
+        citations_text = self._format_citations(
+            citations_data, selected_threshold=selected_threshold
+        )
 
         user_prompt = COMPOSE_USER_TEMPLATE.format(
             query=query,
             normalized_query=normalized_query,
-            ambiguity="medium",
             language=lang,
             citations_text=citations_text,
         )

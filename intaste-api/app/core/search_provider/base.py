@@ -32,6 +32,9 @@ class SearchHit(BaseModel):
     relevance_score: float | None = Field(
         default=None, ge=0.0, le=1.0, description="LLM-evaluated relevance score (0.0-1.0)"
     )
+    relevance_reason: str | None = Field(
+        default=None, max_length=1000, description="LLM-evaluated relevance reasoning"
+    )
     meta: dict[str, Any] | None = None
 
 

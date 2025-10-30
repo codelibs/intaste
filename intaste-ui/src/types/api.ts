@@ -53,7 +53,7 @@ export interface Citation {
   relevance_score?: number;
 
   /** Additional metadata about the document (e.g., content_type, site) */
-  meta?: Record<string, any>;
+  meta?: Record<string, string | number | boolean | null>;
 }
 
 export interface Answer {
@@ -87,7 +87,7 @@ export interface AssistQueryRequest {
   options?: {
     max_results?: number;
     language?: string;
-    filters?: Record<string, any>;
+    filters?: Record<string, string | number | boolean | null>;
     timeout_ms?: number;
   };
 }
@@ -122,7 +122,7 @@ export interface ModelSelectRequest {
 export interface ErrorResponse {
   code: string;
   message: string;
-  details?: Record<string, any>;
+  details?: Record<string, unknown>;
   request_id?: string;
 }
 
@@ -136,7 +136,7 @@ export interface StatusEventData {
 
 export interface IntentEventData {
   normalized_query: string;
-  filters?: Record<string, any>;
+  filters?: Record<string, string | number | boolean | null>;
   followups: string[];
   ambiguity: string;
 }

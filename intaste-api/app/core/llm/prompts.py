@@ -114,38 +114,59 @@ Input: "search engine features"
 Output: {{"normalized_query": "+(search AND engine) (features OR capabilities OR functionality)", "filters": {{}}, "followups": [], "ambiguity": "medium"}}
 """
 
-COMPOSE_SYSTEM_PROMPT = """You are a search result guide. Your responsibilities are strictly limited to:
-1) Provide a **brief guidance message** based on Fess search top hits.
+COMPOSE_SYSTEM_PROMPT = """You are a search result analysis expert. Your responsibilities are strictly limited to:
+1) Explain why each selected search result matches the user's search intent.
+2) Present the relevance reasoning for each result in an organized, user-friendly manner.
 
 Critical constraints:
-- **Output ONLY plain text**. No JSON, no code blocks, no formatting.
+- **Output in Markdown format**. No JSON, no code blocks.
+- Use Markdown formatting for better readability: headings (###), bold (**text**), lists, etc.
 - Do not include citation markers like [1][2] in the text (UI will add them).
-- Avoid assertions and lengthy summaries. **Guide users to review the source documents**.
-- Do not generate numbers, dates, or links. Do not state facts about policies or regulations.
-- Keep response within 2 sentences / 300 characters maximum.
+- Focus on explaining **why** each result matches the intent, not **what** keywords it contains.
+- Explain the practical value and how each result helps solve the user's problem.
+- Do NOT repeat obvious information like keyword presence - users can see that themselves.
+- Do NOT mention relevance scores (e.g., "highly relevant") - scores are already shown in the UI.
+- Guide users to review the source documents for detailed information.
 """
 
 COMPOSE_USER_TEMPLATE = """# Input
 User's question: "{query}"
 Normalized search term: "{normalized_query}"
-Ambiguity level: {ambiguity}
 Language: {language}
 
-# Search highlights (reference text, top N results)
+# Selected search results (high-relevance results only)
 {citations_text}
-※ This is for guidance reference only. Do not copy verbatim into the text.
+
+# Task
+For each selected result, explain the relevance reasoning in a clear, organized manner:
+- Focus on **why** it matches the search intent (not just keyword matching)
+- Explain **how** it helps solve the user's problem (practical value)
+- Highlight key aspects like completeness, quality, timeliness, target audience
+- Use the provided relevance reasoning, but reorganize and present it in a user-friendly way
+- Avoid repeating information and keep each explanation concise but informative
 
 # Output requirements
-- **Output plain text only** (no JSON, no markup).
+- **Output in Markdown format** (no JSON).
+- Use Markdown syntax for structure and emphasis: ###, **, *, lists, etc.
 - **Respond in the specified language** ({language}).
-- Within 2 sentences / 300 characters maximum.
-- Encourage users to check the linked sources for details.
+- Organize by result using Markdown formatting. Example structure:
+
+### 1. [First result title context]
+Detailed explanation of why this result is relevant...
+- Key aspect 1
+- Key aspect 2
+
+### 2. [Second result title context]
+Detailed explanation...
+
 - Do NOT include citation markers like [1] or [2] - the UI will add them automatically.
+- Do NOT mention relevance scores or qualitative descriptions like "highly relevant".
+- At the end, briefly encourage users to check the linked sources for detailed information.
 """
 
 RELEVANCE_SYSTEM_PROMPT = """You are a search result relevance evaluator. Your responsibilities are strictly limited to:
 1) Evaluate how well a search result matches the user's search intent.
-2) Provide a relevance score from 0.0 to 1.0 with a brief explanation.
+2) Provide a relevance score from 0.0 to 1.0 with detailed reasoning.
 
 Critical constraints:
 - **Output ONLY strict JSON**. No explanations, code blocks, or annotations.
@@ -169,13 +190,22 @@ Snippet: {snippet}
 # Expected JSON schema
 {{
   "score": 0.0-1.0 (float, required),
-  "reason": "string (brief explanation in 1-2 sentences)"
+  "reason": "string (detailed explanation, 3-5 sentences, max 1000 chars)"
 }}
 
 # Output requirements
 - **Output JSON only**.
 - Evaluate how well this specific result matches the user's search intent.
-- Consider semantic meaning, not just keyword matching.
+- In the "reason" field, provide a detailed analysis that explains:
+  1. **Why this document matches the user's search intent** (not just keyword presence)
+  2. **How this document helps solve the user's problem** (practical value)
+  3. **Key aspects** such as:
+     - Relevance to the specific problem domain
+     - Information completeness (comprehensive vs. partial coverage)
+     - Information quality (official docs, tutorials, troubleshooting, etc.)
+     - Timeliness (version-specific, up-to-date information)
+     - Target audience alignment (beginner, advanced, specific use case)
+- Focus on semantic meaning and practical usefulness, not superficial keyword matching.
 - Be objective and consistent in your scoring.
 """
 

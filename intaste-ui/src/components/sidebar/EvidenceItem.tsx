@@ -38,7 +38,7 @@ export function EvidenceItem({ citation, active, onSelect, showFull = false }: E
       }}
       role="button"
       tabIndex={0}
-      aria-selected={active}
+      aria-pressed={active}
       className={cn(
         'rounded-lg border p-3 cursor-pointer transition-all',
         'hover:border-primary/50',

@@ -12,10 +12,13 @@
 
 'use client';
 
+import React from 'react';
 import type { Answer } from '@/types/api';
 import { cn } from '@/libs/utils';
 import { ProcessingStatus } from '@/components/common/ProcessingStatus';
 import { useTranslation } from '@/libs/i18n/client';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 interface AnswerBubbleProps {
   answer: Answer;
@@ -23,7 +26,7 @@ interface AnswerBubbleProps {
   processingPhase?: 'intent' | 'search' | 'relevance' | 'compose' | null;
   intentData?: {
     normalized_query: string;
-    filters?: Record<string, any>;
+    filters?: Record<string, string | number | boolean | null>;
     followups: string[];
   } | null;
   citationsData?: {
@@ -52,26 +55,70 @@ export function AnswerBubble({
 }: AnswerBubbleProps) {
   const { t } = useTranslation();
 
-  // Parse citation markers [1], [2], etc. and make them clickable
-  const renderTextWithCitations = (text: string) => {
-    const parts = text.split(/(\[\d+\])/g);
-    return parts.map((part, idx) => {
-      const match = part.match(/\[(\d+)\]/);
-      if (match) {
-        const citationId = parseInt(match[1], 10);
-        return (
-          <button
-            key={idx}
-            onClick={() => onCitationClick?.(citationId)}
-            className="text-primary hover:underline focus:outline-none focus:ring-1 focus:ring-ring rounded"
-            aria-label={t('answer.viewCitation', { id: citationId })}
-          >
-            {part}
-          </button>
-        );
-      }
-      return <span key={idx}>{part}</span>;
-    });
+  // Render Markdown with clickable citation markers
+  const renderMarkdownWithCitations = (text: string) => {
+    return (
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        components={{
+          // Custom renderer for text to make citation markers clickable
+          p: ({ children }) => {
+            const processChildren = (child: React.ReactNode): React.ReactNode => {
+              if (typeof child === 'string') {
+                const parts = child.split(/(\[\d+\])/g);
+                return parts.map((part, idx) => {
+                  const match = part.match(/\[(\d+)\]/);
+                  if (match) {
+                    const citationId = parseInt(match[1], 10);
+                    return (
+                      <button
+                        key={`cite-${idx}`}
+                        onClick={() => onCitationClick?.(citationId)}
+                        className="text-primary hover:underline focus:outline-none focus:ring-1 focus:ring-ring rounded"
+                        aria-label={t('answer.viewCitation', { id: citationId })}
+                      >
+                        {part}
+                      </button>
+                    );
+                  }
+                  return <span key={`text-${idx}`}>{part}</span>;
+                });
+              }
+              return child;
+            };
+
+            return (
+              <p className="mb-4 last:mb-0">
+                {Array.isArray(children)
+                  ? children.map((child, idx) => (
+                      <React.Fragment key={idx}>{processChildren(child)}</React.Fragment>
+                    ))
+                  : processChildren(children)}
+              </p>
+            );
+          },
+          // Style headings
+          h3: ({ children }) => <h3 className="text-lg font-semibold mt-4 mb-2">{children}</h3>,
+          h4: ({ children }) => <h4 className="text-base font-semibold mt-3 mb-2">{children}</h4>,
+          // Style lists
+          ul: ({ children }) => (
+            <ul className="list-disc list-inside mb-4 space-y-1">{children}</ul>
+          ),
+          ol: ({ children }) => (
+            <ol className="list-decimal list-inside mb-4 space-y-1">{children}</ol>
+          ),
+          li: ({ children }) => <li className="ml-4">{children}</li>,
+          // Style inline code and emphasis
+          strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+          em: ({ children }) => <em className="italic">{children}</em>,
+          code: ({ children }) => (
+            <code className="bg-muted px-1 py-0.5 rounded text-sm">{children}</code>
+          ),
+        }}
+      >
+        {text}
+      </ReactMarkdown>
+    );
   };
 
   return (
@@ -93,9 +140,9 @@ export function AnswerBubble({
             relevanceData={relevanceData ?? undefined}
           />
         ) : (
-          // Display answer text
-          <p className="text-foreground leading-relaxed">
-            {renderTextWithCitations(answer.text)}
+          // Display answer text with Markdown rendering
+          <div className="text-foreground leading-relaxed">
+            {renderMarkdownWithCitations(answer.text)}
             {streaming && (
               <span
                 className="inline-block w-2 h-4 ml-1 bg-primary animate-pulse"
@@ -104,7 +151,7 @@ export function AnswerBubble({
                 |
               </span>
             )}
-          </p>
+          </div>
         )}
       </div>
 

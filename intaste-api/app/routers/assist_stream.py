@@ -232,12 +232,14 @@ async def stream_assist_response(
         logger.debug(f"[{session_id}] Starting answer composition streaming")
         compose_start = time.time()
 
-        # Prepare citation data for LLM
+        # Prepare citation data for LLM (include relevance_score and relevance_reason)
         citations_for_llm = [
             {
                 "title": hit.title,
                 "snippet": hit.snippet,
                 "url": hit.url,
+                "relevance_score": hit.relevance_score,
+                "relevance_reason": hit.relevance_reason,
             }
             for hit in citations_data.hits
         ]
@@ -254,6 +256,7 @@ async def stream_assist_response(
             followups=intent_data.followups,
             language=request_options.get("language", "en"),
             timeout_ms=settings.compose_timeout_ms,
+            selected_threshold=settings.intaste_selected_relevance_threshold,
         )
         async for chunk in compose_stream:
             full_text += chunk
