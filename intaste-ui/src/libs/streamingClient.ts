@@ -24,23 +24,29 @@ import type {
   CitationsEventData,
   RelevanceEventData,
   RetryEventData,
+  AssistQueryResponse,
+  AssistQueryRequest,
 } from '@/types/api';
+
+export interface StartEventData {
+  request_id: string;
+}
 
 export interface StreamEvent {
   event: string;
-  data: any;
+  data: unknown;
 }
 
 export interface StreamCallbacks {
-  onStart?: (data: any) => void;
+  onStart?: (data: StartEventData) => void;
   onStatus?: (data: StatusEventData) => void;
   onIntent?: (data: IntentEventData) => void;
   onCitations?: (data: CitationsEventData) => void;
   onRelevance?: (data: RelevanceEventData) => void;
   onRetry?: (data: RetryEventData) => void;
   onChunk?: (data: { text: string }) => void;
-  onComplete?: (data: any) => void;
-  onError?: (data: any) => void;
+  onComplete?: (data: AssistQueryResponse) => void;
+  onError?: (data: ErrorResponse) => void;
 }
 
 /**
@@ -48,7 +54,7 @@ export interface StreamCallbacks {
  */
 export async function queryAssistStream(
   query: string,
-  options: Record<string, any> = {},
+  options: AssistQueryRequest['options'] = {},
   sessionId?: string,
   queryHistory?: string[],
   callbacks?: StreamCallbacks

@@ -17,6 +17,7 @@ import { DEFAULT_LANGUAGE, FALLBACK_LANGUAGE, SUPPORTED_LANGUAGES } from './lang
 
 // Import translation files
 const loadResources = async () => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const resources: Record<string, { common: any }> = {};
 
   for (const lang of SUPPORTED_LANGUAGES) {

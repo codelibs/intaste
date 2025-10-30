@@ -15,7 +15,7 @@
  */
 
 import { create } from 'zustand';
-import type { Answer, Citation, Timings } from '@/types/api';
+import type { Answer, Citation, Timings, AssistQueryRequest } from '@/types/api';
 import { queryAssistStream } from '@/libs/streamingClient';
 import { useSessionStore } from './session.store';
 
@@ -32,7 +32,7 @@ interface AssistState {
   processingPhase: 'intent' | 'search' | 'relevance' | 'compose' | null;
   intentData: {
     normalized_query: string;
-    filters?: Record<string, any>;
+    filters?: Record<string, string | number | boolean | null>;
     followups: string[];
   } | null;
   citationsData: {
@@ -49,7 +49,7 @@ interface AssistState {
     previous_max_score: number;
   } | null;
 
-  send: (query: string, options?: Record<string, any>) => Promise<void>;
+  send: (query: string, options?: AssistQueryRequest['options']) => Promise<void>;
   selectCitation: (id: number | null) => void;
   addQueryToHistory: (query: string) => void;
   clearQueryHistory: () => void;
@@ -72,7 +72,7 @@ export const useAssistStore = create<AssistState>((set, get) => ({
   relevanceData: null,
   retryData: null,
 
-  send: async (query: string, options?: Record<string, any>) => {
+  send: async (query: string, options?: AssistQueryRequest['options']) => {
     set({
       loading: true,
       streaming: true,
@@ -114,7 +114,7 @@ export const useAssistStore = create<AssistState>((set, get) => ({
             });
           },
           onCitations: (data) => {
-            const topResults = data.citations.slice(0, 3).map((c: any) => c.title);
+            const topResults = data.citations.slice(0, 3).map((c: Citation) => c.title);
 
             set({
               citations: data.citations,
@@ -186,9 +186,9 @@ export const useAssistStore = create<AssistState>((set, get) => ({
           },
         }
       );
-    } catch (error: any) {
+    } catch (error: unknown) {
       set({
-        error: error.message || 'Streaming failed',
+        error: error instanceof Error ? error.message : 'Streaming failed',
         loading: false,
         streaming: false,
       });

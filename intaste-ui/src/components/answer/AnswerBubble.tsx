@@ -12,6 +12,7 @@
 
 'use client';
 
+import React from 'react';
 import type { Answer } from '@/types/api';
 import { cn } from '@/libs/utils';
 import { ProcessingStatus } from '@/components/common/ProcessingStatus';
@@ -25,7 +26,7 @@ interface AnswerBubbleProps {
   processingPhase?: 'intent' | 'search' | 'relevance' | 'compose' | null;
   intentData?: {
     normalized_query: string;
-    filters?: Record<string, any>;
+    filters?: Record<string, string | number | boolean | null>;
     followups: string[];
   } | null;
   citationsData?: {
@@ -62,7 +63,7 @@ export function AnswerBubble({
         components={{
           // Custom renderer for text to make citation markers clickable
           p: ({ children }) => {
-            const processChildren = (child: any): any => {
+            const processChildren = (child: React.ReactNode): React.ReactNode => {
               if (typeof child === 'string') {
                 const parts = child.split(/(\[\d+\])/g);
                 return parts.map((part, idx) => {
@@ -89,7 +90,9 @@ export function AnswerBubble({
             return (
               <p className="mb-4 last:mb-0">
                 {Array.isArray(children)
-                  ? children.map((child) => processChildren(child))
+                  ? children.map((child, idx) => (
+                      <React.Fragment key={idx}>{processChildren(child)}</React.Fragment>
+                    ))
                   : processChildren(children)}
               </p>
             );

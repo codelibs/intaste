@@ -486,13 +486,15 @@ class OllamaClient:
             Formatted citations text
         """
         # Filter by selected_threshold if provided
-        filtered_citations = citations_data
-        if selected_threshold is not None:
-            filtered_citations = []
-            for cit in citations_data:
-                relevance_score = cit.get("relevance_score")
-                if relevance_score is not None and relevance_score >= selected_threshold:
-                    filtered_citations.append(cit)
+        filtered_citations = (
+            [
+                cit
+                for cit in citations_data
+                if (score := cit.get("relevance_score")) is not None and score >= selected_threshold
+            ]
+            if selected_threshold is not None
+            else citations_data
+        )
 
         if not filtered_citations:
             return _("No high-relevance search results available.", language="en")

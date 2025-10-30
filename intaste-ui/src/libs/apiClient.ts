@@ -30,7 +30,7 @@ class APIError extends Error {
     public status: number,
     public code: string,
     message: string,
-    public details?: Record<string, any>
+    public details?: Record<string, unknown>
   ) {
     super(message);
     this.name = 'APIError';
