@@ -150,10 +150,9 @@ describe('EvidencePanel', () => {
 
     // The second citation should be highlighted (active)
     // Find the parent element that contains the citation
-    const secondCitation =
-      screen.getByText('Second Document').closest('article') ||
-      screen.getByText('Second Document').closest('[class*="border"]');
+    const secondCitation = screen.getByText('Second Document').closest('[role="button"]');
     expect(secondCitation).toBeTruthy();
+    expect(secondCitation).toHaveClass('ring-2');
   });
 
   it('handles empty citations array', () => {

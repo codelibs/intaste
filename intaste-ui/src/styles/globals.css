@@ -36,6 +36,14 @@
     --input: 214.3 31.8% 91.4%;
     --ring: 221.2 83.2% 53.3%;
     --radius: 0.5rem;
+
+    /* Glassmorphism variables */
+    --glass-bg: 255 255 255;
+    --glass-bg-opacity: 0.1;
+    --glass-border: 255 255 255;
+    --glass-border-opacity: 0.2;
+    --glass-shadow: 0 0 0;
+    --glass-shadow-opacity: 0.1;
   }
 
   .dark {
@@ -58,6 +66,14 @@
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
     --ring: 224.3 76.3% 48%;
+
+    /* Glassmorphism variables - dark mode */
+    --glass-bg: 0 0 0;
+    --glass-bg-opacity: 0.3;
+    --glass-border: 255 255 255;
+    --glass-border-opacity: 0.1;
+    --glass-shadow: 0 0 0;
+    --glass-shadow-opacity: 0.3;
   }
 }
 
@@ -68,5 +84,45 @@
   body {
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));
+  }
+}
+
+@layer utilities {
+  /* Glassmorphism base effect */
+  .glass {
+    background: rgba(var(--glass-bg), var(--glass-bg-opacity));
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(var(--glass-border), var(--glass-border-opacity));
+    box-shadow: 0 8px 32px rgba(var(--glass-shadow), var(--glass-shadow-opacity));
+  }
+
+  /* Glassmorphism card variant with rounded corners */
+  .glass-card {
+    background: rgba(var(--glass-bg), var(--glass-bg-opacity));
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(var(--glass-border), var(--glass-border-opacity));
+    box-shadow: 0 8px 32px rgba(var(--glass-shadow), var(--glass-shadow-opacity));
+    border-radius: 1rem;
+  }
+
+  /* Glassmorphism panel variant */
+  .glass-panel {
+    background: rgba(var(--glass-bg), var(--glass-bg-opacity));
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(var(--glass-border), var(--glass-border-opacity));
+    box-shadow: 0 8px 32px rgba(var(--glass-shadow), var(--glass-shadow-opacity));
+    border-radius: 0.75rem;
+  }
+
+  /* Enhanced glassmorphism with stronger effect */
+  .glass-strong {
+    background: rgba(var(--glass-bg), calc(var(--glass-bg-opacity) * 1.5));
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(var(--glass-border), calc(var(--glass-border-opacity) * 1.5));
+    box-shadow: 0 12px 48px rgba(var(--glass-shadow), calc(var(--glass-shadow-opacity) * 1.2));
   }
 }

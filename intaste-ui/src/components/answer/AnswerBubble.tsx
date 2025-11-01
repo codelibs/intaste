@@ -122,9 +122,9 @@ export function AnswerBubble({
   };
 
   return (
-    <div className={cn('rounded-lg border bg-card p-4 shadow-sm', className)}>
+    <div className={cn('glass-card p-6', className)}>
       {fallbackNotice && (
-        <div className="mb-3 flex items-start gap-2 rounded-md bg-yellow-50 dark:bg-yellow-900/20 p-2 text-xs text-yellow-800 dark:text-yellow-200">
+        <div className="mb-4 flex items-start gap-2 glass-panel p-3 text-xs text-yellow-800 dark:text-yellow-200">
           <span className="text-base">{t('answer.fallbackNotice')}</span>
           <span>{fallbackNotice}</span>
         </div>
@@ -156,15 +156,19 @@ export function AnswerBubble({
       </div>
 
       {answer.suggested_questions && answer.suggested_questions.length > 0 && (
-        <div className="mt-4 pt-4 border-t">
-          <p className="text-xs font-medium text-muted-foreground mb-2">
+        <div className="mt-6 pt-4 border-t border-border/50">
+          <p className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+            <span>💡</span>
             {t('answer.relatedQuestions')}
           </p>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-col gap-2">
             {answer.suggested_questions.map((question, idx) => (
-              <span key={idx} className="text-xs text-muted-foreground">
-                • {question}
-              </span>
+              <div
+                key={idx}
+                className="glass-panel px-3 py-2 text-sm text-foreground hover:glass-strong transition-all duration-200 cursor-pointer"
+              >
+                {question}
+              </div>
             ))}
           </div>
         </div>

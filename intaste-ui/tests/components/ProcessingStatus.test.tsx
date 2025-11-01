@@ -91,19 +91,20 @@ describe('ProcessingStatus', () => {
       expect(screen.getByText(/searching/i)).toBeInTheDocument();
     });
 
-    it('displays spinner during search', () => {
+    it('displays phase icon with animation during search', () => {
       const { container } = renderWithProviders(<ProcessingStatus phase="search" />);
 
-      const spinner = container.querySelector('.animate-spin');
-      expect(spinner).toBeInTheDocument();
+      // Check that the phase icon container exists with glassmorphism
+      const iconContainer = container.querySelector('.glass');
+      expect(iconContainer).toBeInTheDocument();
     });
 
     it('shows animate-pulse class for search indicator', () => {
-      renderWithProviders(<ProcessingStatus phase="search" />);
+      const { container } = renderWithProviders(<ProcessingStatus phase="search" />);
 
-      const searchText = screen.getByText(/searching/i);
-      const parent = searchText.parentElement;
-      expect(parent).toHaveClass('animate-pulse');
+      // Find the parent div with animate-pulse class
+      const pulseElement = container.querySelector('.animate-pulse');
+      expect(pulseElement).toBeInTheDocument();
     });
   });
 
@@ -114,11 +115,12 @@ describe('ProcessingStatus', () => {
       expect(container.textContent).toContain('Generating answer...');
     });
 
-    it('displays spinner during composition', () => {
+    it('displays phase icon with glassmorphism during composition', () => {
       const { container } = renderWithProviders(<ProcessingStatus phase="compose" />);
 
-      const spinner = container.querySelector('.animate-spin');
-      expect(spinner).toBeInTheDocument();
+      // Check that the phase icon container exists with glassmorphism
+      const iconContainer = container.querySelector('.glass');
+      expect(iconContainer).toBeInTheDocument();
     });
 
     it('shows animate-pulse class for compose indicator', () => {
@@ -145,9 +147,14 @@ describe('ProcessingStatus', () => {
 
       // The component adds colon in code
       expect(container.textContent).toContain('Top Results:');
-      expect(screen.getByText('1. Document 1')).toBeInTheDocument();
-      expect(screen.getByText('2. Document 2')).toBeInTheDocument();
-      expect(screen.getByText('3. Document 3')).toBeInTheDocument();
+      // Titles are displayed separately from numbers in the new design
+      expect(screen.getByText('Document 1')).toBeInTheDocument();
+      expect(screen.getByText('Document 2')).toBeInTheDocument();
+      expect(screen.getByText('Document 3')).toBeInTheDocument();
+      // Check that numbers are present in the content
+      expect(container.textContent).toContain('1.');
+      expect(container.textContent).toContain('2.');
+      expect(container.textContent).toContain('3.');
     });
 
     it('does not display citations when total is 0', () => {

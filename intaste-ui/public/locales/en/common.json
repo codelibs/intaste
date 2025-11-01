@@ -1,7 +1,8 @@
 {
   "header": {
     "title": "Intaste",
-    "streaming": "Streaming...",
+    "streaming": "Searching...",
+    "elapsedTime": "Elapsed time: {{time}}",
     "setApiToken": "Set API Token",
     "apiTokenPrompt": "Enter your API token:"
   },
@@ -26,7 +27,14 @@
     "relevanceEvaluated": "Evaluated {{count}} results",
     "maxRelevanceScore": "Best match",
     "generatingAnswer": "Generating answer...",
-    "analyzingQuery": "Analyzing query..."
+    "analyzingQuery": "Analyzing query...",
+    "queryOptimizationComplete": "Query optimization complete",
+    "findingRelevantInfo": "Finding relevant information...",
+    "searchCompletedSuccessfully": "Search completed successfully",
+    "analyzingSearchQuality": "Analyzing search quality...",
+    "qualityAssessmentComplete": "Quality assessment complete",
+    "composingResponseWithCitations": "Composing response with citations...",
+    "understandingQuestion": "Understanding your question..."
   },
   "evidence": {
     "selected": "Selected",

@@ -1,7 +1,8 @@
 {
   "header": {
     "title": "Intaste",
-    "streaming": "Streaming läuft...",
+    "streaming": "Suchen...",
+    "elapsedTime": "Verstrichene Zeit: {{time}}",
     "setApiToken": "API-Token festlegen",
     "apiTokenPrompt": "Geben Sie Ihren API-Token ein:"
   },
@@ -26,7 +27,14 @@
     "relevanceEvaluated": "{{count}} Ergebnisse bewertet",
     "maxRelevanceScore": "Beste Übereinstimmung",
     "generatingAnswer": "Antwort wird generiert...",
-    "analyzingQuery": "Abfrage wird analysiert..."
+    "analyzingQuery": "Abfrage wird analysiert...",
+    "queryOptimizationComplete": "Abfrageoptimierung abgeschlossen",
+    "findingRelevantInfo": "Relevante Informationen werden gesucht...",
+    "searchCompletedSuccessfully": "Suche erfolgreich abgeschlossen",
+    "analyzingSearchQuality": "Suchqualität wird analysiert...",
+    "qualityAssessmentComplete": "Qualitätsbewertung abgeschlossen",
+    "composingResponseWithCitations": "Antwort mit Zitaten wird erstellt...",
+    "understandingQuestion": "Ihre Frage wird verstanden..."
   },
   "evidence": {
     "selected": "Ausgewählt",

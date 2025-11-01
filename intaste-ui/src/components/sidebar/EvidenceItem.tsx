@@ -40,22 +40,24 @@ export function EvidenceItem({ citation, active, onSelect, showFull = false }: E
       tabIndex={0}
       aria-pressed={active}
       className={cn(
-        'rounded-lg border p-3 cursor-pointer transition-all',
-        'hover:border-primary/50',
-        active ? 'border-primary bg-primary/5' : 'border-border bg-card'
+        'glass-card p-4 cursor-pointer transition-all duration-200',
+        'hover:glass-strong hover:scale-[1.02]',
+        active && 'ring-2 ring-primary/50'
       )}
     >
       {/* Citation Number */}
-      <div className="flex items-start gap-2 mb-2">
+      <div className="flex items-start gap-3 mb-2">
         <span
           className={cn(
-            'flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium',
-            active ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+            'flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shadow-sm',
+            active
+              ? 'bg-primary text-primary-foreground ring-2 ring-primary/30'
+              : 'glass text-muted-foreground'
           )}
         >
           {citation.id}
         </span>
-        <h4 className="flex-1 text-sm font-medium text-foreground line-clamp-2">
+        <h4 className="flex-1 text-sm font-semibold text-foreground line-clamp-2">
           {citation.title}
         </h4>
       </div>
@@ -81,7 +83,7 @@ export function EvidenceItem({ citation, active, onSelect, showFull = false }: E
 
       {/* Metadata */}
       {showFull && citation.meta && (
-        <div className="mt-3 pt-3 border-t space-y-1 text-xs">
+        <div className="mt-3 pt-3 border-t border-border/50 space-y-1.5 text-xs">
           {citation.meta.site && (
             <div>
               <span className="font-medium">{t('citation.site')}:</span>{' '}
@@ -117,7 +119,7 @@ export function EvidenceItem({ citation, active, onSelect, showFull = false }: E
           href={citation.url}
           target="_blank"
           rel="noopener noreferrer"
-          className="mt-3 inline-flex items-center text-xs text-primary hover:underline"
+          className="mt-3 inline-flex items-center text-xs text-primary hover:underline font-medium glass-panel px-2 py-1 rounded"
           onClick={(e) => e.stopPropagation()}
         >
           Open in Fess

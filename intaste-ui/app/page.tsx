@@ -22,6 +22,7 @@ import { QueryHistory } from '@/components/history/QueryHistory';
 import { AnswerBubble } from '@/components/answer/AnswerBubble';
 import { EvidencePanel } from '@/components/sidebar/EvidencePanel';
 import { LatencyIndicator } from '@/components/common/LatencyIndicator';
+import { SearchingIndicator } from '@/components/common/SearchingIndicator';
 import { ErrorBanner } from '@/components/common/ErrorBanner';
 import { EmptyState } from '@/components/common/EmptyState';
 import { LanguageSwitcher } from '@/components/common/LanguageSwitcher';
@@ -90,10 +91,8 @@ export default function HomePage() {
         <div className="container mx-auto px-4 py-3 flex items-center justify-between">
           <h1 className="text-xl font-bold text-foreground">{t('header.title')}</h1>
           <div className="flex items-center gap-4">
-            {/* Streaming indicator */}
-            {streaming && (
-              <span className="text-sm text-muted-foreground">⚡ {t('header.streaming')}</span>
-            )}
+            {/* Searching indicator with elapsed time */}
+            <SearchingIndicator />
 
             {/* Language Switcher */}
             <LanguageSwitcher />
