@@ -18,7 +18,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useTranslation } from 'react-i18next';
+import { useTranslation } from '@/libs/i18n/client';
 import { useAssistStore } from '@/store/assist.store';
 import { cn } from '@/libs/utils';
 
@@ -76,7 +76,12 @@ export function SearchingIndicator() {
       {/* Status text */}
       <div className="flex items-center gap-2">
         <span className="text-sm font-medium text-foreground">{t('header.streaming')}</span>
-        <span className="text-xs font-mono text-muted-foreground tabular-nums">
+        <span
+          className="text-xs font-mono text-muted-foreground tabular-nums"
+          aria-live="polite"
+          aria-atomic="true"
+          aria-label={t('header.elapsedTime', { time: formatTime(elapsedTime) })}
+        >
           {formatTime(elapsedTime)}
         </span>
       </div>

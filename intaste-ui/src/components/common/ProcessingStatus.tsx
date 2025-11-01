@@ -96,7 +96,9 @@ export function ProcessingStatus({
             <PhaseIcon phase="intent" />
             <div>
               <div className="font-semibold text-foreground">{t('processing.searchKeywords')}</div>
-              <div className="text-xs text-muted-foreground">Query optimization complete</div>
+              <div className="text-xs text-muted-foreground">
+                {t('processing.queryOptimizationComplete')}
+              </div>
             </div>
           </div>
           <div className="ml-13 space-y-2">
@@ -141,7 +143,9 @@ export function ProcessingStatus({
           <PhaseIcon phase="search" />
           <div>
             <div className="font-semibold text-foreground">{t('processing.searching')}</div>
-            <div className="text-xs text-muted-foreground">Finding relevant information...</div>
+            <div className="text-xs text-muted-foreground">
+              {t('processing.findingRelevantInfo')}
+            </div>
           </div>
         </div>
       )}
@@ -157,7 +161,9 @@ export function ProcessingStatus({
               <div className="font-semibold text-green-600 dark:text-green-400">
                 {t('processing.resultsFound', { count: citationsData.total })}
               </div>
-              <div className="text-xs text-muted-foreground">Search completed successfully</div>
+              <div className="text-xs text-muted-foreground">
+                {t('processing.searchCompletedSuccessfully')}
+              </div>
             </div>
           </div>
 
@@ -187,7 +193,9 @@ export function ProcessingStatus({
             <div className="font-semibold text-foreground">
               {t('processing.evaluatingRelevance')}
             </div>
-            <div className="text-xs text-muted-foreground">Analyzing search quality...</div>
+            <div className="text-xs text-muted-foreground">
+              {t('processing.analyzingSearchQuality')}
+            </div>
           </div>
         </div>
       )}
@@ -201,7 +209,9 @@ export function ProcessingStatus({
               <div className="font-semibold text-cyan-600 dark:text-cyan-400">
                 {t('processing.relevanceEvaluated', { count: relevanceData.evaluated_count })}
               </div>
-              <div className="text-xs text-muted-foreground">Quality assessment complete</div>
+              <div className="text-xs text-muted-foreground">
+                {t('processing.qualityAssessmentComplete')}
+              </div>
             </div>
           </div>
           <div className="ml-13">
@@ -224,7 +234,7 @@ export function ProcessingStatus({
           <div>
             <div className="font-semibold text-foreground">{t('processing.generatingAnswer')}</div>
             <div className="text-xs text-muted-foreground">
-              Composing response with citations...
+              {t('processing.composingResponseWithCitations')}
             </div>
           </div>
         </div>
@@ -236,7 +246,9 @@ export function ProcessingStatus({
           <PhaseIcon phase="intent" />
           <div>
             <div className="font-semibold text-foreground">{t('processing.analyzingQuery')}</div>
-            <div className="text-xs text-muted-foreground">Understanding your question...</div>
+            <div className="text-xs text-muted-foreground">
+              {t('processing.understandingQuestion')}
+            </div>
           </div>
         </div>
       )}

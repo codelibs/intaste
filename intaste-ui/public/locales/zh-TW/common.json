@@ -2,6 +2,7 @@
   "header": {
     "title": "Intaste",
     "streaming": "搜尋中...",
+    "elapsedTime": "已用時間: {{time}}",
     "setApiToken": "設定API令牌",
     "apiTokenPrompt": "請輸入您的API令牌："
   },
@@ -26,7 +27,14 @@
     "relevanceEvaluated": "已評估{{count}}筆結果",
     "maxRelevanceScore": "最佳匹配",
     "generatingAnswer": "產生答案中...",
-    "analyzingQuery": "分析查詢中..."
+    "analyzingQuery": "分析查詢中...",
+    "queryOptimizationComplete": "查詢優化已完成",
+    "findingRelevantInfo": "正在尋找相關資訊...",
+    "searchCompletedSuccessfully": "搜尋成功完成",
+    "analyzingSearchQuality": "正在分析搜尋品質...",
+    "qualityAssessmentComplete": "品質評估已完成",
+    "composingResponseWithCitations": "正在組合帶引用的回答...",
+    "understandingQuestion": "正在理解您的問題..."
   },
   "evidence": {
     "selected": "已選擇",

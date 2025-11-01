@@ -2,6 +2,7 @@
   "header": {
     "title": "Intaste",
     "streaming": "Recherche en cours...",
+    "elapsedTime": "Temps écoulé : {{time}}",
     "setApiToken": "Définir le jeton API",
     "apiTokenPrompt": "Entrez votre jeton API :"
   },
@@ -26,7 +27,14 @@
     "relevanceEvaluated": "{{count}} résultats évalués",
     "maxRelevanceScore": "Meilleure correspondance",
     "generatingAnswer": "Génération de la réponse...",
-    "analyzingQuery": "Analyse de la requête..."
+    "analyzingQuery": "Analyse de la requête...",
+    "queryOptimizationComplete": "Optimisation de la requête terminée",
+    "findingRelevantInfo": "Recherche d'informations pertinentes...",
+    "searchCompletedSuccessfully": "Recherche terminée avec succès",
+    "analyzingSearchQuality": "Analyse de la qualité de recherche...",
+    "qualityAssessmentComplete": "Évaluation de la qualité terminée",
+    "composingResponseWithCitations": "Composition de la réponse avec citations...",
+    "understandingQuestion": "Compréhension de votre question..."
   },
   "evidence": {
     "selected": "Sélectionné",

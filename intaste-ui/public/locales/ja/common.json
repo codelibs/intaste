@@ -2,6 +2,7 @@
   "header": {
     "title": "Intaste",
     "streaming": "検索中...",
+    "elapsedTime": "経過時間: {{time}}",
     "setApiToken": "APIトークンを設定",
     "apiTokenPrompt": "APIトークンを入力してください："
   },
@@ -26,7 +27,14 @@
     "relevanceEvaluated": "{{count}}件の結果を評価しました",
     "maxRelevanceScore": "最高関連度",
     "generatingAnswer": "回答を生成中...",
-    "analyzingQuery": "質問を分析中..."
+    "analyzingQuery": "質問を分析中...",
+    "queryOptimizationComplete": "クエリ最適化が完了しました",
+    "findingRelevantInfo": "関連情報を検索中...",
+    "searchCompletedSuccessfully": "検索が正常に完了しました",
+    "analyzingSearchQuality": "検索品質を分析中...",
+    "qualityAssessmentComplete": "品質評価が完了しました",
+    "composingResponseWithCitations": "引用付きの回答を作成中...",
+    "understandingQuestion": "質問を理解しています..."
   },
   "evidence": {
     "selected": "選択中",

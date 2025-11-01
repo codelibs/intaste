@@ -2,6 +2,7 @@
   "header": {
     "title": "Intaste",
     "streaming": "搜索中...",
+    "elapsedTime": "已用时间: {{time}}",
     "setApiToken": "设置API令牌",
     "apiTokenPrompt": "请输入您的API令牌："
   },
@@ -26,7 +27,14 @@
     "relevanceEvaluated": "已评估{{count}}条结果",
     "maxRelevanceScore": "最佳匹配",
     "generatingAnswer": "生成答案中...",
-    "analyzingQuery": "分析查询中..."
+    "analyzingQuery": "分析查询中...",
+    "queryOptimizationComplete": "查询优化已完成",
+    "findingRelevantInfo": "正在查找相关信息...",
+    "searchCompletedSuccessfully": "搜索成功完成",
+    "analyzingSearchQuality": "正在分析搜索质量...",
+    "qualityAssessmentComplete": "质量评估已完成",
+    "composingResponseWithCitations": "正在组合带引用的回答...",
+    "understandingQuestion": "正在理解您的问题..."
   },
   "evidence": {
     "selected": "已选择",
