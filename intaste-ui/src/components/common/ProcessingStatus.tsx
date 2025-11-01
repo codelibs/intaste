@@ -13,6 +13,7 @@
 'use client';
 
 import { useTranslation } from '@/libs/i18n/client';
+import { cn } from '@/libs/utils';
 
 interface ProcessingStatusProps {
   phase: 'intent' | 'search' | 'relevance' | 'compose';
@@ -39,65 +40,137 @@ export function ProcessingStatus({
 }: ProcessingStatusProps) {
   const { t } = useTranslation();
 
+  // Phase icon components with enhanced animations
+  const PhaseIcon = ({
+    phase: iconPhase,
+  }: {
+    phase: 'intent' | 'search' | 'relevance' | 'compose';
+  }) => {
+    const isActive = phase === iconPhase;
+
+    const icons = {
+      intent: {
+        emoji: '🔍',
+        animation: 'animate-spin',
+        color: 'text-blue-500 dark:text-blue-400',
+      },
+      search: {
+        emoji: '🔎',
+        animation: 'animate-pulse',
+        color: 'text-purple-500 dark:text-purple-400',
+      },
+      relevance: {
+        emoji: '⚖️',
+        animation: 'animate-bounce',
+        color: 'text-cyan-500 dark:text-cyan-400',
+      },
+      compose: {
+        emoji: '💬',
+        animation: 'animate-pulse',
+        color: 'text-green-500 dark:text-green-400',
+      },
+    };
+
+    const icon = icons[iconPhase];
+
+    return (
+      <div
+        className={cn(
+          'flex items-center justify-center w-10 h-10 rounded-full',
+          isActive && 'glass'
+        )}
+      >
+        <span className={cn('text-2xl transition-all duration-300', isActive && icon.animation)}>
+          {icon.emoji}
+        </span>
+      </div>
+    );
+  };
+
   return (
-    <div className="space-y-3 text-sm">
+    <div className={cn('glass-card p-6 space-y-4 transition-all duration-300')}>
       {/* Intent data */}
       {intentData && (
-        <div className="space-y-2">
-          <div className="flex items-center gap-2 text-primary">
-            <span>🔍</span>
-            <span className="font-medium">{t('processing.searchKeywords')}:</span>
-          </div>
-          <div className="pl-6 text-foreground font-mono bg-muted/50 rounded p-2">
-            &quot;{intentData.normalized_query}&quot;
-          </div>
-
-          {intentData.filters && Object.keys(intentData.filters).length > 0 && (
-            <div className="pl-6 text-xs text-muted-foreground">
-              📌 {t('processing.filters')}: {JSON.stringify(intentData.filters)}
+        <div className="space-y-3">
+          <div className="flex items-center gap-3">
+            <PhaseIcon phase="intent" />
+            <div>
+              <div className="font-semibold text-foreground">{t('processing.searchKeywords')}</div>
+              <div className="text-xs text-muted-foreground">Query optimization complete</div>
             </div>
-          )}
+          </div>
+          <div className="ml-13 space-y-2">
+            <div className="glass-panel p-3 font-mono text-sm text-foreground">
+              &quot;{intentData.normalized_query}&quot;
+            </div>
 
-          {intentData.followups.length > 0 && (
-            <div className="space-y-1">
-              <div className="pl-6 text-muted-foreground">
-                💡 {t('processing.relatedQuestions')}:
+            {intentData.filters && Object.keys(intentData.filters).length > 0 && (
+              <div className="flex items-start gap-2 text-xs text-muted-foreground">
+                <span>📌</span>
+                <div>
+                  <span className="font-medium">{t('processing.filters')}:</span>
+                  <div className="mt-1 font-mono">
+                    {JSON.stringify(intentData.filters, null, 2)}
+                  </div>
+                </div>
               </div>
-              <ul className="pl-8 space-y-0.5 text-muted-foreground text-xs">
-                {intentData.followups.map((q, i) => (
-                  <li key={i}>• {q}</li>
-                ))}
-              </ul>
-            </div>
-          )}
+            )}
+
+            {intentData.followups.length > 0 && (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <span>💡</span>
+                  <span className="font-medium">{t('processing.relatedQuestions')}:</span>
+                </div>
+                <ul className="pl-6 space-y-1">
+                  {intentData.followups.map((q, i) => (
+                    <li key={i} className="text-xs text-muted-foreground">
+                      • {q}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
         </div>
       )}
 
       {/* Search in progress indicator */}
       {phase === 'search' && (
-        <div className="flex items-center gap-2 text-primary animate-pulse">
-          <span className="inline-block animate-spin h-4 w-4 border-2 border-primary border-t-transparent rounded-full"></span>
-          <span>🔎 {t('processing.searching')}</span>
+        <div className="flex items-center gap-3 animate-pulse">
+          <PhaseIcon phase="search" />
+          <div>
+            <div className="font-semibold text-foreground">{t('processing.searching')}</div>
+            <div className="text-xs text-muted-foreground">Finding relevant information...</div>
+          </div>
         </div>
       )}
 
       {/* Citations data */}
       {citationsData && citationsData.total > 0 && (
-        <div className="space-y-2">
-          <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
-            <span>✅</span>
-            <span className="font-medium">
-              {t('processing.resultsFound', { count: citationsData.total })}
-            </span>
+        <div className="space-y-3">
+          <div className="flex items-center gap-3">
+            <div className="flex items-center justify-center w-10 h-10 rounded-full glass">
+              <span className="text-2xl">✅</span>
+            </div>
+            <div>
+              <div className="font-semibold text-green-600 dark:text-green-400">
+                {t('processing.resultsFound', { count: citationsData.total })}
+              </div>
+              <div className="text-xs text-muted-foreground">Search completed successfully</div>
+            </div>
           </div>
 
           {citationsData.topResults.length > 0 && (
-            <div className="space-y-1">
-              <div className="pl-6 text-muted-foreground">📄 {t('processing.topResults')}:</div>
-              <ol className="pl-8 space-y-1 text-sm">
+            <div className="ml-13 space-y-2">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <span>📄</span>
+                <span className="font-medium">{t('processing.topResults')}:</span>
+              </div>
+              <ol className="pl-6 space-y-1.5">
                 {citationsData.topResults.map((title, i) => (
-                  <li key={i} className="text-foreground">
-                    {i + 1}. {title}
+                  <li key={i} className="text-sm text-foreground">
+                    <span className="font-semibold text-primary">{i + 1}.</span> {title}
                   </li>
                 ))}
               </ol>
@@ -108,41 +181,63 @@ export function ProcessingStatus({
 
       {/* Relevance evaluation in progress indicator */}
       {phase === 'relevance' && (
-        <div className="flex items-center gap-2 text-primary animate-pulse">
-          <span className="inline-block animate-spin h-4 w-4 border-2 border-primary border-t-transparent rounded-full"></span>
-          <span>⚖️ {t('processing.evaluatingRelevance')}</span>
+        <div className="flex items-center gap-3 animate-pulse">
+          <PhaseIcon phase="relevance" />
+          <div>
+            <div className="font-semibold text-foreground">
+              {t('processing.evaluatingRelevance')}
+            </div>
+            <div className="text-xs text-muted-foreground">Analyzing search quality...</div>
+          </div>
         </div>
       )}
 
       {/* Relevance data */}
       {relevanceData && (
-        <div className="space-y-2">
-          <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400">
-            <span>⚖️</span>
-            <span className="font-medium">
-              {t('processing.relevanceEvaluated', { count: relevanceData.evaluated_count })}
-            </span>
+        <div className="space-y-3">
+          <div className="flex items-center gap-3">
+            <PhaseIcon phase="relevance" />
+            <div>
+              <div className="font-semibold text-cyan-600 dark:text-cyan-400">
+                {t('processing.relevanceEvaluated', { count: relevanceData.evaluated_count })}
+              </div>
+              <div className="text-xs text-muted-foreground">Quality assessment complete</div>
+            </div>
           </div>
-          <div className="pl-6 text-sm text-muted-foreground">
-            {t('processing.maxRelevanceScore')}:{' '}
-            <span className="font-mono">{(relevanceData.max_score * 100).toFixed(0)}%</span>
+          <div className="ml-13">
+            <div className="glass-panel p-3 inline-block">
+              <span className="text-sm text-muted-foreground">
+                {t('processing.maxRelevanceScore')}:
+              </span>{' '}
+              <span className="font-mono text-lg font-bold text-foreground">
+                {(relevanceData.max_score * 100).toFixed(0)}%
+              </span>
+            </div>
           </div>
         </div>
       )}
 
       {/* Answer generation in progress indicator */}
       {phase === 'compose' && (
-        <div className="flex items-center gap-2 text-primary animate-pulse">
-          <span className="inline-block animate-spin h-4 w-4 border-2 border-primary border-t-transparent rounded-full"></span>
-          <span>💬 {t('processing.generatingAnswer')}</span>
+        <div className="flex items-center gap-3 animate-pulse">
+          <PhaseIcon phase="compose" />
+          <div>
+            <div className="font-semibold text-foreground">{t('processing.generatingAnswer')}</div>
+            <div className="text-xs text-muted-foreground">
+              Composing response with citations...
+            </div>
+          </div>
         </div>
       )}
 
       {/* Intent analysis in progress (when intentData is not yet available) */}
       {!intentData && phase === 'intent' && (
-        <div className="flex items-center gap-2 text-primary animate-pulse">
-          <span className="inline-block animate-spin h-4 w-4 border-2 border-primary border-t-transparent rounded-full"></span>
-          <span>🔍 {t('processing.analyzingQuery')}</span>
+        <div className="flex items-center gap-3 animate-pulse">
+          <PhaseIcon phase="intent" />
+          <div>
+            <div className="font-semibold text-foreground">{t('processing.analyzingQuery')}</div>
+            <div className="text-xs text-muted-foreground">Understanding your question...</div>
+          </div>
         </div>
       )}
     </div>

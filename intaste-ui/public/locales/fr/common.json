@@ -1,7 +1,7 @@
 {
   "header": {
     "title": "Intaste",
-    "streaming": "Diffusion en cours...",
+    "streaming": "Recherche en cours...",
     "setApiToken": "Définir le jeton API",
     "apiTokenPrompt": "Entrez votre jeton API :"
   },

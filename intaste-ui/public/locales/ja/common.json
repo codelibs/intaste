@@ -1,7 +1,7 @@
 {
   "header": {
     "title": "Intaste",
-    "streaming": "ストリーミング中...",
+    "streaming": "検索中...",
     "setApiToken": "APIトークンを設定",
     "apiTokenPrompt": "APIトークンを入力してください："
   },

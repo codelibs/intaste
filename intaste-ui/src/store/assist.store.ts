@@ -30,6 +30,7 @@ interface AssistState {
   fallbackNotice: string | null;
   queryHistory: string[];
   processingPhase: 'intent' | 'search' | 'relevance' | 'compose' | null;
+  searchStartTime: number | null;
   intentData: {
     normalized_query: string;
     filters?: Record<string, string | number | boolean | null>;
@@ -67,6 +68,7 @@ export const useAssistStore = create<AssistState>((set, get) => ({
   fallbackNotice: null,
   queryHistory: [],
   processingPhase: null,
+  searchStartTime: null,
   intentData: null,
   citationsData: null,
   relevanceData: null,
@@ -80,6 +82,7 @@ export const useAssistStore = create<AssistState>((set, get) => ({
       fallbackNotice: null,
       answer: { text: '', suggested_questions: [] },
       processingPhase: null,
+      searchStartTime: Date.now(),
       intentData: null,
       citationsData: null,
       relevanceData: null,
@@ -175,6 +178,7 @@ export const useAssistStore = create<AssistState>((set, get) => ({
               timings: data.timings,
               loading: false,
               streaming: false,
+              searchStartTime: null,
             });
           },
           onError: (data) => {
@@ -182,6 +186,7 @@ export const useAssistStore = create<AssistState>((set, get) => ({
               error: data.message || 'Streaming failed',
               loading: false,
               streaming: false,
+              searchStartTime: null,
             });
           },
         }
@@ -191,6 +196,7 @@ export const useAssistStore = create<AssistState>((set, get) => ({
         error: error instanceof Error ? error.message : 'Streaming failed',
         loading: false,
         streaming: false,
+        searchStartTime: null,
       });
     }
   },
@@ -228,5 +234,6 @@ export const useAssistStore = create<AssistState>((set, get) => ({
       timings: null,
       fallbackNotice: null,
       queryHistory: [],
+      searchStartTime: null,
     }),
 }));

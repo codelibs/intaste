@@ -32,19 +32,19 @@ export function EvidencePanel({ citations, selectedId, onSelect, className }: Ev
   const selectedCitation = citations.find((c) => c.id === selectedId);
 
   return (
-    <div className={cn('flex flex-col h-full', className)}>
+    <div className={cn('flex flex-col h-full glass-panel', className)}>
       {/* Tab Header */}
-      <div className="border-b" role="tablist">
-        <div className="flex">
+      <div className="border-b border-border/50" role="tablist">
+        <div className="flex p-2 gap-1">
           <button
             role="tab"
             aria-selected={tab === 'selected'}
             onClick={() => setTab('selected')}
             className={cn(
-              'px-4 py-2 text-sm font-medium border-b-2 transition-colors',
+              'flex-1 px-4 py-2.5 text-sm font-medium rounded-lg transition-all duration-200',
               tab === 'selected'
-                ? 'border-primary text-foreground'
-                : 'border-transparent text-muted-foreground hover:text-foreground'
+                ? 'glass-strong text-foreground shadow-sm'
+                : 'text-muted-foreground hover:text-foreground hover:glass'
             )}
           >
             {t('evidence.selected')}
@@ -54,10 +54,10 @@ export function EvidencePanel({ citations, selectedId, onSelect, className }: Ev
             aria-selected={tab === 'all'}
             onClick={() => setTab('all')}
             className={cn(
-              'px-4 py-2 text-sm font-medium border-b-2 transition-colors',
+              'flex-1 px-4 py-2.5 text-sm font-medium rounded-lg transition-all duration-200',
               tab === 'all'
-                ? 'border-primary text-foreground'
-                : 'border-transparent text-muted-foreground hover:text-foreground'
+                ? 'glass-strong text-foreground shadow-sm'
+                : 'text-muted-foreground hover:text-foreground hover:glass'
             )}
           >
             {t('evidence.all', { count: citations.length })}

@@ -1,7 +1,7 @@
 {
   "header": {
     "title": "Intaste",
-    "streaming": "Transmitiendo...",
+    "streaming": "Buscando...",
     "setApiToken": "Establecer token API",
     "apiTokenPrompt": "Ingrese su token API:"
   },

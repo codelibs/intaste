@@ -1,7 +1,7 @@
 {
   "header": {
     "title": "Intaste",
-    "streaming": "流式传输中...",
+    "streaming": "搜索中...",
     "setApiToken": "设置API令牌",
     "apiTokenPrompt": "请输入您的API令牌："
   },

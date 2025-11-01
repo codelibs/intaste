@@ -61,7 +61,8 @@ describe('EvidenceItem', () => {
     );
 
     const card = container.firstChild;
-    expect(card).toHaveClass('border-primary');
+    expect(card).toHaveClass('ring-2');
+    expect(card).toHaveClass('ring-primary/50');
   });
 
   it('calls onSelect when clicked', async () => {
