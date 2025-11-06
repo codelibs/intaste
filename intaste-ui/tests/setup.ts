@@ -31,6 +31,13 @@ global.localStorage = localStorageMock as any;
 // Mock fetch
 global.fetch = vi.fn();
 
+// Mock ResizeObserver (required for Fluent UI components)
+global.ResizeObserver = class ResizeObserver {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+} as any;
+
 // Mock crypto API with full Web Crypto API surface
 const cryptoMock = {
   randomUUID: vi.fn(() => '00000000-0000-0000-0000-000000000000'),

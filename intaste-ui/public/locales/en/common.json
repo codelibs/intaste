@@ -53,7 +53,7 @@
   },
   "empty": {
     "welcome": {
-      "title": "Welcome to Intaste",
+      "title": "Welcome to Intaste, ask me anything",
       "message": "Enter your question above to get started with AI-assisted search.",
       "suggestions": [
         "Ask questions in natural language",

@@ -13,8 +13,20 @@
 'use client';
 
 import { useRef, KeyboardEvent } from 'react';
-import { cn } from '@/libs/utils';
+import { Textarea, Text, makeStyles } from '@fluentui/react-components';
 import { useTranslation } from '@/libs/i18n/client';
+
+const useStyles = makeStyles({
+  root: {
+    width: '100%',
+  },
+  footer: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: '8px',
+  },
+});
 
 interface QueryInputProps {
   value: string;
@@ -34,6 +46,7 @@ export function QueryInput({
   className,
 }: QueryInputProps) {
   const { t } = useTranslation();
+  const styles = useStyles();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
@@ -54,29 +67,24 @@ export function QueryInput({
   };
 
   return (
-    <div className={cn('relative w-full', className)}>
-      <textarea
+    <div className={className}>
+      <Textarea
         ref={textareaRef}
         value={value}
-        onChange={(e) => onChange(e.target.value)}
+        onChange={(_e, data) => onChange(data.value)}
         onKeyDown={handleKeyDown}
         disabled={disabled}
         placeholder={placeholder || t('input.placeholder')}
         rows={3}
-        maxLength={4096}
-        className={cn(
-          'w-full rounded-lg border border-input bg-background px-4 py-3',
-          'text-sm resize-none',
-          'placeholder:text-muted-foreground',
-          'focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2',
-          'disabled:cursor-not-allowed disabled:opacity-50',
-          'transition-colors'
-        )}
+        resize="none"
+        appearance="outline"
+        size="large"
         aria-label="Search query input"
+        className={styles.root}
       />
-      <div className="mt-2 flex items-center justify-between text-xs text-muted-foreground">
-        <span>{t('input.helper')}</span>
-        <span>{t('input.characterCount', { count: value.length })}</span>
+      <div className={styles.footer}>
+        <Text size={200}>{t('input.helper')}</Text>
+        <Text size={200}>{t('input.characterCount', { count: value.length })}</Text>
       </div>
     </div>
   );
