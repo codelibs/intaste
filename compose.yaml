@@ -26,7 +26,7 @@ networks:
 
 services:
   opensearch:
-    image: ghcr.io/codelibs/fess-opensearch:3.2.0
+    image: ghcr.io/codelibs/fess-opensearch:3.3.2
     container_name: intaste-opensearch
     environment:
       - node.name=intaste-opensearch
@@ -58,7 +58,7 @@ services:
     restart: unless-stopped
 
   fess:
-    image: ghcr.io/codelibs/fess:15.2.0
+    image: ghcr.io/codelibs/fess:15.3.2
     container_name: intaste-fess
     depends_on:
       opensearch:
