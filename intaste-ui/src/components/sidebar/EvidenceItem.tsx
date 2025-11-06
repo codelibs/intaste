@@ -14,8 +14,78 @@
 
 import type { Citation } from '@/types/api';
 import { sanitizeHtml } from '@/libs/sanitizer';
-import { cn } from '@/libs/utils';
+import {
+  Card,
+  Badge,
+  Text,
+  Link,
+  makeStyles,
+  mergeClasses,
+  tokens,
+} from '@fluentui/react-components';
+import { ArrowUpRight16Regular } from '@fluentui/react-icons';
 import { useTranslation } from '@/libs/i18n/client';
+
+const useStyles = makeStyles({
+  card: {
+    padding: tokens.spacingVerticalL,
+    cursor: 'pointer',
+    transition: 'all 0.2s ease',
+    ':hover': {
+      transform: 'scale(1.02)',
+    },
+  },
+  cardActive: {
+    outline: `2px solid ${tokens.colorBrandBackground}`,
+    outlineOffset: '0',
+  },
+  header: {
+    display: 'flex',
+    alignItems: 'flex-start',
+    gap: tokens.spacingHorizontalM,
+    marginBottom: tokens.spacingVerticalS,
+  },
+  badgeActive: {
+    backgroundColor: tokens.colorBrandBackground,
+    color: tokens.colorNeutralForegroundOnBrand,
+  },
+  badgeInactive: {
+    backgroundColor: tokens.colorNeutralBackground3,
+    color: tokens.colorNeutralForeground3,
+  },
+  title: {
+    flex: 1,
+    display: '-webkit-box',
+    WebkitLineClamp: 2,
+    WebkitBoxOrient: 'vertical',
+    overflow: 'hidden',
+  },
+  snippet: {
+    marginTop: tokens.spacingVerticalS,
+    lineHeight: '1.6',
+  },
+  snippetClamped: {
+    display: '-webkit-box',
+    WebkitLineClamp: 3,
+    WebkitBoxOrient: 'vertical',
+    overflow: 'hidden',
+  },
+  metadata: {
+    marginTop: tokens.spacingVerticalM,
+    paddingTop: tokens.spacingVerticalM,
+    borderTopWidth: '1px',
+    borderTopStyle: 'solid',
+    borderTopColor: tokens.colorNeutralStroke2,
+  },
+  metadataRow: {
+    display: 'flex',
+    gap: tokens.spacingHorizontalXS,
+    marginBottom: tokens.spacingVerticalXS,
+  },
+  linkContainer: {
+    marginTop: tokens.spacingVerticalM,
+  },
+});
 
 interface EvidenceItemProps {
   citation: Citation;
@@ -26,9 +96,11 @@ interface EvidenceItemProps {
 
 export function EvidenceItem({ citation, active, onSelect, showFull = false }: EvidenceItemProps) {
   const { t } = useTranslation();
+  const styles = useStyles();
 
   return (
-    <div
+    <Card
+      appearance="filled-alternative"
       onClick={onSelect}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {
@@ -39,75 +111,69 @@ export function EvidenceItem({ citation, active, onSelect, showFull = false }: E
       role="button"
       tabIndex={0}
       aria-pressed={active}
-      className={cn(
-        'glass-card p-4 cursor-pointer transition-all duration-200',
-        'hover:glass-strong hover:scale-[1.02]',
-        active && 'ring-2 ring-primary/50'
-      )}
+      className={mergeClasses(styles.card, active && styles.cardActive)}
     >
-      {/* Citation Number */}
-      <div className="flex items-start gap-3 mb-2">
-        <span
-          className={cn(
-            'flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shadow-sm',
-            active
-              ? 'bg-primary text-primary-foreground ring-2 ring-primary/30'
-              : 'glass text-muted-foreground'
-          )}
+      {/* Citation Number and Title */}
+      <div className={styles.header}>
+        <Badge
+          appearance="filled"
+          shape="circular"
+          size="large"
+          className={active ? styles.badgeActive : styles.badgeInactive}
         >
           {citation.id}
-        </span>
-        <h4 className="flex-1 text-sm font-semibold text-foreground line-clamp-2">
+        </Badge>
+        <Text size={300} weight="semibold" className={styles.title}>
           {citation.title}
-        </h4>
+        </Text>
       </div>
 
       {/* Snippet - SECURITY: Must sanitize HTML from Fess search results */}
       {citation.snippet && (
         <div
-          className="text-xs text-muted-foreground mt-2 leading-relaxed"
+          className={mergeClasses(styles.snippet, !showFull && styles.snippetClamped)}
           // SECURITY: citation.snippet may contain HTML from Fess with search term highlighting.
           // We use sanitizeHtml() to prevent XSS attacks while preserving safe formatting tags.
           // This is the ONLY location in the codebase where dangerouslySetInnerHTML is used.
           dangerouslySetInnerHTML={{
             __html: sanitizeHtml(citation.snippet),
           }}
-          style={{
-            display: showFull ? 'block' : '-webkit-box',
-            WebkitLineClamp: showFull ? 'unset' : 3,
-            WebkitBoxOrient: 'vertical',
-            overflow: showFull ? 'visible' : 'hidden',
-          }}
         />
       )}
 
       {/* Metadata */}
       {showFull && citation.meta && (
-        <div className="mt-3 pt-3 border-t border-border/50 space-y-1.5 text-xs">
+        <div className={styles.metadata}>
           {citation.meta.site && (
-            <div>
-              <span className="font-medium">{t('citation.site')}:</span>{' '}
-              <span className="text-muted-foreground">{citation.meta.site}</span>
+            <div className={styles.metadataRow}>
+              <Text size={200} weight="semibold">
+                {t('citation.site')}:
+              </Text>
+              <Text size={200}>{citation.meta.site}</Text>
             </div>
           )}
           {citation.meta.content_type && (
-            <div>
-              <span className="font-medium">{t('citation.type')}:</span>{' '}
-              <span className="text-muted-foreground">{citation.meta.content_type}</span>
+            <div className={styles.metadataRow}>
+              <Text size={200} weight="semibold">
+                {t('citation.type')}:
+              </Text>
+              <Text size={200}>{citation.meta.content_type}</Text>
             </div>
           )}
           {citation.score !== undefined && (
-            <div>
-              <span className="font-medium">{t('citation.searchScore')}:</span>{' '}
-              <span className="text-muted-foreground">{citation.score.toFixed(2)}</span>
+            <div className={styles.metadataRow}>
+              <Text size={200} weight="semibold">
+                {t('citation.searchScore')}:
+              </Text>
+              <Text size={200}>{citation.score.toFixed(2)}</Text>
             </div>
           )}
           {citation.relevance_score !== undefined && (
-            <div>
-              <span className="font-medium">{t('citation.relevanceScore')}:</span>{' '}
-              <span className="text-muted-foreground">
-                {(citation.relevance_score * 100).toFixed(0)}%
-              </span>
+            <div className={styles.metadataRow}>
+              <Text size={200} weight="semibold">
+                {t('citation.relevanceScore')}:
+              </Text>
+              <Text size={200}>{(citation.relevance_score * 100).toFixed(0)}%</Text>
             </div>
           )}
         </div>
@@ -115,24 +181,15 @@ export function EvidenceItem({ citation, active, onSelect, showFull = false }: E
 
       {/* Open in Fess Link */}
       {showFull && (
-        <a
-          href={citation.url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="mt-3 inline-flex items-center text-xs text-primary hover:underline font-medium glass-panel px-2 py-1 rounded"
-          onClick={(e) => e.stopPropagation()}
-        >
-          Open in Fess
-          <svg className="ml-1 w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-            />
-          </svg>
-        </a>
+        <div className={styles.linkContainer}>
+          <Link href={citation.url} target="_blank" onClick={(e) => e.stopPropagation()}>
+            <Text size={200} weight="medium">
+              Open in Fess
+            </Text>
+            <ArrowUpRight16Regular style={{ marginLeft: tokens.spacingHorizontalXXS }} />
+          </Link>
+        </div>
       )}
-    </div>
+    </Card>
   );
 }

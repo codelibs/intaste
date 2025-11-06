@@ -129,6 +129,11 @@ export default function HomePage() {
               />
             )}
 
+            {/* Empty State - shown above input when no content */}
+            {!loading && !error && !answer && citations.length === 0 && (
+              <EmptyState type="welcome" />
+            )}
+
             {/* Query Input */}
             <QueryInput
               value={query}
@@ -158,11 +163,6 @@ export default function HomePage() {
                 fallbackNotice={fallbackNotice}
                 onCitationClick={handleCitationClick}
               />
-            )}
-
-            {/* Empty State */}
-            {!loading && !error && !answer && citations.length === 0 && (
-              <EmptyState type="welcome" />
             )}
 
             {/* Loading State */}

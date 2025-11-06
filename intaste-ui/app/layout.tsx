@@ -14,6 +14,7 @@ import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import '@/styles/globals.css';
 import { I18nProvider } from '@/providers/I18nProvider';
+import { FluentProvider } from '@/providers/FluentProvider';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -25,13 +26,18 @@ export const metadata: Metadata = {
   creator: 'CodeLibs',
   publisher: 'CodeLibs',
   robots: 'noindex, nofollow', // Adjust for production
+  icons: {
+    icon: '/icon.svg',
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
-        <I18nProvider>{children}</I18nProvider>
+        <FluentProvider>
+          <I18nProvider>{children}</I18nProvider>
+        </FluentProvider>
       </body>
     </html>
   );

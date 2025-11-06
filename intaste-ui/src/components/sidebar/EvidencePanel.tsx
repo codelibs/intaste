@@ -15,8 +15,46 @@
 import { useState } from 'react';
 import type { Citation } from '@/types/api';
 import { EvidenceItem } from './EvidenceItem';
-import { cn } from '@/libs/utils';
+import {
+  TabList,
+  Tab,
+  Card,
+  Text,
+  makeStyles,
+  mergeClasses,
+  tokens,
+  type SelectTabData,
+  type SelectTabEvent,
+} from '@fluentui/react-components';
 import { useTranslation } from '@/libs/i18n/client';
+
+const useStyles = makeStyles({
+  container: {
+    display: 'flex',
+    flexDirection: 'column',
+    height: '100%',
+  },
+  tabsContainer: {
+    borderBottomWidth: '1px',
+    borderBottomStyle: 'solid',
+    borderBottomColor: tokens.colorNeutralStroke2,
+  },
+  tabContent: {
+    flex: 1,
+    overflowY: 'auto',
+    padding: tokens.spacingVerticalL,
+  },
+  citationsList: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: tokens.spacingVerticalM,
+  },
+  emptyState: {
+    textAlign: 'center',
+    paddingTop: tokens.spacingVerticalXXXL,
+    paddingBottom: tokens.spacingVerticalXXXL,
+  },
+});
 
 interface EvidencePanelProps {
   citations: Citation[];
@@ -27,46 +65,27 @@ interface EvidencePanelProps {
 
 export function EvidencePanel({ citations, selectedId, onSelect, className }: EvidencePanelProps) {
   const { t } = useTranslation();
+  const styles = useStyles();
   const [tab, setTab] = useState<'selected' | 'all'>('selected');
 
   const selectedCitation = citations.find((c) => c.id === selectedId);
 
+  const handleTabSelect = (_event: SelectTabEvent, data: SelectTabData) => {
+    setTab(data.value as 'selected' | 'all');
+  };
+
   return (
-    <div className={cn('flex flex-col h-full glass-panel', className)}>
+    <Card appearance="filled" className={mergeClasses(styles.container, className)}>
       {/* Tab Header */}
-      <div className="border-b border-border/50" role="tablist">
-        <div className="flex p-2 gap-1">
-          <button
-            role="tab"
-            aria-selected={tab === 'selected'}
-            onClick={() => setTab('selected')}
-            className={cn(
-              'flex-1 px-4 py-2.5 text-sm font-medium rounded-lg transition-all duration-200',
-              tab === 'selected'
-                ? 'glass-strong text-foreground shadow-sm'
-                : 'text-muted-foreground hover:text-foreground hover:glass'
-            )}
-          >
-            {t('evidence.selected')}
-          </button>
-          <button
-            role="tab"
-            aria-selected={tab === 'all'}
-            onClick={() => setTab('all')}
-            className={cn(
-              'flex-1 px-4 py-2.5 text-sm font-medium rounded-lg transition-all duration-200',
-              tab === 'all'
-                ? 'glass-strong text-foreground shadow-sm'
-                : 'text-muted-foreground hover:text-foreground hover:glass'
-            )}
-          >
-            {t('evidence.all', { count: citations.length })}
-          </button>
-        </div>
+      <div className={styles.tabsContainer}>
+        <TabList selectedValue={tab} onTabSelect={handleTabSelect}>
+          <Tab value="selected">{t('evidence.selected')}</Tab>
+          <Tab value="all">{t('evidence.all', { count: citations.length })}</Tab>
+        </TabList>
       </div>
 
       {/* Tab Content */}
-      <div className="flex-1 overflow-y-auto p-4" role="tabpanel">
+      <div className={styles.tabContent}>
         {tab === 'selected' ? (
           (() => {
             // Filter citations by relevance threshold (default 0.8 = 80%)
@@ -78,7 +97,7 @@ export function EvidencePanel({ citations, selectedId, onSelect, className }: Ev
             // Show high relevance citations if any exist, otherwise show selected citation
             if (highRelevanceCitations.length > 0) {
               return (
-                <div className="space-y-3">
+                <div className={styles.citationsList}>
                   {highRelevanceCitations.map((citation) => (
                     <EvidenceItem
                       key={citation.id}
@@ -101,14 +120,14 @@ export function EvidencePanel({ citations, selectedId, onSelect, className }: Ev
               );
             } else {
               return (
-                <div className="text-center text-sm text-muted-foreground py-8">
-                  {t('evidence.noSelection')}
+                <div className={styles.emptyState}>
+                  <Text size={300}>{t('evidence.noSelection')}</Text>
                 </div>
               );
             }
           })()
         ) : (
-          <div className="space-y-3">
+          <div className={styles.citationsList}>
             {citations.map((citation) => (
               <EvidenceItem
                 key={citation.id}
@@ -120,6 +139,6 @@ export function EvidencePanel({ citations, selectedId, onSelect, className }: Ev
           </div>
         )}
       </div>
-    </div>
+    </Card>
   );
 }

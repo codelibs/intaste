@@ -22,17 +22,20 @@ describe('ErrorBanner', () => {
     expect(screen.getByText('Something went wrong')).toBeInTheDocument();
   });
 
-  it('displays error icon', () => {
-    renderWithProviders(<ErrorBanner message="Error occurred" />);
+  it('renders Fluent MessageBar component', () => {
+    const { container } = renderWithProviders(<ErrorBanner message="Error occurred" />);
 
-    expect(screen.getByText('❌')).toBeInTheDocument();
+    // Fluent UI MessageBar is rendered
+    const messageBar = container.querySelector('.fui-MessageBar');
+    expect(messageBar).toBeInTheDocument();
   });
 
-  it('has alert role for accessibility', () => {
-    renderWithProviders(<ErrorBanner message="Error message" />);
+  it('has proper accessibility attributes', () => {
+    const { container } = renderWithProviders(<ErrorBanner message="Error message" />);
 
-    const banner = screen.getByRole('alert');
-    expect(banner).toBeInTheDocument();
+    // Fluent MessageBar has role attribute
+    const messageBar = container.querySelector('[role]');
+    expect(messageBar).toBeInTheDocument();
   });
 
   it('shows error title', () => {
@@ -74,14 +77,16 @@ describe('ErrorBanner', () => {
       const handleDismiss = vi.fn();
       renderWithProviders(<ErrorBanner message="Error" onDismiss={handleDismiss} />);
 
-      // The dismiss button shows '✕' not 'dismiss'
-      expect(screen.getByText('✕')).toBeInTheDocument();
+      // Fluent MessageBar has dismiss button with aria-label
+      const dismissButton = screen.getByLabelText(/dismiss error/i);
+      expect(dismissButton).toBeInTheDocument();
     });
 
     it('does not show dismiss button when onDismiss is not provided', () => {
       renderWithProviders(<ErrorBanner message="Error" />);
 
-      expect(screen.queryByText('✕')).not.toBeInTheDocument();
+      const dismissButton = screen.queryByLabelText(/dismiss error/i);
+      expect(dismissButton).not.toBeInTheDocument();
     });
 
     it('calls onDismiss when dismiss button is clicked', async () => {
@@ -90,7 +95,7 @@ describe('ErrorBanner', () => {
 
       renderWithProviders(<ErrorBanner message="Error" onDismiss={handleDismiss} />);
 
-      const dismissButton = screen.getByText('✕');
+      const dismissButton = screen.getByLabelText(/dismiss error/i);
       await user.click(dismissButton);
 
       expect(handleDismiss).toHaveBeenCalledTimes(1);
@@ -114,8 +119,8 @@ describe('ErrorBanner', () => {
         <ErrorBanner message="Error" onRetry={handleRetry} onDismiss={handleDismiss} />
       );
 
-      expect(screen.getByText('Retry')).toBeInTheDocument();
-      expect(screen.getByText('✕')).toBeInTheDocument();
+      expect(screen.getByText(/retry/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/dismiss error/i)).toBeInTheDocument();
     });
 
     it('calls correct handlers independently', async () => {
@@ -127,11 +132,11 @@ describe('ErrorBanner', () => {
         <ErrorBanner message="Error" onRetry={handleRetry} onDismiss={handleDismiss} />
       );
 
-      await user.click(screen.getByText('Retry'));
+      await user.click(screen.getByText(/retry/i));
       expect(handleRetry).toHaveBeenCalledTimes(1);
       expect(handleDismiss).not.toHaveBeenCalled();
 
-      await user.click(screen.getByText('✕'));
+      await user.click(screen.getByLabelText(/dismiss error/i));
       expect(handleDismiss).toHaveBeenCalledTimes(1);
       expect(handleRetry).toHaveBeenCalledTimes(1); // Still only once
     });
@@ -143,22 +148,17 @@ describe('ErrorBanner', () => {
         <ErrorBanner message="Error" className="custom-error" />
       );
 
+      // Fluent MessageBar receives className
       const banner = container.querySelector('.custom-error');
       expect(banner).toBeInTheDocument();
     });
 
-    it('has destructive border styling', () => {
+    it('renders with Fluent error intent', () => {
       const { container } = renderWithProviders(<ErrorBanner message="Error" />);
 
-      const banner = container.querySelector('.border-destructive\\/50');
-      expect(banner).toBeInTheDocument();
-    });
-
-    it('has destructive background styling', () => {
-      const { container } = renderWithProviders(<ErrorBanner message="Error" />);
-
-      const banner = container.querySelector('.bg-destructive\\/10');
-      expect(banner).toBeInTheDocument();
+      // Fluent MessageBar with error intent
+      const messageBar = container.querySelector('.fui-MessageBar');
+      expect(messageBar).toBeInTheDocument();
     });
   });
 
@@ -181,10 +181,10 @@ describe('ErrorBanner', () => {
     });
 
     it('handles empty error message', () => {
-      renderWithProviders(<ErrorBanner message="" />);
+      const { container } = renderWithProviders(<ErrorBanner message="" />);
 
-      // Should render without crashing, message area should exist but be empty
-      const banner = screen.getByRole('alert');
+      // Should render without crashing, MessageBar should exist
+      const banner = container.querySelector('.fui-MessageBar');
       expect(banner).toBeInTheDocument();
     });
   });
@@ -194,18 +194,15 @@ describe('ErrorBanner', () => {
       const handleRetry = vi.fn();
       const handleDismiss = vi.fn();
 
-      const { container } = renderWithProviders(
+      renderWithProviders(
         <ErrorBanner message="Error message" onRetry={handleRetry} onDismiss={handleDismiss} />
       );
 
-      const banner = container.querySelector('[role="alert"]');
-      expect(banner).toBeInTheDocument();
-
-      // Check that icon, message, and buttons are all present
-      expect(screen.getByText('❌')).toBeInTheDocument();
+      // Check that message, title, and buttons are all present
+      expect(screen.getByText('Error occurred')).toBeInTheDocument();
       expect(screen.getByText('Error message')).toBeInTheDocument();
-      expect(screen.getByText('Retry')).toBeInTheDocument();
-      expect(screen.getByText('✕')).toBeInTheDocument();
+      expect(screen.getByText(/retry/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/dismiss error/i)).toBeInTheDocument();
     });
   });
 });

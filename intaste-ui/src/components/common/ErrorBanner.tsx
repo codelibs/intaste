@@ -12,8 +12,22 @@
 
 'use client';
 
-import { cn } from '@/libs/utils';
+import {
+  MessageBar,
+  MessageBarBody,
+  MessageBarTitle,
+  MessageBarActions,
+  Button,
+  makeStyles,
+} from '@fluentui/react-components';
+import { DismissRegular } from '@fluentui/react-icons';
 import { useTranslation } from '@/libs/i18n/client';
+
+const useStyles = makeStyles({
+  retryButton: {
+    minWidth: 'auto',
+  },
+});
 
 interface ErrorBannerProps {
   message: string;
@@ -24,38 +38,38 @@ interface ErrorBannerProps {
 
 export function ErrorBanner({ message, onRetry, onDismiss, className }: ErrorBannerProps) {
   const { t } = useTranslation();
+  const styles = useStyles();
 
   return (
-    <div
-      className={cn('rounded-lg border border-destructive/50 bg-destructive/10 p-4', className)}
-      role="alert"
-    >
-      <div className="flex items-start gap-3">
-        <span className="text-xl">❌</span>
-        <div className="flex-1">
-          <p className="text-sm font-medium text-destructive mb-1">{t('error.title')}</p>
-          <p className="text-sm text-destructive/90">{message}</p>
-        </div>
-        <div className="flex gap-2">
-          {onRetry && (
-            <button
-              onClick={onRetry}
-              className="text-xs font-medium text-destructive hover:underline"
-            >
-              {t('error.retry')}
-            </button>
-          )}
-          {onDismiss && (
-            <button
+    <MessageBar intent="error" className={className}>
+      <MessageBarBody>
+        <MessageBarTitle>{t('error.title')}</MessageBarTitle>
+        {message}
+      </MessageBarBody>
+      <MessageBarActions
+        containerAction={
+          onDismiss ? (
+            <Button
+              appearance="transparent"
+              icon={<DismissRegular />}
               onClick={onDismiss}
-              className="text-xs font-medium text-muted-foreground hover:text-foreground"
               aria-label="Dismiss error"
-            >
-              {t('error.dismiss')}
-            </button>
-          )}
-        </div>
-      </div>
-    </div>
+              size="small"
+            />
+          ) : undefined
+        }
+      >
+        {onRetry && (
+          <Button
+            appearance="transparent"
+            onClick={onRetry}
+            className={styles.retryButton}
+            size="small"
+          >
+            {t('error.retry')}
+          </Button>
+        )}
+      </MessageBarActions>
+    </MessageBar>
   );
 }

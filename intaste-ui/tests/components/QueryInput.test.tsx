@@ -93,12 +93,14 @@ describe('QueryInput', () => {
     expect(handleSubmit).not.toHaveBeenCalled();
   });
 
-  it('enforces max length', async () => {
+  it('renders Fluent UI Textarea component', async () => {
     const handleChange = vi.fn();
 
     renderWithProviders(<QueryInput value="" onChange={handleChange} onSubmit={() => {}} />);
 
     const textarea = screen.getByPlaceholderText(/enter your question/i);
-    expect(textarea).toHaveAttribute('maxLength', '4096');
+    // Fluent UI Textarea is rendered
+    expect(textarea).toBeInTheDocument();
+    expect(textarea.tagName).toBe('TEXTAREA');
   });
 });

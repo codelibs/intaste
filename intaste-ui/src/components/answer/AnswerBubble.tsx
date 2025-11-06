@@ -14,11 +14,98 @@
 
 import React from 'react';
 import type { Answer } from '@/types/api';
-import { cn } from '@/libs/utils';
+import { Card, Text, Button, makeStyles, mergeClasses, tokens } from '@fluentui/react-components';
+import { LightbulbRegular } from '@fluentui/react-icons';
 import { ProcessingStatus } from '@/components/common/ProcessingStatus';
 import { useTranslation } from '@/libs/i18n/client';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+
+const useStyles = makeStyles({
+  card: {
+    padding: tokens.spacingVerticalXXL,
+  },
+  fallbackNotice: {
+    marginBottom: tokens.spacingVerticalL,
+    padding: tokens.spacingVerticalM,
+    backgroundColor: tokens.colorPaletteYellowBackground2,
+    borderRadius: tokens.borderRadiusMedium,
+  },
+  markdownContainer: {
+    lineHeight: '1.6',
+  },
+  streamingCursor: {
+    display: 'inline-block',
+    width: '2px',
+    height: '1rem',
+    marginLeft: tokens.spacingHorizontalXS,
+    backgroundColor: tokens.colorBrandBackground,
+    animationName: {
+      '0%, 100%': { opacity: 1 },
+      '50%': { opacity: 0 },
+    },
+    animationDuration: '1s',
+    animationIterationCount: 'infinite',
+  },
+  suggestedQuestionsSection: {
+    marginTop: tokens.spacingVerticalXXL,
+    paddingTop: tokens.spacingVerticalL,
+    borderTopWidth: '1px',
+    borderTopStyle: 'solid',
+    borderTopColor: tokens.colorNeutralStroke2,
+  },
+  suggestedQuestionsHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: tokens.spacingHorizontalS,
+    marginBottom: tokens.spacingVerticalM,
+  },
+  questionsList: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: tokens.spacingVerticalS,
+  },
+  citationButton: {
+    padding: '0',
+    minWidth: 'auto',
+    height: 'auto',
+  },
+  // Markdown styling
+  markdownParagraph: {
+    marginBottom: tokens.spacingVerticalL,
+    '&:last-child': {
+      marginBottom: '0',
+    },
+  },
+  markdownHeading3: {
+    fontSize: tokens.fontSizeBase400,
+    fontWeight: tokens.fontWeightSemibold,
+    marginTop: tokens.spacingVerticalL,
+    marginBottom: tokens.spacingVerticalS,
+  },
+  markdownHeading4: {
+    fontSize: tokens.fontSizeBase300,
+    fontWeight: tokens.fontWeightSemibold,
+    marginTop: tokens.spacingVerticalM,
+    marginBottom: tokens.spacingVerticalS,
+  },
+  markdownList: {
+    marginBottom: tokens.spacingVerticalL,
+    marginLeft: tokens.spacingHorizontalXL,
+  },
+  markdownListItem: {
+    marginLeft: tokens.spacingHorizontalL,
+  },
+  markdownCode: {
+    backgroundColor: tokens.colorNeutralBackground2,
+    paddingLeft: tokens.spacingHorizontalXXS,
+    paddingRight: tokens.spacingHorizontalXXS,
+    paddingTop: '2px',
+    paddingBottom: '2px',
+    borderRadius: tokens.borderRadiusSmall,
+    fontSize: tokens.fontSizeBase200,
+  },
+});
 
 interface AnswerBubbleProps {
   answer: Answer;
@@ -54,6 +141,7 @@ export function AnswerBubble({
   className,
 }: AnswerBubbleProps) {
   const { t } = useTranslation();
+  const styles = useStyles();
 
   // Render Markdown with clickable citation markers
   const renderMarkdownWithCitations = (text: string) => {
@@ -71,14 +159,15 @@ export function AnswerBubble({
                   if (match) {
                     const citationId = parseInt(match[1], 10);
                     return (
-                      <button
+                      <Button
                         key={`cite-${idx}`}
+                        appearance="transparent"
                         onClick={() => onCitationClick?.(citationId)}
-                        className="text-primary hover:underline focus:outline-none focus:ring-1 focus:ring-ring rounded"
+                        className={styles.citationButton}
                         aria-label={t('answer.viewCitation', { id: citationId })}
                       >
-                        {part}
-                      </button>
+                        <Text style={{ color: tokens.colorBrandForeground1 }}>{part}</Text>
+                      </Button>
                     );
                   }
                   return <span key={`text-${idx}`}>{part}</span>;
@@ -88,7 +177,7 @@ export function AnswerBubble({
             };
 
             return (
-              <p className="mb-4 last:mb-0">
+              <p className={styles.markdownParagraph}>
                 {Array.isArray(children)
                   ? children.map((child, idx) => (
                       <React.Fragment key={idx}>{processChildren(child)}</React.Fragment>
@@ -98,22 +187,26 @@ export function AnswerBubble({
             );
           },
           // Style headings
-          h3: ({ children }) => <h3 className="text-lg font-semibold mt-4 mb-2">{children}</h3>,
-          h4: ({ children }) => <h4 className="text-base font-semibold mt-3 mb-2">{children}</h4>,
+          h3: ({ children }) => <h3 className={styles.markdownHeading3}>{children}</h3>,
+          h4: ({ children }) => <h4 className={styles.markdownHeading4}>{children}</h4>,
           // Style lists
           ul: ({ children }) => (
-            <ul className="list-disc list-inside mb-4 space-y-1">{children}</ul>
+            <ul className={styles.markdownList} style={{ listStyleType: 'disc' }}>
+              {children}
+            </ul>
           ),
           ol: ({ children }) => (
-            <ol className="list-decimal list-inside mb-4 space-y-1">{children}</ol>
+            <ol className={styles.markdownList} style={{ listStyleType: 'decimal' }}>
+              {children}
+            </ol>
           ),
-          li: ({ children }) => <li className="ml-4">{children}</li>,
+          li: ({ children }) => <li className={styles.markdownListItem}>{children}</li>,
           // Style inline code and emphasis
-          strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
-          em: ({ children }) => <em className="italic">{children}</em>,
-          code: ({ children }) => (
-            <code className="bg-muted px-1 py-0.5 rounded text-sm">{children}</code>
+          strong: ({ children }) => (
+            <strong style={{ fontWeight: tokens.fontWeightSemibold }}>{children}</strong>
           ),
+          em: ({ children }) => <em style={{ fontStyle: 'italic' }}>{children}</em>,
+          code: ({ children }) => <code className={styles.markdownCode}>{children}</code>,
         }}
       >
         {text}
@@ -122,15 +215,17 @@ export function AnswerBubble({
   };
 
   return (
-    <div className={cn('glass-card p-6', className)}>
+    <Card appearance="filled" className={mergeClasses(styles.card, className)}>
       {fallbackNotice && (
-        <div className="mb-4 flex items-start gap-2 glass-panel p-3 text-xs text-yellow-800 dark:text-yellow-200">
-          <span className="text-base">{t('answer.fallbackNotice')}</span>
-          <span>{fallbackNotice}</span>
-        </div>
+        <Card appearance="filled" className={styles.fallbackNotice}>
+          <Text size={300} weight="semibold">
+            {t('answer.fallbackNotice')}
+          </Text>
+          <Text size={200}>{fallbackNotice}</Text>
+        </Card>
       )}
 
-      <div className="prose prose-sm dark:prose-invert max-w-none">
+      <div className={styles.markdownContainer}>
         {processingPhase ? (
           // Display detailed processing status
           <ProcessingStatus
@@ -141,13 +236,10 @@ export function AnswerBubble({
           />
         ) : (
           // Display answer text with Markdown rendering
-          <div className="text-foreground leading-relaxed">
+          <div>
             {renderMarkdownWithCitations(answer.text)}
             {streaming && (
-              <span
-                className="inline-block w-2 h-4 ml-1 bg-primary animate-pulse"
-                aria-label="Streaming"
-              >
+              <span className={styles.streamingCursor} aria-label="Streaming">
                 |
               </span>
             )}
@@ -156,23 +248,26 @@ export function AnswerBubble({
       </div>
 
       {answer.suggested_questions && answer.suggested_questions.length > 0 && (
-        <div className="mt-6 pt-4 border-t border-border/50">
-          <p className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
-            <span>💡</span>
-            {t('answer.relatedQuestions')}
-          </p>
-          <div className="flex flex-col gap-2">
+        <div className={styles.suggestedQuestionsSection}>
+          <div className={styles.suggestedQuestionsHeader}>
+            <LightbulbRegular />
+            <Text size={300} weight="semibold">
+              {t('answer.relatedQuestions')}
+            </Text>
+          </div>
+          <div className={styles.questionsList}>
             {answer.suggested_questions.map((question, idx) => (
-              <div
+              <Button
                 key={idx}
-                className="glass-panel px-3 py-2 text-sm text-foreground hover:glass-strong transition-all duration-200 cursor-pointer"
+                appearance="subtle"
+                style={{ height: 'auto', padding: tokens.spacingVerticalM }}
               >
-                {question}
-              </div>
+                <Text size={300}>{question}</Text>
+              </Button>
             ))}
           </div>
         </div>
       )}
-    </div>
+    </Card>
   );
 }

@@ -53,7 +53,7 @@
   },
   "empty": {
     "welcome": {
-      "title": "Intaste へようこそ",
+      "title": "Intasteへようこそ、何でも聞いてください",
       "message": "上記に質問を入力してAI支援検索を開始してください。",
       "suggestions": [
         "自然な言葉で質問できます",
