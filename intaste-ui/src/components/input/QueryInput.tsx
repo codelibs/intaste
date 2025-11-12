@@ -19,12 +19,23 @@ import { useTranslation } from '@/libs/i18n/client';
 const useStyles = makeStyles({
   root: {
     width: '100%',
+    transitionProperty: 'all',
+    transitionDuration: '200ms',
+    transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)',
   },
   footer: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
     marginTop: '8px',
+  },
+  helperText: {
+    opacity: '0.7',
+    transitionProperty: 'opacity',
+    transitionDuration: '200ms',
+  },
+  charCount: {
+    fontVariantNumeric: 'tabular-nums',
   },
 });
 
@@ -83,8 +94,8 @@ export function QueryInput({
         className={styles.root}
       />
       <div className={styles.footer}>
-        <Text size={200}>{t('input.helper')}</Text>
-        <Text size={200}>{t('input.characterCount', { count: value.length })}</Text>
+        <Text size={200} className={styles.helperText}>{t('input.helper')}</Text>
+        <Text size={200} className={styles.charCount}>{t('input.characterCount', { count: value.length })}</Text>
       </div>
     </div>
   );
