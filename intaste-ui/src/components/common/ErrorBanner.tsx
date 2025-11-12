@@ -12,22 +12,8 @@
 
 'use client';
 
-import {
-  MessageBar,
-  MessageBarBody,
-  MessageBarTitle,
-  MessageBarActions,
-  Button,
-  makeStyles,
-} from '@fluentui/react-components';
-import { DismissRegular } from '@fluentui/react-icons';
 import { useTranslation } from '@/libs/i18n/client';
-
-const useStyles = makeStyles({
-  retryButton: {
-    minWidth: 'auto',
-  },
-});
+import { Banner } from './Banner';
 
 interface ErrorBannerProps {
   message: string;
@@ -36,40 +22,22 @@ interface ErrorBannerProps {
   className?: string;
 }
 
+/**
+ * ErrorBanner component - now using the unified Banner component
+ * Displays error messages with optional retry and dismiss actions
+ */
 export function ErrorBanner({ message, onRetry, onDismiss, className }: ErrorBannerProps) {
   const { t } = useTranslation();
-  const styles = useStyles();
 
   return (
-    <MessageBar intent="error" className={className}>
-      <MessageBarBody>
-        <MessageBarTitle>{t('error.title')}</MessageBarTitle>
-        {message}
-      </MessageBarBody>
-      <MessageBarActions
-        containerAction={
-          onDismiss ? (
-            <Button
-              appearance="transparent"
-              icon={<DismissRegular />}
-              onClick={onDismiss}
-              aria-label="Dismiss error"
-              size="small"
-            />
-          ) : undefined
-        }
-      >
-        {onRetry && (
-          <Button
-            appearance="transparent"
-            onClick={onRetry}
-            className={styles.retryButton}
-            size="small"
-          >
-            {t('error.retry')}
-          </Button>
-        )}
-      </MessageBarActions>
-    </MessageBar>
+    <Banner
+      intent="error"
+      title={t('error.title')}
+      message={message}
+      onAction={onRetry}
+      actionLabel={onRetry ? t('error.retry') : undefined}
+      onDismiss={onDismiss}
+      className={className}
+    />
   );
 }
