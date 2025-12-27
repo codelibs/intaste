@@ -185,7 +185,7 @@ jobs:
           sed -i "s|image: .*intaste-ui.*|image: ${{ env.REGISTRY }}/${{ env.UI_IMAGE_NAME }}:$VERSION|g" compose.yaml
 
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v7
+        uses: peter-evans/create-pull-request@v8
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           commit-message: "chore: update Docker images to ${{ github.ref_name }}"
