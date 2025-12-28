@@ -245,7 +245,7 @@ describe('sanitizeHtml', () => {
     it('should strip all HTML tags when window is undefined (SSR)', () => {
       // Mock window being undefined
       const originalWindow = global.window;
-      // @ts-ignore
+      // @ts-expect-error - Testing SSR behavior without window
       delete global.window;
 
       const dirty = '<em>emphasized</em> and <script>alert("xss")</script> text';
@@ -264,7 +264,7 @@ describe('sanitizeHtml', () => {
     it('should remove overlapping tags (<<script>script>) - CVE bypass attack', () => {
       // This test verifies the fix for incomplete multi-character sanitization
       const originalWindow = global.window;
-      // @ts-ignore
+      // @ts-expect-error - Testing SSR behavior without window
       delete global.window;
 
       const dirty = '<<script>script>alert("xss")</script>';
@@ -283,7 +283,7 @@ describe('sanitizeHtml', () => {
 
     it('should remove deeply nested malformed tags', () => {
       const originalWindow = global.window;
-      // @ts-ignore
+      // @ts-expect-error - Testing SSR behavior without window
       delete global.window;
 
       const dirty = '<<<div><script>>>malicious</script></div>>';
@@ -300,7 +300,7 @@ describe('sanitizeHtml', () => {
 
     it('should handle tag-like strings that are not actually tags', () => {
       const originalWindow = global.window;
-      // @ts-ignore
+      // @ts-expect-error - Testing SSR behavior without window
       delete global.window;
 
       const dirty = 'Use <variable> or <function> syntax in code';
@@ -317,7 +317,7 @@ describe('sanitizeHtml', () => {
 
     it('should handle complex nested attack pattern', () => {
       const originalWindow = global.window;
-      // @ts-ignore
+      // @ts-expect-error - Testing SSR behavior without window
       delete global.window;
 
       // Multiple levels of nesting to test iterative approach
@@ -334,7 +334,7 @@ describe('sanitizeHtml', () => {
 
     it('should handle mixed malformed and well-formed tags', () => {
       const originalWindow = global.window;
-      // @ts-ignore
+      // @ts-expect-error - Testing SSR behavior without window
       delete global.window;
 
       const dirty = 'Normal <em>text</em> with <<script>malicious>content</script>';
@@ -352,7 +352,7 @@ describe('sanitizeHtml', () => {
 
     it('should complete within iteration limit for extremely nested input', () => {
       const originalWindow = global.window;
-      // @ts-ignore
+      // @ts-expect-error - Testing SSR behavior without window
       delete global.window;
 
       // Create a very deeply nested structure that would take many iterations
