@@ -16,6 +16,7 @@ Fess search agent implementation.
 This agent uses LLM for intent extraction and Fess for search execution.
 """
 
+import asyncio
 import logging
 import time
 from collections.abc import AsyncGenerator
@@ -441,7 +442,7 @@ class FessSearchAgent(BaseSearchAgent):
         evaluation_count: int | None = None,
     ) -> list[SearchHit]:
         """
-        Evaluate relevance of search results and update relevance_score and relevance_reason fields.
+        Evaluate relevance of search results in parallel and update relevance_score and relevance_reason fields.
 
         Args:
             query: Original user query
@@ -454,6 +455,8 @@ class FessSearchAgent(BaseSearchAgent):
         Returns:
             List of SearchHit with relevance_score and relevance_reason populated, sorted by relevance_score descending
         """
+        from ..config import settings
+
         # Get relevance template from registry
         registry = get_registry()
         relevance_template = registry.get("relevance", RelevanceParams)
@@ -462,8 +465,12 @@ class FessSearchAgent(BaseSearchAgent):
         hits_to_evaluate = hits[:evaluation_count] if evaluation_count else hits
         hits_not_evaluated = hits[evaluation_count:] if evaluation_count else []
 
+        # Get max concurrent evaluations from settings
+        max_concurrent = settings.intaste_relevance_max_concurrent
+
         logger.info(
-            f"[{session_id}] Evaluating relevance for {len(hits_to_evaluate)} of {len(hits)} results"
+            f"[{session_id}] Evaluating relevance for {len(hits_to_evaluate)} of {len(hits)} results "
+            f"(max_concurrent={max_concurrent})"
         )
 
         # Calculate per-hit timeout (distribute budget evenly)
@@ -471,42 +478,85 @@ class FessSearchAgent(BaseSearchAgent):
             timeout_ms // max(len(hits_to_evaluate), 1) if hits_to_evaluate else timeout_ms
         )
 
-        evaluated_hits = []
-        for idx, hit in enumerate(hits_to_evaluate, 1):
-            try:
-                search_result_dict = {
-                    "title": hit.title,
-                    "snippet": hit.snippet or "",
-                    "url": hit.url,
-                }
+        # Create semaphore for concurrency control
+        semaphore = asyncio.Semaphore(max_concurrent)
 
-                relevance_output = await self.llm_client.relevance(
-                    query=query,
-                    normalized_query=normalized_query,
-                    search_result=search_result_dict,
-                    system_prompt=relevance_template.system_prompt,
-                    user_template=relevance_template.user_template,
-                    timeout_ms=per_hit_timeout,
-                )
-
-                # Create new SearchHit with relevance_score and relevance_reason
-                evaluated_hit = hit.model_copy(
-                    update={
-                        "relevance_score": relevance_output.score,
-                        "relevance_reason": relevance_output.reason,
+        async def evaluate_single_hit(
+            hit: SearchHit, idx: int
+        ) -> tuple[SearchHit, Exception | None]:
+            """Evaluate a single hit with semaphore control."""
+            async with semaphore:
+                try:
+                    search_result_dict = {
+                        "title": hit.title,
+                        "snippet": hit.snippet or "",
+                        "url": hit.url,
                     }
-                )
+
+                    relevance_output = await self.llm_client.relevance(
+                        query=query,
+                        normalized_query=normalized_query,
+                        search_result=search_result_dict,
+                        system_prompt=relevance_template.system_prompt,
+                        user_template=relevance_template.user_template,
+                        timeout_ms=per_hit_timeout,
+                    )
+
+                    # Create new SearchHit with relevance_score and relevance_reason
+                    evaluated_hit = hit.model_copy(
+                        update={
+                            "relevance_score": relevance_output.score,
+                            "relevance_reason": relevance_output.reason,
+                        }
+                    )
+
+                    logger.debug(
+                        f"[{session_id}] Hit #{idx} relevance: score={relevance_output.score:.2f}, "
+                        f"reason={relevance_output.reason[:100]}"
+                    )
+
+                    return (evaluated_hit, None)
+
+                except Exception as e:
+                    logger.warning(
+                        f"[{session_id}] Failed to evaluate relevance for hit #{idx}: {e}"
+                    )
+                    return (hit, e)
+
+        # Execute evaluations in parallel with overall timeout
+        try:
+            async with asyncio.timeout(timeout_ms / 1000):
+                tasks = [
+                    evaluate_single_hit(hit, idx) for idx, hit in enumerate(hits_to_evaluate, 1)
+                ]
+                results = await asyncio.gather(*tasks, return_exceptions=True)
+
+        except TimeoutError:
+            logger.error(
+                f"[{session_id}] Relevance evaluation timed out after {timeout_ms}ms. "
+                "Returning results without evaluation."
+            )
+            # Return hits without evaluation
+            return hits
+
+        # Process results
+        evaluated_hits = []
+        failed_count = 0
+        for result in results:
+            if isinstance(result, BaseException):
+                # Unexpected exception from gather itself
+                logger.error(f"[{session_id}] Unexpected evaluation error: {result}")
+                failed_count += 1
+            elif isinstance(result, tuple):
+                evaluated_hit, error = result
                 evaluated_hits.append(evaluated_hit)
+                if error is not None:
+                    failed_count += 1
 
-                logger.debug(
-                    f"[{session_id}] Hit #{idx} relevance: score={relevance_output.score:.2f}, "
-                    f"reason={relevance_output.reason[:100]}"
-                )
-
-            except Exception as e:
-                logger.warning(f"[{session_id}] Failed to evaluate relevance for hit #{idx}: {e}")
-                # Keep hit without relevance_score
-                evaluated_hits.append(hit)
+        if failed_count > 0:
+            logger.warning(
+                f"[{session_id}] {failed_count}/{len(hits_to_evaluate)} evaluations failed"
+            )
 
         # Combine evaluated and non-evaluated hits
         all_hits = evaluated_hits + hits_not_evaluated
