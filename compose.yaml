@@ -66,6 +66,7 @@ services:
     environment:
       - SEARCH_ENGINE_HTTP_URL=http://intaste-opensearch:9200
       - FESS_DICTIONARY_PATH=${FESS_DICTIONARY_PATH:-/usr/share/opensearch/config/dictionary/}
+      - "FESS_JAVA_OPTS=-Dfess.config.crawler.document.cache.enabled=false -Dfess.config.query.highlight.fragment.size=500 -Dfess.config.query.highlight.number.of.fragments=3"
       - TZ=${TZ:-UTC}
     networks:
       - intaste-net
