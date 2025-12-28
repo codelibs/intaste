@@ -94,8 +94,12 @@ export function QueryInput({
         className={styles.root}
       />
       <div className={styles.footer}>
-        <Text size={200} className={styles.helperText}>{t('input.helper')}</Text>
-        <Text size={200} className={styles.charCount}>{t('input.characterCount', { count: value.length })}</Text>
+        <Text size={200} className={styles.helperText}>
+          {t('input.helper')}
+        </Text>
+        <Text size={200} className={styles.charCount}>
+          {t('input.characterCount', { count: value.length })}
+        </Text>
       </div>
     </div>
   );

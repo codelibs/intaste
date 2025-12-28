@@ -26,7 +26,7 @@ beforeAll(() => {
         return v.toString(16);
       });
     },
-    getRandomValues: (array: any) => {
+    getRandomValues: (array: Uint8Array) => {
       for (let i = 0; i < array.length; i++) {
         array[i] = Math.floor(Math.random() * 256);
       }

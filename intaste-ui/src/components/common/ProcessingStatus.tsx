@@ -161,10 +161,7 @@ export function ProcessingStatus({
         <div className="space-y-3">
           <div className="flex items-center gap-3">
             <div className="flex items-center justify-center w-10 h-10 rounded-full glass">
-              <CheckmarkCircleRegular
-                className="text-success"
-                fontSize={24}
-              />
+              <CheckmarkCircleRegular className="text-success" fontSize={24} />
             </div>
             <div className="flex items-center gap-2">
               <div>
@@ -226,9 +223,7 @@ export function ProcessingStatus({
                   {t('processing.qualityAssessmentComplete')}
                 </div>
               </div>
-              <Lozenge appearance="info">
-                {(relevanceData.max_score * 100).toFixed(0)}%
-              </Lozenge>
+              <Lozenge appearance="info">{(relevanceData.max_score * 100).toFixed(0)}%</Lozenge>
             </div>
           </div>
         </div>

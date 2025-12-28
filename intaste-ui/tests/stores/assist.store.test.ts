@@ -184,8 +184,8 @@ describe('AssistStore', () => {
     const options = { max_results: 10, site: 'example.com' };
     await useAssistStore.getState().send('test query', options);
 
-    const fetchCall = (global.fetch as any).mock.calls[0];
-    const body = JSON.parse(fetchCall[1].body);
+    const fetchCall = vi.mocked(global.fetch).mock.calls[0]!;
+    const body = JSON.parse(fetchCall[1]!.body as string);
     expect(body.query).toBe('test query');
     expect(body.session_id).toBe('test-session-id');
     expect(body.options).toEqual(options);
@@ -216,8 +216,8 @@ describe('AssistStore', () => {
 
     await useAssistStore.getState().send('test query', {});
 
-    const fetchCall = (global.fetch as any).mock.calls[0];
-    const body = JSON.parse(fetchCall[1].body);
+    const fetchCall = vi.mocked(global.fetch).mock.calls[0]!;
+    const body = JSON.parse(fetchCall[1]!.body as string);
     expect(body.query).toBe('test query');
     expect(body.session_id).toBe('session-123');
     expect(body.options).toEqual({});
@@ -490,8 +490,8 @@ describe('AssistStore', () => {
         })
       );
 
-      const fetchCall = (global.fetch as any).mock.calls[0];
-      const body = JSON.parse(fetchCall[1].body);
+      const fetchCall = vi.mocked(global.fetch).mock.calls[0]!;
+      const body = JSON.parse(fetchCall[1]!.body as string);
       expect(body.query_history).toEqual(['previous query 2', 'previous query 1']);
     });
 
@@ -501,8 +501,8 @@ describe('AssistStore', () => {
 
       await useAssistStore.getState().send('test query');
 
-      const fetchCall = (global.fetch as any).mock.calls[0];
-      const body = JSON.parse(fetchCall[1].body);
+      const fetchCall = vi.mocked(global.fetch).mock.calls[0]!;
+      const body = JSON.parse(fetchCall[1]!.body as string);
       expect(body.query_history).toBeUndefined();
     });
 

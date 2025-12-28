@@ -33,7 +33,7 @@ describe('streamingClient', () => {
     // Reset the mock implementation
     vi.mocked(useUIStore.getState).mockReturnValue({
       apiToken: 'test-token',
-    } as any);
+    } as unknown as ReturnType<typeof useUIStore.getState>);
 
     // Mock fetch
     global.fetch = vi.fn();
@@ -57,10 +57,10 @@ describe('streamingClient', () => {
       }),
     };
 
-    (global.fetch as any).mockResolvedValue({
+    vi.mocked(global.fetch).mockResolvedValue({
       ok: true,
       body: mockReadableStream,
-    });
+    } as unknown as Response);
 
     await queryAssistStream('test query', {}, undefined, undefined, {});
 
@@ -82,7 +82,7 @@ describe('streamingClient', () => {
     // Mock store to return null token
     vi.mocked(useUIStore.getState).mockReturnValue({
       apiToken: null,
-    } as any);
+    } as unknown as ReturnType<typeof useUIStore.getState>);
 
     await expect(queryAssistStream('test', {}, undefined, undefined, {})).rejects.toThrow(
       'API token not configured'
@@ -90,7 +90,7 @@ describe('streamingClient', () => {
   });
 
   it('should throw APIError on HTTP error response with structured error data', async () => {
-    (global.fetch as any).mockResolvedValue({
+    vi.mocked(global.fetch).mockResolvedValue({
       ok: false,
       status: 500,
       json: async () => ({
@@ -98,7 +98,7 @@ describe('streamingClient', () => {
         message: 'Server error',
         details: { reason: 'Database connection failed' },
       }),
-    });
+    } as unknown as Response);
 
     await expect(queryAssistStream('test', {}, undefined, undefined, {})).rejects.toThrow(APIError);
 
@@ -114,13 +114,13 @@ describe('streamingClient', () => {
   });
 
   it('should throw APIError with fallback data when response is not JSON', async () => {
-    (global.fetch as any).mockResolvedValue({
+    vi.mocked(global.fetch).mockResolvedValue({
       ok: false,
       status: 503,
       json: async () => {
         throw new Error('Invalid JSON');
       },
-    });
+    } as unknown as Response);
 
     try {
       await queryAssistStream('test', {}, undefined, undefined, {});
@@ -147,10 +147,10 @@ describe('streamingClient', () => {
       }),
     };
 
-    (global.fetch as any).mockResolvedValue({
+    vi.mocked(global.fetch).mockResolvedValue({
       ok: true,
       body: mockReadableStream,
-    });
+    } as unknown as Response);
 
     await queryAssistStream('test', {}, undefined, undefined, { onStart });
 
@@ -171,10 +171,10 @@ describe('streamingClient', () => {
       }),
     };
 
-    (global.fetch as any).mockResolvedValue({
+    vi.mocked(global.fetch).mockResolvedValue({
       ok: true,
       body: mockReadableStream,
-    });
+    } as unknown as Response);
 
     await queryAssistStream('test', {}, undefined, undefined, { onIntent });
 
@@ -195,10 +195,10 @@ describe('streamingClient', () => {
       }),
     };
 
-    (global.fetch as any).mockResolvedValue({
+    vi.mocked(global.fetch).mockResolvedValue({
       ok: true,
       body: mockReadableStream,
-    });
+    } as unknown as Response);
 
     await queryAssistStream('test', {}, undefined, undefined, { onCitations });
 
@@ -220,10 +220,10 @@ describe('streamingClient', () => {
       }),
     };
 
-    (global.fetch as any).mockResolvedValue({
+    vi.mocked(global.fetch).mockResolvedValue({
       ok: true,
       body: mockReadableStream,
-    });
+    } as unknown as Response);
 
     await queryAssistStream('test', {}, undefined, undefined, { onChunk });
 
@@ -246,10 +246,10 @@ describe('streamingClient', () => {
       }),
     };
 
-    (global.fetch as any).mockResolvedValue({
+    vi.mocked(global.fetch).mockResolvedValue({
       ok: true,
       body: mockReadableStream,
-    });
+    } as unknown as Response);
 
     await queryAssistStream('test', {}, undefined, undefined, { onComplete });
 
@@ -273,10 +273,10 @@ describe('streamingClient', () => {
       }),
     };
 
-    (global.fetch as any).mockResolvedValue({
+    vi.mocked(global.fetch).mockResolvedValue({
       ok: true,
       body: mockReadableStream,
-    });
+    } as unknown as Response);
 
     await queryAssistStream('test', {}, undefined, undefined, { onError });
 
@@ -301,10 +301,10 @@ describe('streamingClient', () => {
       }),
     };
 
-    (global.fetch as any).mockResolvedValue({
+    vi.mocked(global.fetch).mockResolvedValue({
       ok: true,
       body: mockReadableStream,
-    });
+    } as unknown as Response);
 
     await queryAssistStream('test', {}, undefined, undefined, { onChunk });
 
@@ -326,10 +326,10 @@ describe('streamingClient', () => {
       }),
     };
 
-    (global.fetch as any).mockResolvedValue({
+    vi.mocked(global.fetch).mockResolvedValue({
       ok: true,
       body: mockReadableStream,
-    });
+    } as unknown as Response);
 
     await queryAssistStream('test', {}, undefined, undefined, { onChunk });
 
@@ -352,15 +352,15 @@ describe('streamingClient', () => {
       }),
     };
 
-    (global.fetch as any).mockResolvedValue({
+    vi.mocked(global.fetch).mockResolvedValue({
       ok: true,
       body: mockReadableStream,
-    });
+    } as unknown as Response);
 
     await queryAssistStream('test', {}, 'session-123', undefined, {});
 
-    const fetchCall = (global.fetch as any).mock.calls[0];
-    const body = JSON.parse(fetchCall[1].body);
+    const fetchCall = vi.mocked(global.fetch).mock.calls[0]!;
+    const body = JSON.parse(fetchCall[1]!.body as string);
     expect(body.session_id).toBe('session-123');
   });
 
@@ -378,10 +378,10 @@ describe('streamingClient', () => {
       }),
     };
 
-    (global.fetch as any).mockResolvedValue({
+    vi.mocked(global.fetch).mockResolvedValue({
       ok: true,
       body: mockReadableStream,
-    });
+    } as unknown as Response);
 
     await queryAssistStream('test', {}, undefined, undefined, { onChunk });
 
@@ -402,16 +402,16 @@ describe('streamingClient', () => {
       }),
     };
 
-    (global.fetch as any).mockResolvedValue({
+    vi.mocked(global.fetch).mockResolvedValue({
       ok: true,
       body: mockReadableStream,
-    });
+    } as unknown as Response);
 
     const queryHistory = ['previous query 1', 'previous query 2'];
     await queryAssistStream('test', {}, undefined, queryHistory, {});
 
-    const fetchCall = (global.fetch as any).mock.calls[0];
-    const body = JSON.parse(fetchCall[1].body);
+    const fetchCall = vi.mocked(global.fetch).mock.calls[0]!;
+    const body = JSON.parse(fetchCall[1]!.body as string);
     expect(body.query_history).toEqual(queryHistory);
   });
 
@@ -429,15 +429,15 @@ describe('streamingClient', () => {
       }),
     };
 
-    (global.fetch as any).mockResolvedValue({
+    vi.mocked(global.fetch).mockResolvedValue({
       ok: true,
       body: mockReadableStream,
-    });
+    } as unknown as Response);
 
     await queryAssistStream('test', {}, undefined, undefined, {});
 
-    const fetchCall = (global.fetch as any).mock.calls[0];
-    const body = JSON.parse(fetchCall[1].body);
+    const fetchCall = vi.mocked(global.fetch).mock.calls[0]!;
+    const body = JSON.parse(fetchCall[1]!.body as string);
     expect(body.query_history).toBeUndefined();
   });
 
@@ -455,15 +455,15 @@ describe('streamingClient', () => {
       }),
     };
 
-    (global.fetch as any).mockResolvedValue({
+    vi.mocked(global.fetch).mockResolvedValue({
       ok: true,
       body: mockReadableStream,
-    });
+    } as unknown as Response);
 
     await queryAssistStream('test', {}, undefined, [], {});
 
-    const fetchCall = (global.fetch as any).mock.calls[0];
-    const body = JSON.parse(fetchCall[1].body);
+    const fetchCall = vi.mocked(global.fetch).mock.calls[0]!;
+    const body = JSON.parse(fetchCall[1]!.body as string);
     expect(body.query_history).toBeUndefined();
   });
 });
