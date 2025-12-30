@@ -44,9 +44,12 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         # Content-Security-Policy for API responses
         # Note: connect-src 'self' is included for completeness, though SSE connections
         # are governed by the CSP of the page that initiates them, not the SSE response
-        response.headers["Content-Security-Policy"] = (
-            "default-src 'none'; connect-src 'self'; frame-ancestors 'none'"
-        )
+        # Skip CSP for docs paths in debug mode to allow Swagger UI/ReDoc to load
+        docs_paths = ("/docs", "/redoc", "/openapi.json")
+        if not (settings.debug and request.url.path.startswith(docs_paths)):
+            response.headers["Content-Security-Policy"] = (
+                "default-src 'none'; connect-src 'self'; frame-ancestors 'none'"
+            )
 
         # Cache control for API responses
         if "Cache-Control" not in response.headers:

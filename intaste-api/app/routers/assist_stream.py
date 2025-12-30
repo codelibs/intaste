@@ -19,6 +19,7 @@ import logging
 import time
 from collections.abc import AsyncGenerator
 from typing import Any
+from uuid import uuid4
 
 from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
@@ -64,7 +65,7 @@ async def stream_assist_response(
     - error: Error occurred
     """
     start_time = time.time()
-    session_id = request.session_id or "new"
+    session_id = request.session_id or str(uuid4())
     event_count = 0
 
     # Safely get options
@@ -381,7 +382,7 @@ async def stream_query(
     - complete: Processing finished
     - error: Error occurred
     """
-    session_id = request.session_id or "new"
+    session_id = request.session_id or str(uuid4())
     logger.debug(f"[{session_id}] POST /assist/query started: query={request.query!r}")
 
     return StreamingResponse(
