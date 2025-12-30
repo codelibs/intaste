@@ -23,7 +23,7 @@ export function renderWithProviders(ui: ReactElement, options?: Omit<RenderOptio
 /**
  * Mock API response helper
  */
-export function mockApiResponse(data: any, status = 200) {
+export function mockApiResponse<T = unknown>(data: T, status = 200) {
   return {
     ok: status >= 200 && status < 300,
     status,

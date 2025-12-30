@@ -44,10 +44,9 @@ describe('ProcessingStatus', () => {
         <ProcessingStatus phase="intent" intentData={mockIntentData} />
       );
 
-      expect(screen.getByText(/filters/i)).toBeInTheDocument();
-      // Check JSON filter content without regex to avoid CodeQL regex anchor warning
-      expect(container.textContent).toContain('"site"');
-      expect(container.textContent).toContain('"example.com"');
+      // Filters are now displayed as Lozenge badges with format "key: value"
+      expect(container.textContent).toContain('site');
+      expect(container.textContent).toContain('example.com');
     });
 
     it('displays followup questions when available', () => {
@@ -67,9 +66,13 @@ describe('ProcessingStatus', () => {
         filters: {},
       };
 
-      renderWithProviders(<ProcessingStatus phase="intent" intentData={intentDataNoFilters} />);
+      const { container } = renderWithProviders(
+        <ProcessingStatus phase="intent" intentData={intentDataNoFilters} />
+      );
 
-      expect(screen.queryByText(/filters/i)).not.toBeInTheDocument();
+      // When filters are empty, no Lozenge badges should be displayed
+      // The filter key from mockIntentData ("site") should not appear
+      expect(container.textContent).not.toContain('site:');
     });
 
     it('does not display followups when array is empty', () => {
@@ -217,7 +220,11 @@ describe('ProcessingStatus', () => {
         <ProcessingStatus phase="intent" intentData={mockIntentData} />
       );
 
-      expect(container.textContent).toContain('🔍');
+      // Fluent UI icons render as SVG elements
+      const svgIcons = container.querySelectorAll('svg');
+      expect(svgIcons.length).toBeGreaterThan(0);
+      // Verify the "Search Keywords" section is rendered
+      expect(container.textContent).toContain('Search Keywords');
     });
 
     it('displays checkmark icon for results found', () => {
@@ -225,7 +232,11 @@ describe('ProcessingStatus', () => {
         <ProcessingStatus phase="search" citationsData={mockCitationsData} />
       );
 
-      expect(container.textContent).toContain('✅');
+      // Fluent UI CheckmarkCircleRegular renders as SVG
+      const svgIcons = container.querySelectorAll('svg');
+      expect(svgIcons.length).toBeGreaterThan(0);
+      // Verify results found section is rendered
+      expect(container.textContent).toContain('results found');
     });
 
     it('displays thinking icon for related questions', () => {
@@ -233,6 +244,7 @@ describe('ProcessingStatus', () => {
         <ProcessingStatus phase="intent" intentData={mockIntentData} />
       );
 
+      // The 💡 emoji is still used for related questions
       expect(container.textContent).toContain('💡');
     });
 
@@ -241,7 +253,11 @@ describe('ProcessingStatus', () => {
         <ProcessingStatus phase="search" citationsData={mockCitationsData} />
       );
 
-      expect(container.textContent).toContain('📄');
+      // Fluent UI DocumentRegular renders as SVG
+      const svgIcons = container.querySelectorAll('svg');
+      expect(svgIcons.length).toBeGreaterThan(0);
+      // Verify top results section is rendered
+      expect(container.textContent).toContain('Top Results');
     });
   });
 });

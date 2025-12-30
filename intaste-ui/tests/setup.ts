@@ -26,7 +26,7 @@ const localStorageMock = {
   removeItem: vi.fn(),
   clear: vi.fn(),
 };
-global.localStorage = localStorageMock as any;
+global.localStorage = localStorageMock as unknown as Storage;
 
 // Mock fetch
 global.fetch = vi.fn();
@@ -36,12 +36,12 @@ global.ResizeObserver = class ResizeObserver {
   observe() {}
   unobserve() {}
   disconnect() {}
-} as any;
+} as unknown as typeof ResizeObserver;
 
 // Mock crypto API with full Web Crypto API surface
 const cryptoMock = {
   randomUUID: vi.fn(() => '00000000-0000-0000-0000-000000000000'),
-  getRandomValues: vi.fn((array: any) => {
+  getRandomValues: vi.fn((array: Uint8Array) => {
     for (let i = 0; i < array.length; i++) {
       array[i] = Math.floor(Math.random() * 256);
     }
@@ -74,7 +74,7 @@ vi.mock('@/libs/i18n/config', () => ({
 // Mock react-i18next
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key: string, options?: any) => {
+    t: (key: string, options?: Record<string, unknown>) => {
       // Translation map for common keys
       const translations: Record<string, string> = {
         'header.title': 'Intaste',

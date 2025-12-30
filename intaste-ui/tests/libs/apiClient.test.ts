@@ -86,8 +86,8 @@ describe('APIClient', () => {
         rating: 'up',
       });
 
-      const fetchCall = (global.fetch as any).mock.calls[0];
-      const headers = fetchCall[1].headers;
+      const fetchCall = vi.mocked(global.fetch).mock.calls[0]!;
+      const headers = fetchCall[1]!.headers as Headers;
 
       expect(headers.get('X-Intaste-Token')).toBe('test-token');
     });
@@ -104,8 +104,8 @@ describe('APIClient', () => {
         rating: 'up',
       });
 
-      const fetchCall = (global.fetch as any).mock.calls[0];
-      const headers = fetchCall[1].headers;
+      const fetchCall = vi.mocked(global.fetch).mock.calls[0]!;
+      const headers = fetchCall[1]!.headers as Headers;
 
       expect(headers.get('X-Request-ID')).toBeTruthy();
     });
@@ -163,8 +163,8 @@ describe('APIClient', () => {
 
       await getModels();
 
-      const fetchCall = (global.fetch as any).mock.calls[0];
-      const headers = fetchCall[1].headers;
+      const fetchCall = vi.mocked(global.fetch).mock.calls[0]!;
+      const headers = fetchCall[1]!.headers as Headers;
 
       expect(headers.get('X-Intaste-Token')).toBe('test-token');
     });
@@ -216,8 +216,8 @@ describe('APIClient', () => {
 
       await selectModel({ model: 'gpt-oss', scope: 'default' });
 
-      const fetchCall = (global.fetch as any).mock.calls[0];
-      const headers = fetchCall[1].headers;
+      const fetchCall = vi.mocked(global.fetch).mock.calls[0]!;
+      const headers = fetchCall[1]!.headers as Headers;
 
       expect(headers.get('X-Intaste-Token')).toBe('test-token');
     });
@@ -258,8 +258,8 @@ describe('APIClient', () => {
 
       await checkHealth();
 
-      const fetchCall = (global.fetch as any).mock.calls[0];
-      const headers = fetchCall[1].headers;
+      const fetchCall = vi.mocked(global.fetch).mock.calls[0]!;
+      const headers = fetchCall[1]!.headers as Headers;
 
       expect(headers.get('X-Intaste-Token')).toBe('test-token');
     });
@@ -332,8 +332,8 @@ describe('APIClient', () => {
 
       await getModels();
 
-      const fetchCall = (global.fetch as any).mock.calls[0];
-      const headers = fetchCall[1].headers;
+      const fetchCall = vi.mocked(global.fetch).mock.calls[0]!;
+      const headers = fetchCall[1]!.headers as Headers;
 
       expect(headers.get('Content-Type')).toBe('application/json');
     });
@@ -346,8 +346,8 @@ describe('APIClient', () => {
 
       await getModels();
 
-      const fetchCall = (global.fetch as any).mock.calls[0];
-      expect(fetchCall[1].cache).toBe('no-store');
+      const fetchCall = vi.mocked(global.fetch).mock.calls[0]!;
+      expect(fetchCall[1]!.cache).toBe('no-store');
     });
 
     it('constructs correct API URLs', async () => {
@@ -357,16 +357,16 @@ describe('APIClient', () => {
       });
 
       await checkHealth();
-      expect((global.fetch as any).mock.calls[0][0]).toBe('/api/v1/health');
+      expect(vi.mocked(global.fetch).mock.calls[0]![0]).toBe('/api/v1/health');
 
       await getModels();
-      expect((global.fetch as any).mock.calls[1][0]).toBe('/api/v1/models');
+      expect(vi.mocked(global.fetch).mock.calls[1]![0]).toBe('/api/v1/models');
 
       await selectModel({ model: 'test', scope: 'default' });
-      expect((global.fetch as any).mock.calls[2][0]).toBe('/api/v1/models/select');
+      expect(vi.mocked(global.fetch).mock.calls[2]![0]).toBe('/api/v1/models/select');
 
       await submitFeedback({ session_id: 'test', turn: 1, rating: 'up' });
-      expect((global.fetch as any).mock.calls[3][0]).toBe('/api/v1/assist/feedback');
+      expect(vi.mocked(global.fetch).mock.calls[3]![0]).toBe('/api/v1/assist/feedback');
     });
   });
 
@@ -381,8 +381,8 @@ describe('APIClient', () => {
 
       await checkHealth();
 
-      const fetchCall = (global.fetch as any).mock.calls[0];
-      const headers = fetchCall[1].headers;
+      const fetchCall = vi.mocked(global.fetch).mock.calls[0]!;
+      const headers = fetchCall[1]!.headers as Headers;
 
       expect(headers.get('X-Intaste-Token')).toBeNull();
     });
@@ -394,15 +394,15 @@ describe('APIClient', () => {
       });
 
       await getModels();
-      let fetchCall = (global.fetch as any).mock.calls[0];
-      expect(fetchCall[1].headers.get('X-Intaste-Token')).toBe('test-token');
+      let fetchCall = vi.mocked(global.fetch).mock.calls[0]!;
+      expect((fetchCall[1]!.headers as Headers).get('X-Intaste-Token')).toBe('test-token');
 
       // Update token
       useUIStore.setState({ apiToken: 'new-token' });
 
       await getModels();
-      fetchCall = (global.fetch as any).mock.calls[1];
-      expect(fetchCall[1].headers.get('X-Intaste-Token')).toBe('new-token');
+      fetchCall = vi.mocked(global.fetch).mock.calls[1]!;
+      expect((fetchCall[1]!.headers as Headers).get('X-Intaste-Token')).toBe('new-token');
     });
   });
 });

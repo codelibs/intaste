@@ -77,15 +77,15 @@ describe('ErrorBanner', () => {
       const handleDismiss = vi.fn();
       renderWithProviders(<ErrorBanner message="Error" onDismiss={handleDismiss} />);
 
-      // Fluent MessageBar has dismiss button with aria-label
-      const dismissButton = screen.getByLabelText(/dismiss error/i);
+      // Fluent MessageBar has dismiss button with aria-label="Dismiss"
+      const dismissButton = screen.getByLabelText(/^dismiss$/i);
       expect(dismissButton).toBeInTheDocument();
     });
 
     it('does not show dismiss button when onDismiss is not provided', () => {
       renderWithProviders(<ErrorBanner message="Error" />);
 
-      const dismissButton = screen.queryByLabelText(/dismiss error/i);
+      const dismissButton = screen.queryByLabelText(/^dismiss$/i);
       expect(dismissButton).not.toBeInTheDocument();
     });
 
@@ -95,7 +95,7 @@ describe('ErrorBanner', () => {
 
       renderWithProviders(<ErrorBanner message="Error" onDismiss={handleDismiss} />);
 
-      const dismissButton = screen.getByLabelText(/dismiss error/i);
+      const dismissButton = screen.getByLabelText(/^dismiss$/i);
       await user.click(dismissButton);
 
       expect(handleDismiss).toHaveBeenCalledTimes(1);
@@ -105,7 +105,7 @@ describe('ErrorBanner', () => {
       const handleDismiss = vi.fn();
       renderWithProviders(<ErrorBanner message="Error" onDismiss={handleDismiss} />);
 
-      const dismissButton = screen.getByLabelText(/dismiss error/i);
+      const dismissButton = screen.getByLabelText(/^dismiss$/i);
       expect(dismissButton).toBeInTheDocument();
     });
   });
@@ -120,7 +120,7 @@ describe('ErrorBanner', () => {
       );
 
       expect(screen.getByText(/retry/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/dismiss error/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/^dismiss$/i)).toBeInTheDocument();
     });
 
     it('calls correct handlers independently', async () => {
@@ -136,7 +136,7 @@ describe('ErrorBanner', () => {
       expect(handleRetry).toHaveBeenCalledTimes(1);
       expect(handleDismiss).not.toHaveBeenCalled();
 
-      await user.click(screen.getByLabelText(/dismiss error/i));
+      await user.click(screen.getByLabelText(/^dismiss$/i));
       expect(handleDismiss).toHaveBeenCalledTimes(1);
       expect(handleRetry).toHaveBeenCalledTimes(1); // Still only once
     });
@@ -202,7 +202,7 @@ describe('ErrorBanner', () => {
       expect(screen.getByText('Error occurred')).toBeInTheDocument();
       expect(screen.getByText('Error message')).toBeInTheDocument();
       expect(screen.getByText(/retry/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/dismiss error/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/^dismiss$/i)).toBeInTheDocument();
     });
   });
 });

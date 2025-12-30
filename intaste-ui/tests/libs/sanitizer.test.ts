@@ -11,7 +11,7 @@
 // limitations under the License.
 
 import { describe, it, expect } from 'vitest';
-import { sanitizeHtml } from '@/libs/sanitizer';
+import { sanitizeHtml, truncateSnippet } from '@/libs/sanitizer';
 
 describe('sanitizeHtml', () => {
   describe('XSS Prevention', () => {
@@ -369,6 +369,135 @@ describe('sanitizeHtml', () => {
       // May still have some tags if hitting the iteration limit, but should not hang
 
       // Restore window
+      global.window = originalWindow;
+    });
+  });
+});
+
+describe('truncateSnippet', () => {
+  describe('Basic Truncation', () => {
+    it('should truncate text longer than maxLength', () => {
+      const dirty = 'This is a long text that should be truncated after reaching the limit';
+      const result = truncateSnippet(dirty, 20);
+      expect(result).toBe('This is a long text ...');
+    });
+
+    it('should not truncate text shorter than maxLength', () => {
+      const dirty = 'Short text';
+      const result = truncateSnippet(dirty, 100);
+      expect(result).toBe('Short text');
+    });
+
+    it('should not truncate text equal to maxLength', () => {
+      const dirty = '1234567890'; // exactly 10 characters
+      const result = truncateSnippet(dirty, 10);
+      expect(result).toBe('1234567890');
+    });
+
+    it('should add ellipsis when truncating', () => {
+      const dirty = 'This is a test';
+      const result = truncateSnippet(dirty, 7);
+      expect(result).toBe('This is...');
+    });
+  });
+
+  describe('HTML Handling', () => {
+    it('should preserve HTML tags when text is within limit', () => {
+      const dirty = '<em>Hello</em> World';
+      const result = truncateSnippet(dirty, 100);
+      expect(result).toBe('<em>Hello</em> World');
+    });
+
+    it('should strip HTML tags when truncating', () => {
+      const dirty = '<em>Hello</em> World! This is a very long text';
+      const result = truncateSnippet(dirty, 15);
+      // "Hello World! Th" = 15 chars, then "..."
+      expect(result).toBe('Hello World! Th...');
+    });
+
+    it('should calculate length based on text content only', () => {
+      const dirty = '<em>Hi</em>'; // 2 chars of text content
+      const result = truncateSnippet(dirty, 2);
+      expect(result).toBe('<em>Hi</em>'); // Should preserve HTML since text is within limit
+    });
+
+    it('should sanitize HTML before truncation', () => {
+      const dirty = '<script>alert("xss")</script>Hello World';
+      const result = truncateSnippet(dirty, 100);
+      expect(result).not.toContain('script');
+      expect(result).toContain('Hello World');
+    });
+  });
+
+  describe('Edge Cases', () => {
+    it('should handle empty string', () => {
+      const result = truncateSnippet('', 100);
+      expect(result).toBe('');
+    });
+
+    it('should return sanitized HTML when maxLength is 0', () => {
+      const dirty = '<em>Hello</em> World';
+      const result = truncateSnippet(dirty, 0);
+      expect(result).toBe('<em>Hello</em> World');
+    });
+
+    it('should return sanitized HTML when maxLength is negative', () => {
+      const dirty = '<em>Hello</em> World';
+      const result = truncateSnippet(dirty, -1);
+      expect(result).toBe('<em>Hello</em> World');
+    });
+
+    it('should handle Unicode characters correctly', () => {
+      const dirty = '日本語テキストです。これは長いテキストです。';
+      const result = truncateSnippet(dirty, 10);
+      expect(result).toBe('日本語テキストです。...');
+    });
+
+    it('should use default maxLength of 100', () => {
+      const dirty = 'A'.repeat(150);
+      const result = truncateSnippet(dirty);
+      expect(result).toBe('A'.repeat(100) + '...');
+    });
+  });
+
+  describe('Real-world Fess Snippet Examples', () => {
+    it('should truncate long snippet with highlighting', () => {
+      const dirty =
+        'This is a <em>search</em> result with <strong>important</strong> keywords highlighted and additional content that makes it very long.';
+      const result = truncateSnippet(dirty, 50);
+      expect(result).toBe('This is a search result with important keywords hi...');
+    });
+
+    it('should preserve short snippet with highlighting', () => {
+      const dirty = '<em>Fess</em> is a search engine';
+      const result = truncateSnippet(dirty, 100);
+      expect(result).toBe('<em>Fess</em> is a search engine');
+    });
+  });
+
+  describe('Server-side Rendering', () => {
+    it('should truncate correctly when window is undefined', () => {
+      const originalWindow = global.window;
+      // @ts-expect-error - Testing SSR behavior without window
+      delete global.window;
+
+      const dirty = 'This is a long text for SSR testing';
+      const result = truncateSnippet(dirty, 15);
+      expect(result).toBe('This is a long ...');
+
+      global.window = originalWindow;
+    });
+
+    it('should handle HTML truncation in SSR mode', () => {
+      const originalWindow = global.window;
+      // @ts-expect-error - Testing SSR behavior without window
+      delete global.window;
+
+      const dirty = '<em>Hello</em> World! Extended content here';
+      const result = truncateSnippet(dirty, 15);
+      // SSR strips all HTML, so text is "Hello World! Extended content here"
+      expect(result).toBe('Hello World! Ex...');
+
       global.window = originalWindow;
     });
   });

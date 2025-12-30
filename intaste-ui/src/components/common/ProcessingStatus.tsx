@@ -14,6 +14,15 @@
 
 import { useTranslation } from '@/libs/i18n/client';
 import { cn } from '@/libs/utils';
+import {
+  SearchRegular,
+  DocumentSearchRegular,
+  ScalesRegular,
+  CommentRegular,
+  CheckmarkCircleRegular,
+  DocumentRegular,
+} from '@fluentui/react-icons';
+import { Lozenge } from './Lozenge';
 
 interface ProcessingStatusProps {
   phase: 'intent' | 'search' | 'relevance' | 'compose';
@@ -50,39 +59,38 @@ export function ProcessingStatus({
 
     const icons = {
       intent: {
-        emoji: '🔍',
+        Icon: SearchRegular,
         animation: 'animate-spin',
         color: 'text-blue-500 dark:text-blue-400',
       },
       search: {
-        emoji: '🔎',
+        Icon: DocumentSearchRegular,
         animation: 'animate-pulse',
         color: 'text-purple-500 dark:text-purple-400',
       },
       relevance: {
-        emoji: '⚖️',
+        Icon: ScalesRegular,
         animation: 'animate-bounce',
         color: 'text-cyan-500 dark:text-cyan-400',
       },
       compose: {
-        emoji: '💬',
+        Icon: CommentRegular,
         animation: 'animate-pulse',
         color: 'text-green-500 dark:text-green-400',
       },
     };
 
-    const icon = icons[iconPhase];
+    const { Icon, animation, color } = icons[iconPhase];
 
     return (
       <div
         className={cn(
-          'flex items-center justify-center w-10 h-10 rounded-full',
-          isActive && 'glass'
+          'flex items-center justify-center w-10 h-10 rounded-full transition-all duration-300',
+          isActive && 'glass',
+          isActive ? color : 'text-muted-foreground'
         )}
       >
-        <span className={cn('text-2xl transition-all duration-300', isActive && icon.animation)}>
-          {icon.emoji}
-        </span>
+        <Icon className={cn('text-xl', isActive && animation)} fontSize={24} />
       </div>
     );
   };
@@ -107,14 +115,12 @@ export function ProcessingStatus({
             </div>
 
             {intentData.filters && Object.keys(intentData.filters).length > 0 && (
-              <div className="flex items-start gap-2 text-xs text-muted-foreground">
-                <span>📌</span>
-                <div>
-                  <span className="font-medium">{t('processing.filters')}:</span>
-                  <div className="mt-1 font-mono">
-                    {JSON.stringify(intentData.filters, null, 2)}
-                  </div>
-                </div>
+              <div className="flex flex-wrap gap-2">
+                {Object.entries(intentData.filters).map(([key, value]) => (
+                  <Lozenge key={key} appearance="default">
+                    {key}: {String(value)}
+                  </Lozenge>
+                ))}
               </div>
             )}
 
@@ -155,22 +161,25 @@ export function ProcessingStatus({
         <div className="space-y-3">
           <div className="flex items-center gap-3">
             <div className="flex items-center justify-center w-10 h-10 rounded-full glass">
-              <span className="text-2xl">✅</span>
+              <CheckmarkCircleRegular className="text-success" fontSize={24} />
             </div>
-            <div>
-              <div className="font-semibold text-green-600 dark:text-green-400">
-                {t('processing.resultsFound', { count: citationsData.total })}
+            <div className="flex items-center gap-2">
+              <div>
+                <div className="font-semibold text-success">
+                  {t('processing.resultsFound', { count: citationsData.total })}
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  {t('processing.searchCompletedSuccessfully')}
+                </div>
               </div>
-              <div className="text-xs text-muted-foreground">
-                {t('processing.searchCompletedSuccessfully')}
-              </div>
+              <Lozenge appearance="success">{citationsData.total}</Lozenge>
             </div>
           </div>
 
           {citationsData.topResults.length > 0 && (
             <div className="ml-13 space-y-2">
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <span>📄</span>
+                <DocumentRegular fontSize={16} />
                 <span className="font-medium">{t('processing.topResults')}:</span>
               </div>
               <ol className="pl-6 space-y-1.5">
@@ -205,23 +214,16 @@ export function ProcessingStatus({
         <div className="space-y-3">
           <div className="flex items-center gap-3">
             <PhaseIcon phase="relevance" />
-            <div>
-              <div className="font-semibold text-cyan-600 dark:text-cyan-400">
-                {t('processing.relevanceEvaluated', { count: relevanceData.evaluated_count })}
+            <div className="flex items-center gap-2">
+              <div>
+                <div className="font-semibold text-info">
+                  {t('processing.relevanceEvaluated', { count: relevanceData.evaluated_count })}
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  {t('processing.qualityAssessmentComplete')}
+                </div>
               </div>
-              <div className="text-xs text-muted-foreground">
-                {t('processing.qualityAssessmentComplete')}
-              </div>
-            </div>
-          </div>
-          <div className="ml-13">
-            <div className="glass-panel p-3 inline-block">
-              <span className="text-sm text-muted-foreground">
-                {t('processing.maxRelevanceScore')}:
-              </span>{' '}
-              <span className="font-mono text-lg font-bold text-foreground">
-                {(relevanceData.max_score * 100).toFixed(0)}%
-              </span>
+              <Lozenge appearance="info">{(relevanceData.max_score * 100).toFixed(0)}%</Lozenge>
             </div>
           </div>
         </div>

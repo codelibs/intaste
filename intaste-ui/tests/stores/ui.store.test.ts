@@ -131,7 +131,7 @@ describe('UIStore', () => {
       });
 
       // Verify the migration logic would work by simulating what onRehydrateStorage does
-      const mockState = { apiToken: null } as any;
+      const mockState: { apiToken: string | null } = { apiToken: null };
       const hasLegacy = localStorage.getItem('intaste.token');
 
       if (hasLegacy && !mockState.apiToken) {
