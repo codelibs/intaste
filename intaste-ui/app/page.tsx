@@ -91,15 +91,9 @@ export default function HomePage() {
       <header className="border-b bg-card">
         <div className="container mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
-              <Image
-                src="/logo.svg"
-                alt="Intaste logo"
-                width={32}
-                height={32}
-                priority
-              />
-              <h1 className="text-xl font-bold text-foreground">{t('header.title')}</h1>
-            </div>
+            <Image src="/logo.svg" alt="Intaste logo" width={32} height={32} priority />
+            <h1 className="text-xl font-bold text-foreground">{t('header.title')}</h1>
+          </div>
           <div className="flex items-center gap-4">
             {/* Searching indicator with elapsed time */}
             <SearchingIndicator />
