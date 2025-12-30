@@ -252,7 +252,7 @@ async def test_stream_query_with_session(
     auth_headers: dict,
 ):
     """Test streaming query with session context."""
-    session_id = "00000000-0000-0000-0000-000000000001"
+    session_id = "00000000-0000-4000-8000-000000000001"
 
     # Mock intent extraction
     mock_llm_client.intent.return_value = IntentOutput(

@@ -351,8 +351,7 @@ async def stream_assist_response(
             },
         )
         logger.debug(
-            f"[{session_id}] Streaming event #{event_count}: type=error, "
-            f"code={error_code}"
+            f"[{session_id}] Streaming event #{event_count}: type=error, " f"code={error_code}"
         )
         yield error_event
 
