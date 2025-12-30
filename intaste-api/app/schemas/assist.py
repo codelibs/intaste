@@ -14,10 +14,19 @@
 Schemas for /assist endpoints.
 """
 
-from typing import Any, Literal
+import re
+from typing import Annotated, Any, Literal
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, StringConstraints, field_validator
+
+# Constrained type for query history items (each item max 4096 chars)
+QueryHistoryItem = Annotated[str, StringConstraints(min_length=1, max_length=4096)]
+
+# UUID v4 pattern for session ID validation
+UUID_V4_PATTERN = re.compile(
+    r"^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$", re.IGNORECASE
+)
 
 
 class Citation(BaseModel):
@@ -84,15 +93,23 @@ class AssistQueryRequest(BaseModel):
 
     query: str = Field(..., min_length=1, max_length=4096, description="Natural language query")
     session_id: str | None = Field(None, description="Session ID (UUID v4)")
-    query_history: list[str] | None = Field(
+    query_history: list[QueryHistoryItem] | None = Field(
         None,
         max_length=10,
-        description="Previous queries in this session (most recent first, max 10)",
+        description="Previous queries in this session (most recent first, max 10, each max 4096 chars)",
     )
     options: dict[str, Any] | None = Field(
         None,
         description="Optional parameters: max_results, language, filters, timeout_ms",
     )
+
+    @field_validator("session_id")
+    @classmethod
+    def validate_session_id(cls, v: str | None) -> str | None:
+        """Validate session_id is a valid UUID v4 format."""
+        if v is not None and not UUID_V4_PATTERN.match(v):
+            raise ValueError("session_id must be a valid UUID v4 format")
+        return v
 
 
 class AssistQueryResponse(BaseModel):

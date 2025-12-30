@@ -323,23 +323,36 @@ async def stream_assist_response(
 
     except Exception as e:
         elapsed_ms = int((time.time() - start_time) * 1000)
+        # Log detailed error for debugging (server-side only)
         logger.error(f"[{session_id}] Streaming error after {elapsed_ms}ms: {e}", exc_info=True)
         logger.debug(
             f"[{session_id}] Streaming error context: query={request.query!r}, "
             f"events_sent={event_count}, error_type={type(e).__name__}"
         )
 
+        # Map internal exceptions to user-friendly error codes
+        # Do NOT expose internal error messages to clients
+        error_code = "PROCESSING_ERROR"
+        error_message = "An error occurred while processing your request"
+
+        if isinstance(e, TimeoutError):
+            error_code = "TIMEOUT"
+            error_message = "Request timed out. Please try again."
+        elif isinstance(e, RuntimeError):
+            error_code = "SERVICE_ERROR"
+            error_message = "Service temporarily unavailable. Please try again later."
+
         event_count += 1
         error_event = await format_sse(
             "error",
             {
-                "message": str(e),
-                "type": type(e).__name__,
+                "code": error_code,
+                "message": error_message,
             },
         )
         logger.debug(
             f"[{session_id}] Streaming event #{event_count}: type=error, "
-            f"size={len(error_event)} bytes"
+            f"code={error_code}"
         )
         yield error_event
 

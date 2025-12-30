@@ -28,7 +28,11 @@ from .core.search_agent.base import SearchAgent
 from .core.search_agent.factory import create_search_agent
 from .core.search_provider.base import SearchProvider
 from .core.search_provider.factory import SearchProviderFactory
-from .core.security.middleware import add_request_id_middleware, setup_cors
+from .core.security.middleware import (
+    add_request_id_middleware,
+    add_security_headers_middleware,
+    setup_cors,
+)
 from .i18n import _
 from .routers import assist_stream, health, models
 from .services.assist import AssistService
@@ -163,8 +167,9 @@ app = FastAPI(
     redoc_url="/redoc" if settings.debug else None,
 )
 
-# Add middleware
+# Add middleware (order matters: CORS first, then security headers, then request ID)
 setup_cors(app)
+add_security_headers_middleware(app)
 add_request_id_middleware(app)
 
 # Include routers

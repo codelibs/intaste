@@ -13,7 +13,7 @@
 'use client';
 
 import type { Citation } from '@/types/api';
-import { truncateSnippet } from '@/libs/sanitizer';
+import { truncateSnippet, isValidHttpUrl } from '@/libs/sanitizer';
 import {
   Card,
   Badge,
@@ -182,10 +182,15 @@ export function EvidenceItem({ citation, active, onSelect, showFull = false }: E
         </div>
       )}
 
-      {/* Open in Fess Link */}
-      {showFull && (
+      {/* Open in Fess Link - SECURITY: Only render link if URL is valid HTTP/HTTPS */}
+      {showFull && isValidHttpUrl(citation.url) && (
         <div className={styles.linkContainer}>
-          <Link href={citation.url} target="_blank" onClick={(e) => e.stopPropagation()}>
+          <Link
+            href={citation.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+          >
             <Text size={200} weight="medium">
               Open in Fess
             </Text>

@@ -154,6 +154,32 @@ export function truncateSnippet(dirty: string, maxLength: number = 100): string 
   return escapeHtml(plainText.slice(0, maxLength) + '...');
 }
 
+/**
+ * Validate that a URL is safe to use as a link href.
+ *
+ * This function checks that the URL uses a safe protocol (http or https)
+ * to prevent javascript:, data:, or other potentially dangerous URL schemes.
+ *
+ * @param url - The URL to validate
+ * @returns true if the URL is safe to use, false otherwise
+ *
+ * @example
+ * ```typescript
+ * isValidHttpUrl('https://example.com')  // => true
+ * isValidHttpUrl('http://example.com')   // => true
+ * isValidHttpUrl('javascript:alert(1)')  // => false
+ * isValidHttpUrl('data:text/html,...')   // => false
+ * ```
+ */
+export function isValidHttpUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
 export function sanitizeHtml(dirty: string): string {
   if (typeof window === 'undefined') {
     // Server-side: iteratively remove all HTML tags to prevent bypass attacks
