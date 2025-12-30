@@ -13,6 +13,7 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 import { useAssistStore } from '@/store/assist.store';
 import { useUIStore } from '@/store/ui.store';
 import { useLanguageStore } from '@/store/language.store';
@@ -89,7 +90,10 @@ export default function HomePage() {
       {/* Header */}
       <header className="border-b bg-card">
         <div className="container mx-auto px-4 py-3 flex items-center justify-between">
-          <h1 className="text-xl font-bold text-foreground">{t('header.title')}</h1>
+          <div className="flex items-center gap-2">
+            <Image src="/logo.svg" alt="Intaste logo" width={32} height={32} priority />
+            <h1 className="text-xl font-bold text-foreground">{t('header.title')}</h1>
+          </div>
           <div className="flex items-center gap-4">
             {/* Searching indicator with elapsed time */}
             <SearchingIndicator />
