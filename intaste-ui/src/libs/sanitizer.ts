@@ -22,6 +22,24 @@
 import DOMPurify from 'dompurify';
 
 /**
+ * Escape HTML meta-characters in a string so it can be safely embedded in HTML.
+ *
+ * This is used to ensure that DOM-extracted text is not reinterpreted as HTML
+ * when passed to dangerouslySetInnerHTML.
+ *
+ * @param text - The plain text string to escape
+ * @returns HTML-encoded string safe for use as innerHTML
+ */
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+/**
  * Sanitize HTML content from search snippets to prevent XSS attacks.
  *
  * This function uses DOMPurify to remove potentially malicious HTML while preserving
@@ -104,8 +122,20 @@ export function truncateSnippet(dirty: string, maxLength: number = 100): string 
   // Strip HTML tags to get plain text for length calculation
   let plainText: string;
   if (typeof window === 'undefined') {
-    // Server-side: simple regex-based tag removal
-    plainText = sanitized.replace(/<[^>]*>/g, '');
+    // Server-side: iteratively remove all HTML tags and orphan angle brackets
+    // to prevent bypass attacks from malformed or overlapping tags.
+    let text = sanitized;
+    let previousText: string;
+    let iterations = 0;
+    const MAX_ITERATIONS = 10; // Safety limit to prevent excessive work
+
+    do {
+      previousText = text;
+      text = text.replace(/<[^>]*>|[<>]/g, '');
+      iterations++;
+    } while (text !== previousText && iterations < MAX_ITERATIONS);
+
+    plainText = text;
   } else {
     // Client-side: use DOM for accurate text extraction
     const temp = document.createElement('div');
@@ -118,8 +148,10 @@ export function truncateSnippet(dirty: string, maxLength: number = 100): string 
     return sanitized;
   }
 
-  // Truncate plain text and add ellipsis
-  return plainText.slice(0, maxLength) + '...';
+  // Truncate plain text and add ellipsis.
+  // SECURITY: HTML-encode the truncated text so it is safe to use with dangerouslySetInnerHTML.
+  // This prevents DOM text (which may contain decoded < or >) from being reinterpreted as HTML.
+  return escapeHtml(plainText.slice(0, maxLength) + '...');
 }
 
 export function sanitizeHtml(dirty: string): string {
