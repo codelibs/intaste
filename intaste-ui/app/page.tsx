@@ -51,7 +51,7 @@ export default function HomePage() {
     send,
     selectCitation,
     addQueryToHistory,
-    clearQueryHistory,
+    clear,
   } = useAssistStore();
 
   const handleSubmit = async () => {
@@ -125,7 +125,7 @@ export default function HomePage() {
               <QueryHistory
                 history={queryHistory}
                 onQueryClick={handleHistoryQueryClick}
-                onClear={clearQueryHistory}
+                onClear={clear}
               />
             )}
 
