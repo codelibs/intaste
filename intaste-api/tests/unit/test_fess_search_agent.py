@@ -310,6 +310,135 @@ async def test_evaluate_relevance(search_agent, mock_llm_client):
 
 
 @pytest.mark.asyncio
+async def test_evaluate_relevance_parallel(search_agent, mock_llm_client):
+    """Test parallel relevance evaluation with multiple results."""
+    import asyncio
+    import time
+
+    from app.core.llm.base import RelevanceOutput
+
+    # Mock 10 relevance evaluations
+    mock_llm_client.relevance.side_effect = [
+        RelevanceOutput(score=0.9, reason=f"Reason {i}") for i in range(10)
+    ]
+
+    hits = [
+        SearchHit(
+            id=str(i),
+            title=f"Doc {i}",
+            url=f"https://example.com/{i}",
+            snippet=f"snippet {i}",
+            score=0.95 - i * 0.05,
+        )
+        for i in range(10)
+    ]
+
+    start = time.time()
+    evaluated_hits = await search_agent._evaluate_relevance(
+        query="test query",
+        normalized_query="test query normalized",
+        hits=hits,
+        session_id="test-session",
+        timeout_ms=45000,
+    )
+    elapsed = time.time() - start
+
+    # Verify all hits evaluated
+    assert len(evaluated_hits) == 10
+    assert all(h.relevance_score is not None for h in evaluated_hits)
+    assert mock_llm_client.relevance.call_count == 10
+
+    # Verify results sorted by relevance_score (all are 0.9 in this mock)
+    scores = [h.relevance_score for h in evaluated_hits]
+    assert all(s == 0.9 for s in scores)
+
+
+@pytest.mark.asyncio
+async def test_evaluate_relevance_parallel_partial_failure(search_agent, mock_llm_client):
+    """Test parallel evaluation with some failures."""
+    from app.core.llm.base import RelevanceOutput
+
+    # Mock mixed success/failure
+    mock_llm_client.relevance.side_effect = [
+        RelevanceOutput(score=0.9, reason="Success 1"),
+        TimeoutError("LLM timeout"),
+        RelevanceOutput(score=0.7, reason="Success 2"),
+        RuntimeError("LLM error"),
+        RelevanceOutput(score=0.6, reason="Success 3"),
+    ]
+
+    hits = [
+        SearchHit(
+            id=str(i),
+            title=f"Doc {i}",
+            url=f"https://example.com/{i}",
+            snippet=f"snippet {i}",
+            score=0.9,
+        )
+        for i in range(5)
+    ]
+
+    evaluated_hits = await search_agent._evaluate_relevance(
+        query="test query",
+        normalized_query="test query normalized",
+        hits=hits,
+        session_id="test-session",
+        timeout_ms=10000,
+    )
+
+    # Should have 3 with scores, 2 without
+    scored = [h for h in evaluated_hits if h.relevance_score is not None]
+    unscored = [h for h in evaluated_hits if h.relevance_score is None]
+
+    assert len(scored) == 3
+    assert len(unscored) == 2
+    assert len(evaluated_hits) == 5
+
+
+@pytest.mark.asyncio
+async def test_evaluate_relevance_timeout_budget(search_agent, mock_llm_client):
+    """Test overall timeout is respected."""
+    import asyncio
+    import time
+
+    from app.core.llm.base import RelevanceOutput
+
+    async def slow_relevance(*args, **kwargs):
+        await asyncio.sleep(2)
+        return RelevanceOutput(score=0.5, reason="Slow")
+
+    mock_llm_client.relevance.side_effect = slow_relevance
+
+    hits = [
+        SearchHit(
+            id=str(i),
+            title=f"Doc {i}",
+            url=f"https://example.com/{i}",
+            snippet="snippet",
+            score=0.9,
+        )
+        for i in range(10)
+    ]
+
+    start = time.time()
+    # Should timeout after 1 second
+    evaluated_hits = await search_agent._evaluate_relevance(
+        query="test query",
+        normalized_query="test query normalized",
+        hits=hits,
+        session_id="test-session",
+        timeout_ms=1000,
+    )
+    elapsed = time.time() - start
+
+    # Should return original hits (no evaluation) due to timeout
+    assert elapsed < 1.5  # Some overhead allowed
+    assert len(evaluated_hits) == 10
+    # All hits should have no relevance_score (timeout case returns original hits)
+    assert all(h.relevance_score is None for h in evaluated_hits)
+
+
+@pytest.mark.asyncio
 async def test_should_retry():
     """Test _should_retry method."""
     agent = FessSearchAgent(

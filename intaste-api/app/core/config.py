@@ -95,6 +95,9 @@ class Settings(BaseSettings):
     intaste_selected_relevance_threshold: float = Field(
         default=0.8, ge=0.0, le=1.0, validation_alias="INTASTE_SELECTED_RELEVANCE_THRESHOLD"
     )
+    intaste_relevance_max_concurrent: int = Field(
+        default=5, ge=1, le=20, validation_alias="INTASTE_RELEVANCE_MAX_CONCURRENT"
+    )
 
     # LLM Warmup
     intaste_llm_warmup_enabled: bool = Field(
