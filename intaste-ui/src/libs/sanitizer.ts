@@ -69,6 +69,59 @@ import DOMPurify from 'dompurify';
  *
  * @see {@link https://github.com/cure53/DOMPurify DOMPurify Documentation}
  */
+/**
+ * Truncate HTML content to a maximum text length.
+ *
+ * This function first sanitizes the HTML, then truncates the text content
+ * (excluding HTML tags) to the specified maximum length. If truncation occurs,
+ * "..." is appended to indicate the content was shortened.
+ *
+ * **Note:** HTML tags are stripped when truncation is needed, as preserving
+ * tag boundaries across truncation points is complex and error-prone.
+ *
+ * @param dirty - The potentially unsafe HTML string to sanitize and truncate
+ * @param maxLength - Maximum text length (default: 100). Set to 0 or negative to disable truncation.
+ * @returns Sanitized and optionally truncated text string
+ *
+ * @example
+ * ```typescript
+ * truncateSnippet('<em>Hello</em> World! This is a test.', 10)
+ * // => 'Hello Worl...'
+ *
+ * truncateSnippet('Short text', 100)
+ * // => 'Short text' (no truncation needed)
+ * ```
+ */
+export function truncateSnippet(dirty: string, maxLength: number = 100): string {
+  // First sanitize the HTML
+  const sanitized = sanitizeHtml(dirty);
+
+  // If maxLength is disabled or content is empty, return sanitized HTML as-is
+  if (maxLength <= 0 || !sanitized) {
+    return sanitized;
+  }
+
+  // Strip HTML tags to get plain text for length calculation
+  let plainText: string;
+  if (typeof window === 'undefined') {
+    // Server-side: simple regex-based tag removal
+    plainText = sanitized.replace(/<[^>]*>/g, '');
+  } else {
+    // Client-side: use DOM for accurate text extraction
+    const temp = document.createElement('div');
+    temp.innerHTML = sanitized;
+    plainText = temp.textContent || temp.innerText || '';
+  }
+
+  // If text is within limit, return sanitized HTML (preserves formatting)
+  if (plainText.length <= maxLength) {
+    return sanitized;
+  }
+
+  // Truncate plain text and add ellipsis
+  return plainText.slice(0, maxLength) + '...';
+}
+
 export function sanitizeHtml(dirty: string): string {
   if (typeof window === 'undefined') {
     // Server-side: iteratively remove all HTML tags to prevent bypass attacks

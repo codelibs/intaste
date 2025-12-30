@@ -66,11 +66,14 @@ services:
     environment:
       - SEARCH_ENGINE_HTTP_URL=http://intaste-opensearch:9200
       - FESS_DICTIONARY_PATH=${FESS_DICTIONARY_PATH:-/usr/share/opensearch/config/dictionary/}
+      - "FESS_JAVA_OPTS=-Dfess.config.crawler.document.cache.enabled=false -Dfess.config.query.highlight.fragment.size=1000 -Dfess.config.query.highlight.number.of.fragments=3 -Dfess.config.query.highlight.tag.pre= -Dfess.config.query.highlight.tag.post="
       - TZ=${TZ:-UTC}
     networks:
       - intaste-net
     expose:
       - "8080"
+    ports:
+      - "8080:8080"
     healthcheck:
       <<: *curl-health
       test: ["CMD-SHELL", "curl -fsS 'http://localhost:8080/api/v1/health' || exit 1"]

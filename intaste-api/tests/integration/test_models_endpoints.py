@@ -309,7 +309,7 @@ class TestModelsEndpointErrors:
         """Test selecting model with malformed JSON."""
         response = client.post(
             "/api/v1/models/select",
-            data="not-valid-json",
+            content="not-valid-json",
             headers={**auth_headers, "Content-Type": "application/json"},
         )
 

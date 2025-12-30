@@ -19,10 +19,6 @@ services:
     ports:
       - "9200:9200"
 
-  fess:
-    ports:
-      - "8080:8080"
-
   ollama:
     ports:
       - "11434:11434"

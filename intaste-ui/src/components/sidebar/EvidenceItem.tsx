@@ -13,7 +13,7 @@
 'use client';
 
 import type { Citation } from '@/types/api';
-import { sanitizeHtml } from '@/libs/sanitizer';
+import { truncateSnippet } from '@/libs/sanitizer';
 import {
   Card,
   Badge,
@@ -25,6 +25,9 @@ import {
 } from '@fluentui/react-components';
 import { ArrowUpRight16Regular } from '@fluentui/react-icons';
 import { useTranslation } from '@/libs/i18n/client';
+
+// Maximum character length for snippet display (configurable via environment variable)
+const SNIPPET_MAX_LENGTH = parseInt(process.env.NEXT_PUBLIC_SNIPPET_MAX_LENGTH || '100', 10);
 
 const useStyles = makeStyles({
   card: {
@@ -131,12 +134,12 @@ export function EvidenceItem({ citation, active, onSelect, showFull = false }: E
       {/* Snippet - SECURITY: Must sanitize HTML from Fess search results */}
       {citation.snippet && (
         <div
-          className={mergeClasses(styles.snippet, !showFull && styles.snippetClamped)}
+          className={styles.snippet}
           // SECURITY: citation.snippet may contain HTML from Fess with search term highlighting.
-          // We use sanitizeHtml() to prevent XSS attacks while preserving safe formatting tags.
+          // We use truncateSnippet() to sanitize (prevent XSS) and truncate to configured length.
           // This is the ONLY location in the codebase where dangerouslySetInnerHTML is used.
           dangerouslySetInnerHTML={{
-            __html: sanitizeHtml(citation.snippet),
+            __html: truncateSnippet(citation.snippet, SNIPPET_MAX_LENGTH),
           }}
         />
       )}

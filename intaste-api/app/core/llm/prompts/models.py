@@ -6,17 +6,14 @@ This module provides type-safe prompt management with:
 - Automatic parameter validation via Pydantic
 """
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 # Base class for all prompt parameters
 class PromptParams(BaseModel):
     """Base class for prompt template parameters."""
 
-    class Config:
-        """Pydantic config."""
-
-        extra = "forbid"  # Prevent extra parameters
+    model_config = ConfigDict(extra="forbid")  # Prevent extra parameters
 
 
 # Intent extraction parameters
@@ -112,10 +109,7 @@ class PromptTemplate[P: PromptParams](BaseModel):
         default_factory=dict, description="Additional metadata (tags, author, etc.)"
     )
 
-    class Config:
-        """Pydantic config."""
-
-        frozen = True  # Make templates immutable
+    model_config = ConfigDict(frozen=True)  # Make templates immutable
 
     def format(self, params: P) -> str:
         """Format the user template with validated parameters.
