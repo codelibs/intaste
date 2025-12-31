@@ -11,7 +11,7 @@
 # limitations under the License.
 
 """
-Middleware for request tracking and CORS.
+Middleware for request tracking, CORS, and security headers.
 """
 
 import time
@@ -23,6 +23,39 @@ from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from ..config import settings
+
+
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    """
+    Add security headers to all responses.
+    """
+
+    async def dispatch(
+        self, request: Request, call_next: Callable[[Request], Awaitable[Response]]
+    ) -> Response:
+        response = await call_next(request)
+
+        # Security headers
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
+
+        # Content-Security-Policy for API responses
+        # Note: connect-src 'self' is included for completeness, though SSE connections
+        # are governed by the CSP of the page that initiates them, not the SSE response
+        # Skip CSP for docs paths in debug mode to allow Swagger UI/ReDoc to load
+        docs_paths = ("/docs", "/redoc", "/openapi.json")
+        if not (settings.debug and request.url.path.startswith(docs_paths)):
+            response.headers["Content-Security-Policy"] = (
+                "default-src 'none'; connect-src 'self'; frame-ancestors 'none'"
+            )
+
+        # Cache control for API responses
+        if "Cache-Control" not in response.headers:
+            response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate"
+
+        return response
 
 
 class RequestIDMiddleware(BaseHTTPMiddleware):
@@ -48,6 +81,13 @@ class RequestIDMiddleware(BaseHTTPMiddleware):
         response.headers["X-Process-Time"] = f"{(time.time() - start_time) * 1000:.2f}ms"
 
         return response
+
+
+def add_security_headers_middleware(app: FastAPI) -> None:
+    """
+    Add security headers middleware to the app.
+    """
+    app.add_middleware(SecurityHeadersMiddleware)
 
 
 def add_request_id_middleware(app: FastAPI) -> None:

@@ -79,8 +79,8 @@ class TestAssistQueryRequestValidation:
             assert request.query == query
 
     def test_session_id_validation(self):
-        """Test session_id validation (UUID v4 format expected in docs)."""
-        # Valid: proper UUID format
+        """Test session_id validation (UUID v4 format required)."""
+        # Valid: proper UUID v4 format
         valid_uuid = str(uuid4())
         request = AssistQueryRequest(query="test", session_id=valid_uuid)
         assert request.session_id == valid_uuid
@@ -89,11 +89,12 @@ class TestAssistQueryRequestValidation:
         request = AssistQueryRequest(query="test", session_id=None)
         assert request.session_id is None
 
-        # Note: The schema uses str | None, not UUID type,
-        # so any string is technically valid at schema level
-        # But we should document that UUID v4 is expected
-        request = AssistQueryRequest(query="test", session_id="not-a-uuid")
-        assert request.session_id == "not-a-uuid"
+        # Invalid: non-UUID string should raise ValidationError
+        with pytest.raises(ValidationError) as exc_info:
+            AssistQueryRequest(query="test", session_id="not-a-uuid")
+
+        errors = exc_info.value.errors()
+        assert any("session_id" in str(error) for error in errors)
 
     def test_query_history_validation(self):
         """Test query_history validation (max_length=10)."""

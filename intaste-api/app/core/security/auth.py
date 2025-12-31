@@ -14,6 +14,8 @@
 API authentication using X-Intaste-Token header.
 """
 
+import hmac
+
 from fastapi import Header, HTTPException, status
 
 from ...i18n import _
@@ -26,6 +28,8 @@ async def verify_api_token(
     """
     Verify the API token from X-Intaste-Token header.
 
+    Uses constant-time comparison to prevent timing attacks.
+
     Args:
         x_intaste_token: Token from header
 
@@ -35,7 +39,17 @@ async def verify_api_token(
     Raises:
         HTTPException: 401 if token is invalid or missing
     """
-    if not x_intaste_token or x_intaste_token != settings.intaste_api_token:
+    if not x_intaste_token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail={
+                "code": "UNAUTHORIZED",
+                "message": _("Invalid or missing API token", language="en"),
+            },
+        )
+
+    # Use constant-time comparison to prevent timing attacks
+    if not hmac.compare_digest(x_intaste_token, settings.intaste_api_token):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail={
